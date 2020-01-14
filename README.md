@@ -2,9 +2,9 @@
 
 ## 孙首勋 高星坤 
 ### 胡哲宁 [github](www.baidu.com"标题") [博客](链接网址 "标题")
-### 程天翼 github 博客 
-### 孙胜顺 github 博客
-### 吴烜章 github 博客
+### 程天翼 [github](www.baidu.com"标题") [博客](链接网址 "标题")
+### 孙胜顺 [github](https://github.com/sss-lql"标题") [博客](https://blog.csdn.net/weixin_45511599 "标题")
+### 吴烜章 [github](www.baidu.com"标题") [博客](链接网址 "标题")
 
 ### 注意事项
 - 1.每位同学建立自己的文件夹，存放自己的代码等内容
