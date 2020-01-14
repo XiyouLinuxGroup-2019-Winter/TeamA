@@ -1,10 +1,10 @@
 # TeamA
 
 ## 孙首勋 高星坤 
-### 胡哲宁 [github](www.baidu.com"标题") [博客](链接网址 "标题")
-### 程天翼 [github](www.baidu.com"标题") [博客](链接网址 "标题")
+### 胡哲宁 [github](https://me.csdn.net/adlatereturn "标题") [博客](https://github.com/adlternative "标题")
+### 程天翼 [github](https://github.com/ensemblelearning "标题") [博客](https://blog.csdn.net/ensemblelearning "标题")
 ### 孙胜顺 [github](https://github.com/sss-lql "标题") [博客](https://blog.csdn.net/weixin_45511599 "标题")
-### 吴烜章 [github](www.baidu.com"标题") [博客](链接网址 "标题")
+### 吴烜章 [github](https://github.com/Taciturn-wu "标题") [博客](https://blog.csdn.net/weixin_45819130 "标题")
 
 ### 注意事项
 - 1.每位同学建立自己的文件夹，存放自己的代码等内容
