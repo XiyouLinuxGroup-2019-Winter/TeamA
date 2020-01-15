@@ -20,7 +20,7 @@ typedef struct Node
 }CLType;
 
 int CLDelteNode(CLType*head,char*key)
-{mZ    CLType*node,*htemp;
+{    CLType*node,*htemp;
     htemp=head;
     node=head;
     while(htemp)

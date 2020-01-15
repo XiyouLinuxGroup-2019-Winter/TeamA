@@ -19,7 +19,7 @@ typedef struct Node
     struct Node *nextNode;//用来指向下一个节点
 }CLType;
 
-int CLTypeLength(CLType*head)
+int CLLength(CLType*head)
 {
     CLType*htemp;
     int len=0;

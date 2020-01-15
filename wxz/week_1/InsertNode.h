@@ -39,6 +39,6 @@ CLType* CLInsertNode(CLType*head,char*findkey,Data nodeData)
         printf("未找到正确的插入位置!\n");
         free(node);
     }
-    return node;
+    return head;
 }
 #endif
