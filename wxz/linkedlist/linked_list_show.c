@@ -14,8 +14,8 @@ int main()
     int i=2;
     Node* head;
     head=create();
-    //AddFirst(head);
+    AddFirst(head);
     //AddEnd(head);
-    Find_i(head,2);
+    //Find_i(head,2);
     Print();
 }
