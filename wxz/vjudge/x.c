@@ -14,24 +14,7 @@ int main()
     int i;
     for(i=0;i<n;i++)
     scanf("%d",&a[i]);
-    
-    for(i=0;i<n;i++)
-    {
-        for(j=0;j<i;j++)
-        {
-            if(a[j]>a[j+1])
-            {
-                t=a[j];
-                a[j]=a[j+1];
-                a[j+1]=t;
-            }
-        }
-    }
 
-    for(i=1;i<n-1;i++)
-    {
-        if(min(a[i]))
-    }
     /*int min=0,max=0;
     for(i=1;i<n;i++)
     {
@@ -56,9 +39,25 @@ int main()
     int cnt=0;
     for(i=1;i<n-1;i++)
     {
-        if(a[0]<a[i]<a[n-1])
+        if(a[i]!=a[max] && a[i]!=a[min])
+            cnt++;
+    }*/
+    int max=a[0];
+    int min=a[0];
+    int cnt=0;
+    for(i=0;i<n;i++)
+    {
+        if(a[i]>max)
+            max=a[i];
+        if(a[i]<min)
+            min=a[i];
+    }
+    for(i=0;i<n;i++)
+    {
+        if(a[i]!=max && a[i]!=min)
             cnt++;
     }
-    printf("%d",cnt);*/
+
+    printf("%d",cnt);
 
 }
