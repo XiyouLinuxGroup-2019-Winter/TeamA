@@ -6,7 +6,8 @@ int main()
     Plist fun;
     elem_type temp;
     InitLInkList(&fun);
-    // // menu(&fun);
+    menu(&fun);
+
     // for (int i = 0; i < 5; i++)
     // {
     //     AddNode_head(&fun, i);
@@ -37,6 +38,5 @@ int main()
     // printf("%d被删除\n", temp);
     // Traverse(&fun, SeekNode_this);
 
-    
     return 0;
 }
