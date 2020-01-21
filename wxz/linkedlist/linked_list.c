@@ -32,11 +32,11 @@ Node* AddEnd(Node* head)
             return head;
         Node* p=(Node*)malloc(sizeof(Node));
         pnew->next=p;
+        pnew=p;
 
+        pnew->next=NULL;
         pnew->data=data; 
-        p->next=NULL;
-        pnew=pnew->next;
-
+        //pnew->next=NULL;
         head->n++;
         
     }
@@ -76,9 +76,26 @@ Node* AddEnd(Node* head)
     return head;
 }*/
 
-Node* AddFirst(Node* tail)
+
+/*Node* AddFirst(Node* head)
 {
-    Node* head=tail;
+    int data;
+    Node* pnew=head;
+    while(1)
+    {
+        puts("请输入数字：");
+        scanf("%d",&data);
+        if(data==-1)
+            return head;
+        Node* p=(Node*)malloc(sizeof(Node));
+        p->next=pnew->next;
+        pnew->next=p;
+    }
+    return head;
+}*/
+Node* AddFirst(Node* head)
+{
+    Node* pnew=head;
     int data;
     while(1)
     {
@@ -87,8 +104,8 @@ Node* AddFirst(Node* tail)
         if(data==-1)
             return head;
         Node* p=(Node*)malloc(sizeof(Node));
-        p->next=head;
-        head=p;
+        p->next=pnew;
+        pnew=p;
 
         p->data=data;
 
