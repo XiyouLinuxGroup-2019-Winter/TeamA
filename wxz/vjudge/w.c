@@ -9,30 +9,34 @@
 int main()
 {
     int n,m;
+    int num;
     scanf("%d %d",&n,&m);
-    getchar();
-    int a[n][101];
+    char a[1000][1000];
     int i,j;
     for(i=0;i<n;i++)
-    {
-        for(j=0;j<m;j++)
-            scanf("%d",&a[i][j]);
-    }
+        scanf("%s",a[i]);   
     
     int max;
     int cnt=0;
+    int b[1000];
     for(j=0;j<m;j++)
     {
-        max=a[0][m];
+        max=0;
         for(i=0;i<n;i++)
         {
-            if(max<a[i][j] && max!=a[i][i])
-                cnt++;
-            if(max>a[i][j] && )
-                cnt++;
-            if(max=a[i][j])
-                break;
+            if(max<a[i][j]-'0')
+                max=a[i][j]-'0';
         }
+        for(i=0;i<n;i++)
+        {
+            if(a[i][j]-'0'==max)
+                b[i]=1;
+        }
+    }
+    for(i=0;i<n;i++)
+    {
+        if(b[i]==1)
+        cnt++;
     }
     printf("%d",cnt);
 }
