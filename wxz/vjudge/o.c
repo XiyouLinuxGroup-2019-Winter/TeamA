@@ -10,26 +10,28 @@
 int main()
 {
     char a[1001];
-    int i,len;
-    int sum=0;
-    int n=0;
-    while(scanf("%s",a)!=EOF)
+    while(scanf("%s",a) && strcmp(a,"0"))
     {
         int sum=0;
-        len=strlen(a);
-        if(a[0]=='0')
-            continue;
-        for(i=0;i<len;i++)
+        int t;
+       
+        int i=0;
+        int len=strlen(a);
+        for(i=0;a[i]!='\0';i++)
             sum+=a[i]-'0';
-        if(sum<=9)
-            return ;
-        int n=0;
-        while(sum>0)
+           
+        while(sum>=10)
         {
-            n+=sum%10;
-            sum=sum/10;
+            t=sum;
+            sum=0;
+            while(t)
+            {
+                sum+=t%10;
+                t=t/10;
+            }
         }
-        memset(a,'\0',sizeof(a));
         printf("%d\n",sum);
+       
     }
+          
 }
