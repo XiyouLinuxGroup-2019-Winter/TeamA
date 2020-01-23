@@ -13,7 +13,8 @@ int main()
 {
     int i=2;
     Node* head;
-    head=create();
+    head=(Node*)malloc(sizeof(Node));
+    Create(head);
     AddFirst(head);
     //AddEnd(head);
     //Find_i(head,2);

@@ -13,7 +13,7 @@ typedef struct NODE{
     int n;
 }Node;
 
-Node* create();
+Node* Create(Node* head);
 Node* AddFirst(Node* head);
 Node* AddEnd(Node* head);
 Node* Find_i(Node* head,int i);

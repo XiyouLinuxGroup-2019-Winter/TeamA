@@ -2,73 +2,112 @@
 	> File Name: double_linked_list.c
 	> Author: 
 	> Mail: 
-	> Created Time: 2020年01月19日 星期日 15时48分54秒
+	> Created Time: 2020年01月23日 星期四 21时07分32秒
  ************************************************************************/
 
 #include<stdio.h>
 #include <stdlib.h>
-typedef struct NODE{
-    struct NODE *tre;//后趋
-    struct NODE *pre;//前趋
-    int data;
-}Node;
+#include "double_linked_list.h"
 
-int cnt=0;
-Node *create(Node*head);
-void print();
-int main()
+Node* Create()
 {
-    Node *head=NULL;
-    create(head);
-    print();
+    Node* head;
+    head=(Node*)malloc(sizeof(Node));
+    head->next=NULL;
+    head->pre=NULL;
+
+    head->n=0;
+    return head;
 }
-Node *create(Node *head)
+
+Node* AddFirst(Node* head)
 {
-    Node *end,*pnew;
-    int n,i;
-    printf("创建了几个结点:");
-    scanf("%d",&n);
-    for(i=0;i<n;i++)
+    Node* pnew=head;
+    int data;
+    while(1)
     {
-        cnt++;
-        pnew=(Node*)malloc(sizeof(Node));
-        printf("请输入:");
-        scanf("%d",&pnew->data);
-        pnew->tre=NULL;
-        if(head==NULL)
-        {
-            pnew->pre=NULL;
-            head=pnew;
-        }
-        else
-        {
-            end->tre=pnew;
-            pnew->pre=end;
-        }
-        end=pnew;
+        puts("请输入：");
+        scanf("%d",&data);
+        
+        if(data==-1)
+            break;
+        Node* p=(Node*)malloc(sizeof(Node));
+        p->data=data;
+
+        p->next=NULL;
+        while(pnew->next!=NULL)
+            pnew=pnew->next;
+        pnew->next=p;
+        p->pre=pnew;
+
+        head->n++;
     }
     return head;
 }
-void print()
-{
-    Node* head;
-    Node* t=head;
-    Node* t1=head;
 
-    //从左开始遍历
-    while(t)
+
+Node* AddEnd(Node* head)
+{
+    Node *pnew=head;
+    int data;
+    while(pnew->next!=NULL)
+        pnew=pnew->next;
+    while(1)
     {
-        printf("%d\t",t->data);
-        t=t->tre;
+        puts("请输入:");
+        scanf("%d",&data);
+        if(data==-1)
+            break;
+
+        Node* p=(Node*)malloc(sizeof(Node));
+        p->data=data;
+
+        p->next=NULL;
+        p->pre=pnew;
+        pnew->next=p;
+        pnew=pnew->next;
+
+        head->n++;
     }
-    //遍历到了链表尾
-    while(t1 && t1->tre!=NULL)
-        t1=t1->tre;
-    printf("\n");
-    //从右开始遍历
-    while(t1)
+    return head;
+}
+
+/*Node* Delete_i(Node* head,int i)
+{
+    Node*pnew=head;
+    if()
+}*/
+Node *Delete_key(Node* head,int key)
+{
+    Node* pnew=head;
+    while(pnew->data != key)
+        pnew=pnew->next;
+    pnew->pre->next=pnew->next;
+    pnew->next->pre=pnew->pre;
+
+    head->n--;
+    return head;
+}
+void change(Node* head,int n,int new)
+{
+	Node* pnew=head;
+	int j=1;
+	while(j!=n)
+	{
+		pnew=pnew->next;
+		j++;
+	}
+    pnew->data=new;
+}
+
+Node* Find_key(Node* head,int key)
+{
+    Node* pnew=head;
+    int j=1;
+    while(j!=key)
     {
-        printf("%d\t",t1->data);
-        t1=t1->pre;
+        pnew=pnew->next;
+        j++;
     }
+    printf(" %d \n",pnew->data);
 }

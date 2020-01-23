@@ -1,23 +1,37 @@
-[/*************************************************************************
+/*************************************************************************
 	> File Name: double_linked_list.c
 	> Author: 
 	> Mail: 
-	> Created Time: 2020年01月20日 星期一 12时18分45秒
+	> Created Time: 2020年01月23日 星期四 21时07分32秒
  ************************************************************************/
 
 #include<stdio.h>
 #include <stdlib.h>
-#include "linked_list.h"
-
-Node* Create()
+#include "double_linked_list.h"
+Node* Create(Node* head)
 {
-    Node* head;
-    head=(Node*)malloc(sizeof(Node));
+    Node* second;
+    Node* three;
+    second=(Node*)malloc(sizeof(Node));
+    three=(Node*)malloc(sizeof(Node));
+
+    head->pre=NULL;
+    head->next=second;
+    head->data=1;
+
+    second->pre=head;
+    second->next=three;
+    second->data=2;
+
+    three->pre=second;
+    three->next=NULL;
+    three->data=3;
+    /*head=(Node*)malloc(sizeof(Node));
     head->next=NULL;
     head->pre=NULL;
 
     head->n=0;
-    return head;
+    return head;*/
 }
 
 Node* AddFirst(Node* head)
@@ -31,7 +45,7 @@ Node* AddFirst(Node* head)
         
         if(data==-1)
             break;
-        Node* p=(Node*)mallco(sizeof(Node));
+        Node* p=(Node*)malloc(sizeof(Node));
         p->data=data;
 
         p->next=NULL;
@@ -46,7 +60,7 @@ Node* AddFirst(Node* head)
 }
 
 
-Node* AddEnd(Node* head)
+/*Node* AddEnd(Node* head)
 {
     Node *pnew=head;
     int data;
@@ -76,7 +90,7 @@ Node* Delete_i(Node* head,int i)
 {
     Node*pnew=head;
     if()
-}
+}*/
 Node *Delete_key(Node* head,int key)
 {
     Node* pnew=head;
@@ -112,7 +126,12 @@ Node* Find_key(Node* head,int key)
     printf(" %d \n",pnew->data);
 }
 
-
-
-
-
+void Print(Node* head)
+{
+    Node* pnew=head;
+    while(pnew!=NULL)
+    {
+        pnew=pnew->next;
+        printf("%d ",pnew->data);        
+    }
+}

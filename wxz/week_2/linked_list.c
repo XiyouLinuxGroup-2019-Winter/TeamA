@@ -2,156 +2,211 @@
 	> File Name: linked_list.c
 	> Author: 
 	> Mail: 
-	> Created Time: 2020年01月22日 星期三 23时46分03秒
+	> Created Time: 2020年01月19日 星期日 21时38分56秒
  ************************************************************************/
 
 #include<stdio.h>
 #include <stdlib.h>
-#include "Add_First.h"
-Node* Create()
+#include "linked_list.h"
+
+Node* create()
 {
     Node* head=(Node*)malloc(sizeof(Node));
     head->next=NULL;
     head->n=0;
     return head;
 }
-Node* AddFirst(Node* head)
-{
-    int data;
-    while(1)
-    {
-        scanf("%d",&data);
-        if(data==-1)
-            return head;
-        Node* pnew=(Node*)malloc(sizeof(Node));
-        pnew->data=data;
 
-        pnew->next=head->next;
-        head-->next=pnew;
-
-        head->n++;
-    }
-    return head;
-}
 Node* AddEnd(Node* head)
 {
     int data;
-    Node* pnew,*tail;
-    tail=head;
+    Node* pnew=head;
+    while(pnew->next!=NULL)
+        pnew=pnew->next;
     while(1)
     {
+        printf("请输入数字:");
+        scanf("%d",&data);
+        
+        if(data==-1)
+            return head;
+        Node* p=(Node*)malloc(sizeof(Node));
+        pnew->next=p;
+        pnew=p;
+
+        pnew->next=NULL;
+        pnew->data=data; 
+        //pnew->next=NULL;
+        head->n++;
+        
+    }
+    return head;
+}
+/*Node* AddEnd(Node* head)
+{
+    Node* pnew,*p;
+    int data;
+    if(!(pnew=(Node*)malloc(sizeof(Node))))
+    {
+        puts("内存分配失败!\n");
+        return NULL;
+    }
+    else
+    {
+        while(1)
+        {
+            scanf("%d",&data);
+            pnew->data=data;
+
+            pnew->next=NULL;
+            if(head=NULL)
+            {
+                head=pnew;
+                return head;
+            }
+            p=head;
+            while(p->next!=NULL)
+                p=p->next;
+            p->next=pnew;
+            
+            pnew->next=NULL;
+            head->n++;
+        }
+    }
+    return head;
+}*/
+
+
+/*Node* AddFirst(Node* head)
+{
+    int data;
+    Node* pnew=head;
+    while(1)
+    {
+        puts("请输入数字：");
         scanf("%d",&data);
         if(data==-1)
             return head;
-        pnew=(Node*)malloc(sizeof(Node));
-        pnew->next=tail->next;
-        tail->next=pnew;
-        tail=pnew;
-
-        head->n++;
+        Node* p=(Node*)malloc(sizeof(Node));
+        p->next=pnew->next;
+        pnew->next=p;
     }
     return head;
-
-}
-
-Node* Find_i(Node* head,int i)
+}*/
+Node* AddFirst(Node* head)
 {
-    Node* pnew;
-    int j=1;
-    pnew=head->next;
-    while(j<i && pnew!=NULL)
+    Node* pnew=head;
+    int data;
+    while(1)
     {
-        pnew=pnew->next;
-        j++;
-    }
-    if(j>i || pnew==NULL)
-        puts("找不到这个结点");
-    else
-        return (pnew->next);
-}
-Node* Find_key(Node* head,int key)
-{
-    Node* pnew=head->next;
-    while(pnew!=NULL && p->data!=key)
-        pnew=pnew->next;
-    if(pnew->data==key)
-        return pnew;
-    else
-    {
-        puts("这个结点不存在");
-        return NULL;
-    }
-}
+        printf("请输入数字:");
+        scanf("%d",&data);
+        if(data==-1)
+            return head;
+        Node* p=(Node*)malloc(sizeof(Node));
+        p->next=pnew;
+        pnew=p;
 
-Node* change(Node* head,int n,int new)
-{
-    Node* t=head->next;
-    int j=1;
-    while(t!=NULL && j<n)
-    {
-        t=t->next;
-        j++;
+        p->data=data;
+
+        p->n=head->n+1;
+        head->n=0;
+
     }
-    if(t!=NULL)
-        t->data=new;
-    else
-        puts("结点不存在");
     return head;
 }
 
 Node* Delete_i(Node* head,int i)
 {
-    int j=0;
-    Node* p,*q;
-    p=head;
-    q=head->next;
-    while(p->next!=NULL && j<i-1)
-    {
-        p=q;
-        q=q->next;
-        j++;
-    }
-    if(p->next==NULL || j>i-1)
-        puts("该结点不存在!");
-    else
-    {
-        p->next=q->next;
-        free(q);
-        head->n--;
-    }
-    return head;
-}
-
-Node* Delete_key(Node* head,int key)
-{
-    Node* p,*q;
-    p=head;
-    q=head->next;
-    while(q!=NULL && q->data!=key)
-    {
-        p=q;
-        q=q->next;
-    }
-    if(q->data==key)
-    {
-        p->next=q->next;
-        free(q);
-        head->n--;
-    }
-    else
-        printf("要删除的结点不存在");
-
-    return head;
-}
-
-void Print()
-{
-    Node* head;
+    int n=1;
     Node* t=head;
-    while(t->next !=NULL)
+    Node* t_1=NULL;
+
+    if(t->n<i)
+    {
+        printf("没有这个结点:");
+        return head;
+    }
+    t_1->next=t->next;
+    free(t);
+
+    head->n--;
+    return head;
+}
+Node *Delete_key(Node* head,int key)
+{
+    Node *t,*t_1;
+    t=t_1=head;
+
+    while(t->next!=NULL)
+    {
+        if(t->data==key)
+        {
+            t_1->next=t->next;
+            free(t);
+        }
+        t_1=t;
+        t=t->next;
+
+        head->n--;
+    }
+    return head;
+}
+
+Node* change(Node* head,int n,int new)
+{
+    Node* t=head;
+    int i=0;
+    while(i<n && t!=NULL)
+    {
+        t=t->next;
+        i++;
+    }
+    if(t!=NULL)
+        t->data=new;
+    else
+        puts("结点不存在！\n");
+    return head;
+}
+
+Node *Find_i(Node* head,int i)
+{
+    int n=1;
+    Node* t=head;
+    while(t->next!=NULL && n<i)
+    {
+        t=t->next;
+        n++;
+    }
+    if(n<i)
+        puts("找不到该结点!\n");
+    else
+        printf("%d",t->data);
+    return head;
+}
+
+Node *Find_key(Node* head,int key)
+{
+    Node *t=head;
+    while(t->next!=NULL)
+    {
+        if(t->data==key)
+            printf("%d ",t->data);
+        t=t->next;
+    }
+    return head;
+}
+
+void Print(Node* head)
+{
+    Node *t;
+    t=head;
+    while(t!=NULL)
     {
         printf("%d ",t->data);
         t=t->next;
     }
     putchar('\n');
 }
+
+
