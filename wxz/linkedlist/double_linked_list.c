@@ -1,4 +1,4 @@
-/*************************************************************************
+[/*************************************************************************
 	> File Name: double_linked_list.c
 	> Author: 
 	> Mail: 
@@ -7,6 +7,7 @@
 
 #include<stdio.h>
 #include <stdlib.h>
+#include "linked_list.h"
 
 Node* Create()
 {
@@ -33,16 +34,18 @@ Node* AddFirst(Node* head)
         Node* p=(Node*)mallco(sizeof(Node));
         p->data=data;
 
-        p->next=pnew->next;
-        p->pre=pnew;
-        if(pnew->next!=NULL)
-        pnew->next->pre=p;
+        p->next=NULL;
+        while(pnew->next!=NULL)
+            pnew=pnew->next;
         pnew->next=p;
+        p->pre=pnew;
 
         head->n++;
     }
     return head;
 }
+
+
 Node* AddEnd(Node* head)
 {
     Node *pnew=head;
@@ -76,9 +79,38 @@ Node* Delete_i(Node* head,int i)
 }
 Node *Delete_key(Node* head,int key)
 {
-    
+    Node* pnew=head;
+    while(pnew->data != key)
+        pnew=pnew->next;
+    pnew->pre->next=pnew->next;
+    pnew->next->pre=pnew->pre;
+
+    head->n--;
+    return head;
+}
+void change(Node* head,int n,int new)
+{
+	Node* pnew=head;
+	int j=1;
+	while(j!=n)
+	{
+		pnew=pnew->next;
+		j++;
+	}
+    pnew->data=new;
 }
 
+Node* Find_key(Node* head,int key)
+{
+    Node* pnew=head;
+    int j=1;
+    while(j!=key)
+    {
+        pnew=pnew->next;
+        j++;
+    }
+    printf(" %d \n",pnew->data);
+}
 
 
 
