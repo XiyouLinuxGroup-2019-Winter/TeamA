@@ -1,0 +1,1 @@
+sizeof("ab c\nt\012\xa1*2")
