@@ -8,6 +8,7 @@
 #include<stdio.h>
 #include "tree.h"
 #include <stdlib.h>
+#include <stdbool.h>
 CBT* TreeInit()
 {
     CBT* node;
@@ -45,11 +46,11 @@ void TreeAdd(CBT* treenode)
         {
             printf("没有找到该父节点!\n");
             free(pnode);
-            return 0;
+
         }
         printf("1.添加该结点到左子树\n2.添加该结点到右子树\n");
         do{
-            menusel=getchar()
+            menusel=getchar();
             menusel-='0';
             if(menusel==1 || menusel==2)
             {
@@ -76,13 +77,13 @@ void TreeAdd(CBT* treenode)
                     }
                 }
             }
-        }while(menusel!=1 && menusel!=2)
+        }while(menusel!=1 && menusel!=2);
     }
 }
 CBT* TreeFind(CBT* treenode,char data)
 {
     CBT* ptr;
-    if(treenode=＝NULL)
+    if(treenode==NULL)
         return NULL;
     else
     {
@@ -164,7 +165,7 @@ void TreeLDR(CBT* treenode,void (*TreeNodeData)(CBT* p))//中序遍历
     {
         TreeLDR(treenode->left,TreeNodeData);
         TreeNodeData(treenode);
-        treeLDR(treenode->right,TreeNodeData);
+        TreeLDR(treenode->right,TreeNodeData);
     }
 }
 void TreeLRD(CBT* treenode,void (*TreeNodeData)(CBT* p))
@@ -176,4 +177,33 @@ void TreeLRD(CBT* treenode,void (*TreeNodeData)(CBT* p))
         TreeNodeData(treenode);
     }
 }
+void TreeLevel(CBT* treenode,void (*TreeNodeData)(CBT* p))
+{
+    CBT* p;
+    CBT* q[len];
+    int head=0;
+    int tail=0;
+    if(treenode)
+    {
+        tail=(tail+1)%len;
+        q[tail]=treenode;
+    }
+    while(head!=tail)
+    {
+        head=(head+1)%len;
+        p=q[head];
+        TreeNodeData(p);
+        if(p->left!=NULL)
+        {
+            tail=(tail+1)%len;
+            q[tail]=p->left;
+        }
+        if(p->right!=NULL)
+        {
+            tail=(tail+1)%len;
+            q[tail]=p->right;
+        }
 
+    }
+
+}

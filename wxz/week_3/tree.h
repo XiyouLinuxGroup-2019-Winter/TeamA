@@ -7,6 +7,7 @@
 
 #ifndef _TREE_H
 #define _TREE_H
+#include <stdbool.h>
 #define len 20
 typedef struct CBT{
     char data;
@@ -22,7 +23,7 @@ bool TreeIsEmpty(CBT* treenode);
 int TreeDepth(CBT* treenode);
 void TreeFree(CBT* treenode);
 void TreeDLR(CBT* treenode,void (*TreeNodeData)(CBT* p));
-void TreeLdR(CBT* treenode,void (*TreeNodeData)(CBT* p));
+void TreeLDR(CBT* treenode,void (*TreeNodeData)(CBT* p));
 void TreeLRD(CBT* treenode,void (*TreeNodeData)(CBT* p));
 void TreeLevel(CBT* treenode,void (*TreeNodeData)(CBT* p));
 
