@@ -13,8 +13,7 @@ typedef struct node{
 }Node;
 Node* Create();
 void Print(Node* p);
-void Print1(Node* p);//逆序打印
 void Destory(Node* p);
 void Insert(Node* p);
 void Delete(Node* p);
-#endifmZ
+#endif

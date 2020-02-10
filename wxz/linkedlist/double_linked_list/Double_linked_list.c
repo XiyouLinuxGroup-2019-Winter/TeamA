@@ -7,6 +7,7 @@
 
 #include<stdio.h>
 #include "double_linked_list.h"
+#include <stdlib.h>
 Node* Create()
 {
     Node* p,*q,*pnew;
@@ -14,7 +15,7 @@ Node* Create()
     if(p==NULL)
     {
         printf("错误!\n");
-        return ;
+        return NULL;
     }
     p->next=NULL;
     p->pre=NULL;
@@ -42,6 +43,16 @@ void Print(Node* p)
 {
     Node* temp;
     temp=p->next;
+    while(temp!=p)
+    {
+        printf("%d ",temp->data);
+        temp=temp->next;
+    }
+}
+void Print1(Node* p)
+{
+    Node* temp;
+    temp=p->pre;
     while(temp!=p)
     {
         printf("%d ",temp->data);
@@ -84,13 +95,54 @@ void Insert(Node* p)
             pnew->pre=temp->pre;
             temp->pre=pnew;
             break;
-        }:wq
+        }
 
         if(pro->data==data)
         {
             pnew->pre=pro;
             pro->next->pre=pnew;
-
+            pnew->next=pro->next;
+            pro->next=pnew;
+            break;
+        }
+        if(pro==temp)
+        {
+            printf("不存在！\n");
+            return ;
         }
     }
+    printf("插入完成！\n");
 }
+void Delete(Node* p)
+{
+    Node* temp,*pro;
+    temp=p;
+    int data;
+    scanf("%d",&data);
+    while(1)
+    {
+        temp=temp->next;
+        pro=temp->pre;
+        if(temp->data==data)
+        {
+            temp->pre->next=temp->next;
+            temp->next->pre=temp->pre;
+            free(temp);
+            break;
+        }
+        if(pro->data==data)
+        {
+            pro->next->pre=pro->pre;
+            pro->pre->next=pro->next;
+            free(pro);
+            break;
+        }
+        if(temp==pro)
+        {
+            printf("不存在！\n");
+            return ;
+        }
+    }
+    printf("删除成功！\n");
+}
+
