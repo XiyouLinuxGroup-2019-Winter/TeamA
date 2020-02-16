@@ -45,7 +45,7 @@ int main()
     char write_buf[32]="hello world";
  //   if((fd=creat("example_63.c",S_IRWXU))==-1){
    //     my_err("OPEN",__LINE__);
-        if((fd=open("example_63.c",O_RDWR|O_CREAT|O_TRUNC),S_IRWXU)==-1){
+        if((fd=open("example_63.c",O_RDWR|O_CREAT|O_TRUNC,S_IRWXU))==-1){
             my_err("OPEN",__LINE__);
         }else{
         printf("creat file success\n");
