@@ -1,0 +1,5 @@
+dup2的返回值1
+oldfd= 3
+test
+
+test

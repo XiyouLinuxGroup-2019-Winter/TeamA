@@ -25,7 +25,7 @@ void dfs(int x, int kk)
             if (!book[j] && (map[i][j] == '#'))
             {
                 book[j] = 1;
-                dfs(x + 1, kk - 1);
+                dfs(i + 1, kk - 1);
                 book[j]=0;
             }
         }
