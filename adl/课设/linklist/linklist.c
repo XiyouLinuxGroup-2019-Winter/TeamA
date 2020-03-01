@@ -26,7 +26,6 @@ Status AddNode_head(Plist *p, elem_type e)
 
         cur->data = e;
         cur->next = (*p)->head->next;
-        ;
         cur->pre = (*p)->head;
         cur->next->pre = cur;
         (*p)->head->next = cur;
@@ -125,7 +124,6 @@ Status ChangeNode_key(Plist *p, elem_type *e, elem_type new)
             m->data = new;
         }
         m = m->next;
-        
     }
     return OK;
 }
@@ -274,100 +272,98 @@ Status DeleteNode(Plist *p)
 }
 Status SeekNode(Plist *p)
 {
+
+    int choice;
+    elem_type e;
+
+    puts("1>以项数查找\t2>以关键字查找");
+    scanf("%d", &choice);
+
+    if (choice == 1)
     {
-        int choice;
-        elem_type e;
-
-        puts("1>以项数查找\t2>以关键字查找");
-        scanf("%d", &choice);
-
-        if (choice == 1)
+        int num;
+        printf("查找第几项？");
+        scanf("%d", &num);
+        if (SeekNode_num(p, num, &e))
         {
-            int num;
-            printf("查找第几项？");
-            scanf("%d", &num);
-            if (SeekNode_num(p, num, &e))
-            {
-                printf("找到了%d\n", e);
-                return OK;
-            }
-            else
-            {
-                puts("输入过大或者过小");
-                return FALSE;
-            }
-        }
-        else if (choice == 2)
-        {
-            printf("你想要查找的是");
-            scanf("%d", &e);
-            if (SeekNode_key(p, e))
-            {
-                printf("找到了%d\n", e);
-                return OK;
-            }
-            else
-            {
-                puts("库中找不到你想要的");
-                return FALSE;
-            }
+            printf("找到了%d\n", e);
+            return OK;
         }
         else
         {
-            puts("你的输入有误");
+            puts("输入过大或者过小");
             return FALSE;
         }
+    }
+    else if (choice == 2)
+    {
+        printf("你想要查找的是");
+        scanf("%d", &e);
+        if (SeekNode_key(p, e))
+        {
+            printf("找到了%d\n", e);
+            return OK;
+        }
+        else
+        {
+            puts("库中找不到你想要的");
+            return FALSE;
+        }
+    }
+    else
+    {
+        puts("你的输入有误");
+        return FALSE;
     }
 }
 Status ChangeNode(Plist *p)
 {
+
+    int choice;
+    elem_type e, new;
+
+    puts("1>以项数更改\t2>以关键字更改");
+    scanf("%d", &choice);
+
+    if (choice == 1)
     {
-        int choice;
-        elem_type e, new;
-
-        puts("1>以项数更改\t2>以关键字更改");
-        scanf("%d", &choice);
-
-        if (choice == 1)
+        int num;
+        printf("修改第几项？");
+        scanf("%d", &num);
+        printf("修改为");
+        scanf("%d", &new);
+        if (ChangeNode_num(p, num, &e, new))
         {
-            int num;
-            printf("修改第几项？");
-            scanf("%d", &num);
-            printf("修改为");
-            scanf("%d", &new);
-            if (ChangeNode_num(p, num, &e, new))
-            {
-                printf("第%d个数据%d已经被修改为%d\n",num, e,new);
-                return OK;
-            }
-            else
-            {
-                puts("输入过大或者过小");
-                return FALSE;
-            }
-        }
-        else if (choice == 2)
-        {
-            printf("你想要更改的是");
-            scanf("%d", &e);
-            printf("修改为");
-            scanf("%d", &new);
-            if (ChangeNode_key(p, &e, new))
-            {
-                printf("%d已经被修改为%d\n", e,new);
-                return OK;
-            }
-            else
-            {
-                puts("库中找不到你想要的");
-                return FALSE;
-            }
+            printf("第%d个数据%d已经被修改为%d\n", num, e, new);
+            return OK;
         }
         else
         {
-            puts("你的输入有误");
+            puts("输入过大或者过小");
             return FALSE;
         }
+    }
+    else if (choice == 2)
+    {
+        printf("你想要更改的是");
+        scanf("%d", &e);
+        printf("修改为");
+        scanf("%d", &new);
+        if (ChangeNode_key(p, &e, new))
+        {
+            printf("%d已经被修改为%d\n", e, new);
+            return OK;
+        }
+        else
+        {
+            puts("库中找不到你想要的");
+            return FALSE;
+        }
+    }
+    else
+    {
+        puts("你的输入有误");
+        return FALSE;
     }
 }
 Status Traverse(Plist *p)
@@ -377,17 +373,17 @@ Status Traverse(Plist *p)
         Traverse_Seek(p, SeekNode_this);
     return OK;
 }
-Status Traverse_Reverse(Plist*p)
+Status Traverse_Reverse(Plist *p)
 {
-    int choice=1;
-    if(choice==1)
-        Traverse_Reverse_Seek(p,SeekNode_this);
+    int choice = 1;
+    if (choice == 1)
+        Traverse_Reverse_Seek(p, SeekNode_this);
     return OK;
 }
 void menu(Plist *p)
 {
     fun choice_fun;
-    fun_array menu = {AddNode, DeleteNode, ChangeNode, SeekNode, Traverse,Traverse_Reverse};
+    fun_array menu = {AddNode, DeleteNode, ChangeNode, SeekNode, Traverse, Traverse_Reverse};
     int choice;
     while (1)
     {
@@ -409,7 +405,8 @@ void menu(Plist *p)
         {
             choice_fun = menu[choice - 1];
             choice_fun(p);
-         if(choice!=6&&choice!=5)   Traverse(p);
+            if (choice != 6 && choice != 5)
+                Traverse(p);
         }
         else
             break;
