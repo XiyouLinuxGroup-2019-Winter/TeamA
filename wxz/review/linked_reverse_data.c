@@ -21,6 +21,7 @@ int main()
     Node* p;
     p=input();
     scanf("%d",&n);
+    getchar();
     p=reverse(p);
     while(p!=NULL)
     {
@@ -41,7 +42,7 @@ Node* input()
         Node* new=(Node*)malloc(sizeof(Node));
         new->data=data;
         new->next=NULL;
-        if(head=NULL)
+        if(head==NULL)
         {
             head=new;
             tail=new;
@@ -55,9 +56,9 @@ Node* input()
     }
     return head;
 }
-Node* reverse(Node* head)
+/*Node* reverse(Node* head)
 {
-    Node* t,*p,*r;
+    Node*t,*p,*r;
     p=head;
     while(p)
     {
@@ -67,4 +68,34 @@ Node* reverse(Node* head)
         p=t;
     }
     return r;
+}*/
+/*Node* reverse(Node* head)
+{
+    Node* a,*b,*c;
+    a=head;
+    b=a->next;
+    c=b;
+    a->next=NULL;
+    while(b!=NULL)
+    {
+        c=c->next;
+        b->next=a;
+        a=b;
+        b=c;
+    }
+    return a;
+}*/
+Node* reverse(Node* head)
+{
+    Node* pnew,*pend;
+    pnew=head->next;
+    head->next=NULL;
+    while(pnew)
+    {
+        pend=pnew;
+        pnew=pnew->next;
+        pend->next=head->next;
+        head->next=pend;
+    }
+    return head;
 }

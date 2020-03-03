@@ -22,7 +22,7 @@ Node* AddFirst(Node* head)
     {
         scanf("%d",&data);
         if(data==-1)
-            return head;
+            break;
         Node* pnew=(Node*)malloc(sizeof(Node));
         pnew->data=data;
 
@@ -42,7 +42,7 @@ Node* AddEnd(Node* head)
     {
         scanf("%d",&data);
         if(data==-1)
-            return head;
+            break;
         pnew=(Node*)malloc(sizeof(Node));
         pnew->next=tail->next;
         tail->next=pnew;

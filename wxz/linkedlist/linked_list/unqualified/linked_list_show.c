@@ -6,7 +6,6 @@
  ************************************************************************/
 
 #include<stdio.h>
-#include <string.h>
 #include <stdlib.h>
 #include "linked_list.h"
 int main()
@@ -14,7 +13,7 @@ int main()
     int i=2;
     Node* head;
     head=(Node*)malloc(sizeof(Node));
-    Create(head);
+   // Create(head);
     AddFirst(head);
     //AddEnd(head);
     //Find_i(head,2);

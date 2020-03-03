@@ -1,8 +1,8 @@
 /*************************************************************************
-	> File Name: linked_list_bubblesort.c
+	> File Name: linked_delete_data.c
 	> Author: 
 	> Mail: 
-	> Created Time: 2020年01月22日 星期三 22时12分26秒
+	> Created Time: 2020年02月24日 星期一 20时55分46秒
  ************************************************************************/
 
 #include<stdio.h>
@@ -12,47 +12,22 @@ typedef struct NODE{
     struct NODE* next;
 }Node;
 
-Node* Create();
-void print(Node* head);
-Node* BubbleSort(Node* head);
+Node* delete(Node* head,int n);
+Node* input();
 int main()
 {
     Node* p;
-    p=Create();
-    p=BubbleSort(p);
-    print(p);
-}
-Node* BubbleSort(Node* head)
-{
-    Node *p=NULL,*tail=NULL;
-    p=head;
-    while(p!=tail)
-    {
-        while(p->next!=tail)
-        {
-            if((p->data) > (p->next->data))
-            {
-                int t=p->data;
-                p->data=p->next->data;
-                p->next->data=t;
-            }
-            p=p->next;
-        }
-        tail=p;
-        p=head;
-    }
-    return head;
-}
-void print(Node* head)
-{
-    Node* p=head;
+    p=input();
+    int n;
+    scanf("%d",&n);
+    delete(p,n);
     while(p)
     {
-        printf("%d ",p->data);
         p=p->next;
+        printf("%d",p->data);
     }
 }
-Node* Create()
+Node* input()
 {
     int data;
     scanf("%d",&data);
@@ -76,4 +51,18 @@ Node* Create()
     }
     return head;
 }
-
+Node* delete(Node* head,int n)
+{
+    Node* p;
+    p=head;
+    Node* t;
+    while(p!=NULL)
+    {
+        if(p->data==n)
+        {
+            p=p->next;
+            t->next=p->next;
+        }
+        free(p);
+    }
+}

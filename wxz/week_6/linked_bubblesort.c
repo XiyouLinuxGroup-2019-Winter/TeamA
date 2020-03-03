@@ -1,8 +1,8 @@
 /*************************************************************************
-	> File Name: linked_list_bubblesort.c
+	> File Name: linked_bubblesort.c
 	> Author: 
 	> Mail: 
-	> Created Time: 2020年01月22日 星期三 22时12分26秒
+	> Created Time: 2020年02月25日 星期二 13时36分32秒
  ************************************************************************/
 
 #include<stdio.h>
@@ -24,22 +24,24 @@ int main()
 }
 Node* BubbleSort(Node* head)
 {
-    Node *p=NULL,*tail=NULL;
-    p=head;
-    while(p!=tail)
+    Node* p;
+    Node* q;
+    Node* r;
+    Node n;
+    for(p=head;p;p=p->next)
     {
-        while(p->next!=tail)
+        for(q=p->next;q;q=q->next)
         {
-            if((p->data) > (p->next->data))
+            if(p->data>q->data)
             {
-                int t=p->data;
-                p->data=p->next->data;
-                p->next->data=t;
+                n=*p;
+                *p=*q;
+                *q=n;
+                r=p->next;
+                p->next=q->next;
+                q->next=r;
             }
-            p=p->next;
         }
-        tail=p;
-        p=head;
     }
     return head;
 }
@@ -76,4 +78,3 @@ Node* Create()
     }
     return head;
 }
-

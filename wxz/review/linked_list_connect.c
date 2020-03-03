@@ -40,7 +40,7 @@ Node *delete_node(Node* p,Node* t)
 }
 void selection_sort(Node* p,int n)
 {
-    Node *t,tmp;
+    Node *t,*tmp;
     int i,min;
     for(i=0;i<n;i++)
     {
@@ -49,7 +49,7 @@ void selection_sort(Node* p,int n)
         tmp=NULL;
         while(t->next)
         {
-            if(min>t->next->data)
+            if(min>(t->next->data))
             {
                 min=t->next->data;
                 tmp=t;
@@ -63,11 +63,12 @@ void selection_sort(Node* p,int n)
 }
 Node* Create(int a[],int n)
 {
-    Node *t1,t2,p;
+    Node *t1,*t2,*p;
     p=(Node*)malloc(sizeof(Node));
     p->data=a[0];
     t1=p;
-    for(i=0;i<n;i++)
+    int i;
+    for(i=1;i<n;i++)
     {
         t2=(Node*)malloc(sizeof(Node));
         t2->next=NULL;
