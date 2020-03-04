@@ -1,0 +1,18 @@
+int insert(struct f *head)
+{
+	struct f *p;
+	p=(struct f *)malloc(sizeof(struct f));
+	printf("请输入要加入的学生的学号和姓名\n");
+	scanf("%d %s",&p->data,p->name);
+    while(head->next!=NULL&&head->next->data<p->data)
+    head=head->next;
+    if(head->next->data==p->data)
+    {
+    	free(p);
+    	return 0;
+    }
+    p->next=head->next;
+    head->next=p;
+    return 1;
+}  
+

@@ -1,0 +1,24 @@
+int delete(struct f*head)
+{
+	int num;
+	struct f *p; 
+	p=head->next;
+	if(p==NULL)
+	return 0; 
+	printf("请输入要删除的学生学号");
+	scanf("%d",&num);
+	head=head->next;
+	while(p!=NULL)
+	{
+		if(p->data==num)
+		 {
+		     head->next=p->next;
+		     free(p);
+		     return 1; 
+		 }
+		 head=p;
+		 p=p->next; 
+	}
+	return 0; 
+} 
+

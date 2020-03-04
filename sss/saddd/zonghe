@@ -1,0 +1,113 @@
+#include<stdio.h>
+struct f
+{
+	int data;
+	char name[11];
+	struct f *next;
+};  
+int insert(struct f *head)
+{
+	struct f *p;
+	p=(struct f *)malloc(sizeof(struct f));
+	printf("请输入要加入的学生的学号和姓名\n");
+	scanf("%d %s",&p->data,p->name);
+    while(head->next!=NULL&&head->next->data<p->data)
+    head=head->next;  
+    if(head->next!=NULL&&head->next->data==p->data)
+    {    
+    	free(p);
+    	return 0;
+    }
+    p->next=head->next;   
+   head->next=p;
+    return 1;
+}
+int delete(struct f*head)
+{
+	int num;
+	struct f *p; 
+	p=head->next;
+	if(p==NULL)
+	return 0; 
+	printf("请输入要删除的学生学号\n");
+	scanf("%d",&num);
+	while(p!=NULL)
+	{
+		if(p->data==num)
+		 {
+		     head->next=p->next;
+		     free(p);
+		     return 1; 
+		 }
+		 head=p;
+		 p=p->next; 
+	}
+	return 0; 
+} 
+struct f *find(struct f *head)
+{
+	printf("请输入要查找的学生的学号！\n");
+	int num;
+	scanf("%d",&num);
+	struct f *p;
+	p=head->next; 
+	while(p!=NULL)
+	{
+		if(p->data==num)
+		return p;
+		else
+		p=p->next; 
+	}
+	return NULL;
+}                                    //定义一个结构体//
+struct f *creat(void)                  //链表的创建函数//
+{
+	struct f *head,*p,*end;
+	int x; 
+	head=end=(struct f*)malloc(sizeof(struct f));
+	printf("请输入学号以及你的姓名！\n");
+	p=(struct f*)malloc(sizeof(struct f));
+	scanf("%d %s",&p->data,p->name);
+	end->next=p;
+	end=p;
+	end->next=NULL;
+	printf("请选择继续输入和退出，继续输出请输入1，退出输入0\n");
+	while(scanf("%d",&x),x!=0)
+	{    
+		insert(head);  
+		printf("请选择继续输入和退出，继续输出请输入1，退出输入0\n"); 
+	}
+	return head; 
+} 
+void print(struct f*head)     //链表的输出函数//
+{
+	head=head->next;
+	while(head!=NULL)
+	{
+		printf("%d %s\n",head->data,head->name);
+		head=head->next; 
+	}
+} 
+main()      
+{
+	struct f *head,*p;
+	head=creat();
+	print(head);
+	if(insert(head))
+	printf("插入成功！\n"); 
+	else
+	printf("插入失败！（有重名！！）\n"); 
+	print(head);
+	p=find(head);
+	if(p)
+	printf("找到学生 该生的信息是\n%d %s\n",p->data,p->name);
+	else
+	printf("没找到！\n"); 
+	print(head); 
+	if(delete(head))
+	printf("已删除\n");
+	else
+	printf("删除失败\n"); 
+	print(head); 
+}
+
