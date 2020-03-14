@@ -36,7 +36,7 @@ int my_read(int fd)//自定义的读数据函数
     if((lseek(fd,0,SEEK_SET))==-1)
         my_err("lseek",__LINE__);
 
-    printf("len: &d\n",len);
+    printf("len: %d\n",len);
 
     //读数据
     if((ret=read(fd,read_buf,len))<0)
@@ -46,6 +46,8 @@ int my_read(int fd)//自定义的读数据函数
     for(i=0;i<len;i++)
         printf("%c",read_buf[i]);
     printf("\n");
+
+    return  ret;
 }
 int main()
 {
