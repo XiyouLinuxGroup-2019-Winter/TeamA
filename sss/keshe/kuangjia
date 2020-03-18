@@ -1,0 +1,538 @@
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+
+typedef struct shandong//结构体 
+{
+	char shiname[20];
+	char shizhangname[20];
+	char phone[13];
+	char postcode[10];
+	int  people;
+	int area;
+	struct shandong *next;
+	
+ }shan;
+ //菜单函数 
+ print()
+ {
+ 	printf("******************************************************************************************************\n");
+ 	printf("######################################################################################################\n");
+ 	printf("                                   山东区市管理系统\n\n");
+ 	printf("                           1.信息录入                           2.信息报表\n");
+ 	printf("                           3.信息插入                           4.信息删除\n");
+ 	printf("                           5.信息查询                           6.信息修改\n");
+ 	printf("                           7.信息保存                           8.信息读取\n");
+ 	printf("                           9.信息统计                           10.数据排序\n");
+ 	printf("                                               11.返回菜单\n");
+ 	printf("_______________________________________________________________________________________________________\n");
+ 	printf("^^^^^^^^^^^^^^^^^^^^^^^^退^^^^^^^^^^^出^^^^^^^^^^请^^^^^^^^^^^^按^^^^^^^^^^0^^^^^^^^^^^^^^^^^^^^^^^^^^^\n");
+ 	printf("————————————————————————————————----------------------------------——-\n");
+}
+//数据输入 
+void inputdate(shan *head)
+{
+	shan *p2,*p1;
+	p2=(shan *)malloc(sizeof(shan));
+	p2=head;
+	p1=(shan *)malloc(sizeof(shan));
+	if(p1!=NULL)
+	{
+	
+		printf("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$\n");
+		printf("                                  输入数据                                               \n");
+		printf("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$\n");
+		printf("\n\n");
+		printf("                      请输入信息，市名处输入ok结束\n");
+		while(1)
+		{
+			printf("市名:");
+		    scanf("%s",&p1->shiname);
+		  if(strcmp(p1->shiname,"ok")==0)
+		    {                                                                      
+			    
+			    printf("输入结束\n");
+		     	p2->next=NULL;
+		    	free(p1);
+		    	p1=p2;
+		    	break;
+	     	}
+	     	
+	     	else
+	     	{ 
+	     		printf("\n市长名字:");
+	     		scanf("%s",&p1->shizhangname);
+	     		printf("\n市长电话:");
+	     		scanf("%s",&p1->phone);
+	     		printf("\n本市邮编:");
+				scanf("%s",&p1->postcode);
+				printf("\n人口数量:");
+				scanf("%d",&p1->people);
+				printf("\n地域面积:");
+				scanf("%d",&p1->area);
+				printf("______________________________________________________________\n");
+				p2->next=p1; 		
+				p2=p1;
+			    p1=(shan *)malloc(sizeof(shan));
+			 }
+        
+    	}
+	}
+	
+}
+//信息显示 
+void lookdate(shan * head)
+{
+	
+	printf("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$\n");
+	printf("\n\n");
+	printf("                         信息报表                          \n");
+	printf("___________________________________________________________\n");
+	printf("\n\n\n");
+	shan *p1;
+	p1=(shan *)malloc(sizeof(shan));
+	p1=head->next;
+	if(head->next==NULL)
+    {
+ 	printf("什么也没有\n\n");
+	printf("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n");
+	return;
+    }
+	while (p1!=NULL)
+	{
+		printf("市名:%s  ",p1->shiname);
+		printf("市长名:%s  ",p1->shizhangname);
+		printf("市长电话:%s  ",p1->phone);
+		printf("本市邮编:%s  ",p1->postcode);
+		printf("本市人口:%d  ",p1->people);
+		printf("本市地域面积:%d\n",p1->area);
+		printf("\n\n");
+		printf("________________________________________________________\n\n");
+		p1=p1->next;
+	}
+	free(p1);
+
+	
+} 
+//信息插入
+void insert (shan *head)
+{	int i=0;
+    char name [20];
+    printf("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$\n");
+    printf("\n\n");
+    printf("                      信息插入                                         \n");
+    printf("\n\n\n");
+    shan *p2,*p1,*p3;
+    p1=head->next;
+	p3=(shan *)malloc(sizeof(shan));
+	printf("请输入插入的信息\n");
+	            printf("市名字:");
+            	scanf("%s",&p3->shiname);
+		        printf("\n市长名字:");
+	     		scanf("%s",&p3->shizhangname);
+	     		printf("\n市长电话:");
+	     		scanf("%s",&p3->phone);
+	     		printf("\n本市邮编:");
+				scanf("%s",&p3->postcode);
+				printf("\n人口数量:");
+				scanf("%s",&p3->people);
+				printf("\n地域面积:");
+				scanf("%s",&p3->area);
+	printf("请输入要插入哪个市的前面:");
+	scanf("%s",name);
+	while(strcmp(p1->shiname,name)!=0)
+	{
+		p2=p1;
+		p1=p1->next;
+		i=1;
+				
+	}
+	if(i==0)//插在第一个 
+	{
+		p3->next=head->next;
+	    head->next=p3;
+	    printf("插入成功\n");
+	    printf("\n\n\n");
+	    printf("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n");
+	}
+	
+
+	if(i==1)//插在中间 
+	{
+	p2->next=p3;
+	p3->next=p1; 
+	printf("插入成功\n");
+	printf("\n\n\n");
+	printf("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n");
+	}
+
+	
+	
+	
+}
+
+//信息删除
+void deleated (shan *p0)
+{
+	printf("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$\n\n\n");
+	printf("                                信息删除\n");
+	char name[20];
+	shan *p;
+	p=p0->next;
+	if(p==NULL)
+	{
+		printf("什么也没有\n");
+		printf("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n");
+		return;
+	}
+	printf("请输入要删除的市名:");
+	scanf("%s",name);
+	while(p!=NULL)
+	{
+		if(strcmp(p->shiname,name)==0)
+		{
+			p0->next=p->next;
+			printf("                 删除成功\n");
+			printf("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n");
+			free(p);
+			return;
+		}
+		p0=p;
+		p=p->next;
+	}
+}
+
+//信息查询
+void finddate(shan *head) 
+{
+	int i=0;
+	shan *p1;
+	p1=(shan*)malloc(sizeof(shan));
+	p1=head->next;
+	char name[20];
+     printf("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$\n\n");
+	 printf("                           信息查询\n"); 
+	if(head->next==NULL)
+	{
+		printf("什么也没有");
+		printf("\n\n\n");
+		printf("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n");
+		return;
+	}
+	
+	printf("请输入要查询的市名:");
+	scanf("%s",name);
+	printf("\n\n");
+	while(p1!=NULL)
+	{
+		if(strcmp(p1->shiname,name)==0)
+		{
+		printf("市名:%s  ",p1->shiname);
+		printf("市长名:%s  ",p1->shizhangname);
+		printf("市长电话:%s  ",p1->phone);
+		printf("本市邮编:%s  ",p1->postcode);
+		printf("本市人口:%d  ",p1->people);
+		printf("本市地域面积:%d\n",p1->area);
+		printf("\n");
+		printf("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n");
+		printf("\n\n\n");
+		i=1;
+		break;
+		}		
+		p1=p1->next;
+        
+	}
+	if(i==0)
+	printf("没有该市\n");
+	printf("\n\n\n\n");
+	printf("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n\n\n");
+}
+//信息修改
+void update(shan *head)
+{
+	int i=0;
+	shan * p1;
+	p1=head->next;
+	printf("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$\n\n");
+	printf("                             信息修改\n");
+	printf("请输入要修改的市名:\n");
+	char name[20];
+	scanf("%s",name);
+	while(p1->next!=NULL)
+	{
+		if(strcmp(p1->shiname,name)==0)
+		{
+		printf("该市信息\n");
+		printf("1.市名:%s  ",p1->shiname);
+		printf("2.市长名:%s  ",p1->shizhangname);
+		printf("3.市长电话:%s\n  ",p1->phone);
+		printf("4.本市邮编:%s  ",p1->postcode);
+		printf("5.本市人口:%d  ",p1->people);
+		printf("6.本市地域面积:%d\n",p1->area);
+		printf("___________________________________________________________________________\n");
+		printf("请输入要修改的编号:");
+		scanf("%d",&i);
+		printf("请输入新信息:");
+		switch(i)
+		{
+			case 1 : scanf("%s",&p1->shiname);break;
+			case 2 : scanf("%s",&p1->shizhangname);break;
+			case 3 : scanf("%s",&p1->phone);break;
+			case 4 : scanf("%s",&p1->postcode);break;
+			case 5 : scanf("%d",&p1->people);break;
+			case 6 : scanf("%d",&p1->area);break;
+		}
+		i=1;
+		printf("                 修改数据完成\n");
+		printf("\n\n\n");
+		printf("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n");
+		break;
+		}
+		p1=p1->next;
+	}
+	if(i==0)
+	{
+		printf("               没有该市\n\n\n");
+		printf("^^^^^^^^^^^^^^^^l^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n");
+	}
+ } 
+
+void save(shan *head)
+{
+    FILE *fp;  
+    shan *p;  
+    if((fp=fopen("d://课设.txt","at"))==NULL)
+		printf("Can not open the file!");  
+    p=head->next; 
+	 //fprintf(fp,"市名\t市长名\t市长电话\t市邮编\t市人口\t地域面积\t\n\n\n\n");
+    while(p!=NULL)
+	{  
+        
+	    fprintf(fp,"%s\t%s\t%s\t%s\t%d\t%d\t\n",p->shiname,p->shizhangname,
+		p->phone,p->postcode,p->people,p->area);
+			p=p->next;
+    }  
+    fclose(fp);  
+	printf("存储完成\n");
+	system("pause");
+	system("cls");
+}
+
+
+void area(shan *head)
+{
+	shan * p1;
+	p1=head->next;
+	printf("请输入要统计多少面积及以上的城市:");
+	int k;
+	int sum=0;
+	scanf("%d",&k);
+	while(p1!=NULL)
+	{
+		if(p1->area>=k)
+		sum++;
+		p1=p1->next;
+	}
+	printf("符合条件的一共有%d个\n",sum);
+	free(p1);
+}
+void people(shan *head)
+{
+	shan * p1;
+	p1=head->next;
+	printf("请输入要统计多少人口及以上的城市:");
+	int k;
+	int sum=0;
+	scanf ("%d",&k);
+	while(p1!=NULL)
+	{
+		if(p1->people>=k)
+		sum++;
+		p1=p1->next;
+	}
+	printf("符合条件的一共有%d个\n",sum);
+	free(p1);
+}
+void  statistic(shan * head)//数据统计 
+{
+	printf("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&\n");
+	printf("                               数据统计\n");
+	printf("\n\n");
+	printf("1.人口数量           2.占地面积\n\n"); 
+	printf("请输入要统计什么:");
+	int i;
+	scanf("%d",&i);
+	switch(i)
+	{
+		case 1 : people(head);break;
+		case 2 : area(head);break;
+	}
+	printf("统计完成\n");
+	printf("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n");
+}
+void paixu(shan *head)
+{
+	shan *p1,*p2;
+	char q[20];
+	int f;
+	printf("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&\n");
+	printf("                                   数据排序\n");
+	printf("\n\n\n");
+	int n=0;
+	printf("请选择排序方式:");
+	printf("1--升序         2--降序\n");
+	int l;
+	scanf("%d",&l);
+    while(l<1||l>2)
+    {
+    		printf("请输入正确数字 :");
+    		scanf("%d",&l);
+	}
+
+	
+	switch(l)
+	{
+	  case 1 :for(p1=head->next;p1!=NULL;p1=p1->next)
+              for(p2=p1->next;p2!=NULL;p2=p2->next)
+              {
+         	   if(p1->people>p2->people)
+         	   {
+         		
+          	    strcpy(q,p1->shiname);
+          	    strcpy(p1->shiname,p2->shiname);
+          	    strcpy(p2->shiname,q);
+          	
+          	    strcpy(q,p1->shizhangname);
+          	    strcpy(p1->shizhangname,p2->shizhangname);
+          	    strcpy(p2->shizhangname,q);
+          	
+          	    strcpy(q,p1->phone);
+          	    strcpy(p1->phone,p2->phone);
+          	    strcpy(p2->phone,q);
+          	    
+			    strcpy(q,p1->postcode);
+          	    strcpy(p1->postcode,p2->postcode);
+          	    strcpy(p2->postcode,q);
+          	    
+				f=p1->people;
+				p1->people=p2->people;
+				p2->people=f;
+				
+				f=p1->area;
+				p1->area=p2->area;
+				p2->area=f;     
+			   }
+		     }
+		     printf("升序完成\n\n");
+		     printf("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n");
+		     break;
+	case 2 :for(p1=head->next;p1!=NULL;p1=p1->next)
+              for(p2=p1->next;p2!=NULL;p2=p2->next)
+              {
+         	   if(p1->people<p2->people)
+         	   {
+         		
+          	    strcpy(q,p1->shiname);
+          	    strcpy(p1->shiname,p2->shiname);
+          	    strcpy(p2->shiname,q);
+          	
+          	    strcpy(q,p1->shizhangname);
+          	    strcpy(p1->shizhangname,p2->shizhangname);
+          	    strcpy(p2->shizhangname,q);
+          	
+          	    strcpy(q,p1->phone);
+          	    strcpy(p1->phone,p2->phone);
+          	    strcpy(p2->phone,q);
+          	    
+			    strcpy(q,p1->postcode);
+          	    strcpy(p1->postcode,p2->postcode);
+          	    strcpy(p2->postcode,q);
+          	    
+				f=p1->people;
+				p1->people=p2->people;
+				p2->people=f;
+				
+				f=p1->area;
+				p1->area=p2->area;
+				p2->area=f;     
+			   }
+		     }
+		     printf("降序完成\n\n");
+		     printf("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n");
+		     break;
+	 } 
+   
+	
+	
+}
+
+//主函数 
+ int main()
+ {
+ 	
+ 	
+ 	
+	shan *head=(shan *)malloc(sizeof(shan));
+	head->next=NULL;
+ 	int i;
+ 	system("color 4e");
+ 
+	printf("请输入密码:");
+ 	char a[10];
+ 	char b[10]={'1','5','0','6','5','0'};
+ 	scanf("%s",a);
+ 	while(strcmp(b,a)!=0)
+ 	{
+ 		printf("\n密码输入错误，请重新输入:");
+ 		scanf("%s",a);
+	 }
+	print();
+    while(1)
+{
+ 		
+	 
+    printf("请输入您需要的操作的编号：\n");//选择执行的操作 
+    scanf("%d",&i);
+    while(i<0||i>12)
+	{
+	     printf("请正确输入您需要操作的编号\n"); 
+		 scanf("%d",&i);
+	
+	}
+	if(i==0)
+	{
+		printf("欢迎下次使用");
+		break;
+	}
+	switch(i)
+	{
+		
+		case 1 : inputdate(head);
+		         break;
+		case 2 : lookdate(head);
+		         break;
+		case 3 : insert(head);
+		         break;
+		case 4 : deleated(head);
+		         break;
+		case 5 : finddate(head);
+		         break;
+		case 6 : update(head);
+		         break;
+		case 7 : save(head);
+		         break;
+		//case 8 : read(head);
+		  //       break;
+		case 9 : statistic(head);
+		         break;
+		case 10 :paixu(head);
+		         break;
+		case 11: print();
+		         break;
+		         
+	}
+}
+
+ }
+	
+
