@@ -36,6 +36,8 @@ void display(int flag,char* pathname);
 void display_dir(int flag_param,char* path);
 void display_R(int flag_param,char* path);
 void display_colour(char name[]);
+void resolve_name(char *path,char* name);
+
 
 
 /*
@@ -71,6 +73,21 @@ void display_colour(char name[])
     else if(S_ISSOCK(buf.st_mode))//  SOCKET
         colour = 36;//          青蓝色
 }
+void resolve_name(char* path,char* name)
+{
+    int i,j;
+    for(i=0;j=0;i<strlen(path);i++)
+    {
+        if(path[i]=='/')
+        {
+            j=0;
+            continue;
+        }
+        name[j++]=path[i];
+    }
+    name[j]='\0';
+}
+
 
 void my_err(const char* err_string,int line)
 {
@@ -179,7 +196,7 @@ void display_single(char* name)
     len=strlen(name);
     len=g_maxlen-len;
     display_colour(name);
-    printf("\033[%dm%s\033[0m\n",colour,name);
+    printf("\033[%dm%s\033[0m",colour,name);
     //display_colour(name,buf);
 
     for(i=0;i<len;i++)
@@ -191,13 +208,75 @@ void display_single(char* name)
     g_leave_len-=(g_maxlen+2);//一行中剩下的字符数量
 }
 
+
+
+void display_R(int flag_param,char* path)
+{
+    struct stat buf;
+    struct stat buff;
+    DIR* dir;
+    struct dirent* ptr;
+    char filenames[256][256],name[256][256],temp[256];
+    int i=0,j.k.len,cnt=0;
+
+    if(lstat(path,&buf)==-1)
+    {
+        my_err("lstat",__LINE__);
+        exit(0);
+    }
+
+    if(S_ISDIR(buf.st_mode))  //目录文件
+    {
+        printf("\n%s\n",path);
+        cnt=0;
+        dir=opendir(path);
+        if(dir==NULL)
+            my_err("opendir",__LINE__);
+        while((ptr==readdir(dir))!=NULL) //获取子目录下文件名，变成绝对路径名"/"
+        {
+            len=0;
+            cnt++;
+            strncpy(filenames[i],path,strlen(path));
+            filenames[i][strlen(path)]='/';
+            filenames[i][strlen(path+1)]='\0';
+            strncat(filenames[i],ptr->d_name,strlen(ptr->d_name));
+            filenames[i][strlen(filenames)]='\0';
+            i++;
+        }
+
+        for(i=0;i<cnt;i++)
+            resolve_name(filenames[i],name[i]);
+
+        for(i=0;i<cnt;i++)
+        {
+            if(name[i][0]!='.')
+            {
+                if(lstat(filenames[i],&buff)==-1)
+                    my_err("lstat",__LINE__);
+
+                if(S_ISDIR(buff.st_mode)) //目录文件
+                {
+                    char* _filenames=(char*)malloc(strlen(filenames[i])*sizeof(char));
+                    display_R(flag_param,_filenames);
+                    free(_filenames);
+                }
+                else
+                {
+                    if(flag_param>)
+                }
+            }
+        }
+    }
+
+
+}
 //递归显示目录下的文件
-void display_R(int flag_param,char * path)
+/*void display_R(int flag_param,char * path)
 {
     DIR *dir;
     struct dirent *ptr;
     int count=0;
-    char filesname[256][256],temp[256],name[256][256];
+    char filenames[256][256],temp[256],name[256][256];
     int ans=0;
     int i,j,k,len;
     struct stat buf;
@@ -231,21 +310,21 @@ void display_R(int flag_param,char * path)
         ptr=readdir(dir);
         if(ptr==NULL) 
             my_err("readdir",__LINE__);
-        strncpy(filesname[i],path,len);
-        filesname[i][len]='\0';  //strcat的实现需要最后一位是‘\0’
-        if(filesname[i][0]=='.') 
+        strncpy(filenames[i],path,len);
+        filenames[i][len]='\0';  //strcat的实现需要最后一位是‘\0’
+        if(filenames[i][0]=='.') 
             continue;
-        strcat(filesname[i],ptr->d_name);
-        filesname[i][len+strlen(ptr->d_name)]='\0';
+        strcat(filenames[i],ptr->d_name);
+        filenames[i][len+strlen(ptr->d_name)]='\0';
         if(flag_param>=8)
-            display(3,filesname[i]);
+            display(3,filenames[i]);
         else
-            display(flag_param-4,filesname[i]);
+            display(flag_param-4,filenames[i]);
     
 
-        lstat(filesname[i],&buf);
+        lstat(filenames[i],&buf);
         if(S_ISDIR(buf.st_mode))  //目录文件
-            strcpy(name[ans++],filesname[i]); //保存下所有的目录文件
+            strcpy(name[ans++],filenames[i]); //保存下所有的目录文件
     }
     closedir(dir);
 
@@ -269,7 +348,7 @@ void display_R(int flag_param,char * path)
         display_R(flag_param,strcat(name[k],"/"));
         printf("\n");
     }
-}
+}*/
 
 /*
 *  根据命令行参数和完整路径名显示目标文件
@@ -389,7 +468,6 @@ void display_dir(int flag_param,char* path)
         //如果命令行中没有-l选项，打印一个换行符
         if((flag_param & PARAM_L)==0)
             printf("\n");
-
     }
 }
 
@@ -444,7 +522,7 @@ int main(int argc,char** argv)
     //如果没有输入文件名或目录，就显示当前目录
     if(num+1==argc)
     {
-        strcpy(path,"./");  
+        strcpy(path,".");  
         path[2]='\0';
         //printf("%d  :flag_param: \n",_flag_param);
         display_dir(flag_param,path);
@@ -477,16 +555,16 @@ int main(int argc,char** argv)
                 else
                     path[strlen(argv[i])]='\0';
                 
-                display_dir(flag_param,path);
-                //i++;
+                display_dir(flag_param,path);//按目录输出
+                i++;
             }
             else
             {
-
+                //按文件输出
                 display(flag_param,path);//argc[i]是一个文件
-                //i++;
+                i++;
             }
-            i++;
+            //i++;
         }
     }while(i<argc);
 }
