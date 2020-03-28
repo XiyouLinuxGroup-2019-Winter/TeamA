@@ -27,7 +27,7 @@ int main(void)
     {
          n = read(fd, buf, 10);
         if(n>=0)
-            break;
+            break;//说明读到了
         if(errno!=EAGAIN)
         {
             perror("read /dev/tty");
