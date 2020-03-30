@@ -17,7 +17,7 @@ int main(void)
 {
     char buf[10];
     int fd, n, i;
-    fd = open("/dev/tty", O_RDONLY|O_NONBLOCK);
+    fd = open("/dev/tty", O_RDONLY|O_NONBLOCK);//PCB->fd  3
     if(fd<0) 
     {
         perror("open /dev/tty");
@@ -40,5 +40,5 @@ int main(void)
         write(STDOUT_FILENO, MSG_TIMEOUT, strlen(MSG_TIMEOUT));
     else
         write(STDOUT_FILENO, buf, n);
-    close(fd);
+    //close(fd);
 }

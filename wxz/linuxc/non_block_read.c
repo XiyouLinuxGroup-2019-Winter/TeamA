@@ -26,7 +26,7 @@ int main(void)
     n = read(fd, buf, 10);
     if (n < 0) 
     {
-        if (errno == EAGAIN) 
+        if (errno == EAGAIN) //
         {
             sleep(1);
             write(STDOUT_FILENO, MSG_TRY, strlen(MSG_TRY));

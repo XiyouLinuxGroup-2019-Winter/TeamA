@@ -16,7 +16,7 @@ int main(int argc,char* argv[])
     for(i=0;i<5;i++)
     {
         if(fork()==0)
-            break;
+            break;//避免多余子进程的创建
     }
     if(i==5)
     {

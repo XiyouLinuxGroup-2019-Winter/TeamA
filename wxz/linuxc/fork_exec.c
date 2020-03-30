@@ -22,7 +22,7 @@ int main(int argc,char*argv[])
     else if(pid==0)
     {
         
-        //execlp("ls","ls","-l","-h",NULL);
+    // execlp("ls","ls","-l","-h",NULL);//argv[1],argv[2]
         //execlp("data","data",NULL);
         //execl("./a.out","./a.out",NULL);
         //execl("/bin/ls","ls","-l",NULL);

@@ -19,13 +19,13 @@ int main(int argc,char*argv[])
         perror("fork error");
         exit(1);
     }
-    else if(pid==0)
+    else if(pid==0)//子进程创建成功
     {
         printf("---child, my parent=%d,going to sleep 10s\n",getppid());
         sleep(10);
         printf("------child die------\n");
     }
-    else if(pid>0)
+    else if(pid>0)//父进程创建成功
     {
         while(1)
         {
