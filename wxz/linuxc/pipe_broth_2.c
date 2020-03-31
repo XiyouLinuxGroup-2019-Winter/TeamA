@@ -9,6 +9,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <sys/wait.h>
+#include <string.h>
 int main(int argc,char* argv[])
 {
     //先创建管道,在fork兄弟进程，兄进程执行ls,关闭读端，弟进程执行wc,关闭写端
