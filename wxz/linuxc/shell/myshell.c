@@ -57,6 +57,7 @@ void print_prompt()
         printf("#");
     else
         printf("$");
+    free(buf);
 }
 
 //获取用户输入
