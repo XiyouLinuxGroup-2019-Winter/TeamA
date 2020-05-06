@@ -63,7 +63,7 @@ int main(int argc,char **argv)
 	   }
 	   else if (param[i] == 'l')
 	   {
-		   flag_param |PARAM_L;
+		   flag_param |=PARAM_L;
 	           continue;
 	   }
 	   else
