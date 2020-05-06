@@ -14,28 +14,62 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <dirent.h>
-
+#include<readline/readline.h>
+#include<readline/history.h>
+#include <pwd.h>
+#include <limits.h>
 #define normal 0//一般的命令
 #define out_readirect 1//输出重定向
 #define in_readirect 2//输入重定向
 #define have_pipe 3//命令中有管道
+#define out_readirect2 4
+
+char cd_pathname[PATH_MAX];
+char pathname[PATH_MAX]="/home/taciturn-wu";
 
 void print_prompt();//打印提示符
 void get_input(char*);//得到输入的命令
-void explain_input(char* ,int* ,char a[][]);//对输入的命令解析
-void do_cmd(int,char a[][]);//执行命令
+void explain_input(char* ,int* ,char a[100][256]);//对输入的命令解析
+void do_cmd(int,char a[100][256]);//执行命令
 int find_command(char*);//查找命令中的可执行程序
-
+void do_cd(char* arg[],int argcount);
+/*struct passwd
+{
+  char *pw_name;                // 用户登录名 
+  char *pw_passwd;              // 密码(加密后)
+  __uid_t pw_uid;               // 用户ID 
+  __gid_t pw_gid;               // 组ID 
+  char *pw_gecos;               // 详细用户名
+  char *pw_dir;                 // 用户目录 
+  char *pw_shell;               // Shell程序名 
+};*/
 
 void print_prompt()
 {
-    printf("myshell$$ ");
+    struct passwd* name;
+    uid_t uid;
+    uid=getuid();
+    name=getpwuid(uid);
+    char* buf=NULL;
+    buf=(char*)malloc(sizeof(char)*256);
+    printf("myshell$$ \033[;37m%s\033[0m",getcwd(buf,256));
+    if(strcmp(name->pw_name,"root")==0)
+        printf("#");
+    else
+        printf("$");
 }
 
 //获取用户输入
 void get_input(char* buf)
 {
-    int len=0;
+    char* str=readline("");
+    add_history(str);
+    strcpy(buf,str);
+    int len=strlen(buf);
+    
+    buf[strlen(buf)]='\n';
+
+    /*int len=0;
     int ch;
 
     ch=getchar();
@@ -53,8 +87,29 @@ void get_input(char* buf)
 
     buf[len]='\n';
     len++;
-    buf[len]='\0';
+    buf[len]='\0';*/
 
+}
+
+void do_cd(char* arg[],int argcount)
+{
+    getcwd(cd_pathname,256);
+    if((argcount==1) || strcmp(arg[1],"~")==0)
+    {
+        strcpy(pathname,cd_pathname);
+        chdir("/home/taciturn-wu/");
+    }
+    else if(strcmp(arg[1],"-")==0)
+    {
+        chdir(pathname);
+        printf("%s\n",pathname);
+        strcpy(pathname,cd_pathname);
+    }
+    else
+    {
+        strcpy(pathname,cd_pathname);
+        chdir(arg[1]);
+    }
 }
 
 /*解析buf中的命令．将结果存入arglist中，命令以回车符号\n结束
@@ -107,6 +162,11 @@ void do_cmd(int argcount,char arglist[100][256])
         arg[i]=(char*)arglist[i];
 
     arg[argcount]=NULL;
+
+    if(strcmp(arg[0],"cd")==0)
+    {
+        do_cd(arg,argcount);
+    }
     
     //查看命令行是否有后台运行符
     for(i=0;i<argcount;i++)
@@ -142,7 +202,7 @@ void do_cmd(int argcount,char arglist[100][256])
             if(i==0)
                 flag++;
         }
-        if(strncmp(arg[i],"|")==0)
+        if(strcmp(arg[i],"|")==0)
         {
             flag++;
             how=have_pipe;
@@ -152,6 +212,15 @@ void do_cmd(int argcount,char arglist[100][256])
                 flag++;
 
         }
+        if(strcmp(arg[i],">>")==0)
+        {
+            flag++;
+            how=out_readirect2;
+            if(arg[i+1]==NULL)
+                flag++;
+            if(i==0)
+                flag++;
+        }
     }
     
 
@@ -160,6 +229,20 @@ void do_cmd(int argcount,char arglist[100][256])
     {
         printf("wrong command\n");
         return ;
+    }
+
+    if(how==out_readirect2)//   >>
+    {
+        
+        for(i=0;arg[i]!=NULL;i++)
+        {
+            if(strcmp(arg[i],">>")==0)
+            {
+                file=arg[i+1];
+                arg[i]=NULL;
+            }
+
+        }
     }
     if(how==out_readirect)//　　　　　命令只含有一个输出重定向符号>
     {
@@ -176,7 +259,7 @@ void do_cmd(int argcount,char arglist[100][256])
     {
         for(i=0;arg[i]!=NULL;i++)
         {
-            if(strcmp(argc=[i],"<")==0)
+            if(strcmp(arg[i],"<")==0)
             {
                 file=arg[i+1];
                 arg[i]=NULL;
@@ -194,8 +277,9 @@ void do_cmd(int argcount,char arglist[100][256])
                 arg[i]=NULL;
                 int j;
                 for(j=i+1;arg[j]!=NULL;j++)
+                {
                     argnext[j-i-1]=arg[j];
-
+                }
                 argnext[j-i-1]=arg[j];
                 break;
             }
@@ -206,89 +290,106 @@ void do_cmd(int argcount,char arglist[100][256])
         printf("fork error\n");
         return ;
     }
+
     switch(how)
     {
         case 0:
         //pid为0说明是子进程，在子进程中执行输入的命令
         //输入的命令中不含>,<和|
-        if(pid==0)
-        {
-            if(!(find_command(arg[0])))
-            {
-                printf("%s:command not found\n",arg[0]);
-                exit(0);
-            }
-            execvp(arg[0],arg);
-            exit(0);
-        }
-        break;
-        case 1:
-        //输入的命令中含有输出重定向符>
-        if(pid==0)
-        {
-            if(!(find_command(arg[0])))
-            {
-                printf("%s:command not found\n",arg[0]);
-                exit(0);
-            }
-            fd=open(file,O_RDWR | O_CREAT |O_TRUNC,0644);
-            dup2(fd.1);
-            execvp(arg[0],arg);
-            exit(0);
-        }
-        break;
-        case 2:
-        //输入的命令中含有输入重定向符<
-        if(pid==0)
-        {
-            if(!(find_command(arg[0])))
-            {
-                printf("%s: command not found\n",arg[0]);
-                exit(0);
-            }
-            fd=open(file,O_RDONLY);
-            dup2(fd,0);
-            execvp(arg[0],arg);
-            exit(0);
-        }
-        break;
-        case 3:
-        //输入的命令中含有管道符|
-        if(pif==0)
-        {
-            int pid2;
-            int status2;
-            int fd2;
-            if((pid2=fork())<0)
-            {
-                printf("fork2 error\n");
-                return ;
-            }
-            else if(pid2==0)
+            if(pid==0)
             {
                 if(!(find_command(arg[0])))
                 {
-                    printf("%s :command not found\n",arg[0]);
+                    if(strcmp(arg[0],"cd")==0)
+                        exit(0);
+                    printf("%s:command not found\n",arg[0]);
                     exit(0);
                 }
-                fd2=open("/tmp/youdonotnowfile",O_WRONLY | O_CREAT | O_TRUNC,0644);
-                dup2=(fd2,1);
                 execvp(arg[0],arg);
                 exit(0);
             }
-            if(waitpid(pid2,&status2,0)==-1)
-                printf("wait for child process error\n");
-            if(!(find_command(argnext[0])))
+            break;
+        case 1:
+        //输入的命令中含有输出重定向符>
+            if(pid==0)
             {
-                printf("%s :command not found\n",argnext[0]);
+                if(!(find_command(arg[0])))
+                {
+                   printf("%s:command not found\n",arg[0]);
+                    exit(0);
+                }
+                fd=open(file,O_RDWR | O_CREAT |O_TRUNC,0644);
+                dup2(fd,1);
+                execvp(arg[0],arg);
                 exit(0);
             }
-            fd2=open("/tmp/youdonotnowfile",O_RDONLY);
-            dup2(fd2,0);
-            execvp(argnext[0],argnext);
+            break;
+        case 2:
+        //输入的命令中含有输入重定向符<
+            if(pid==0)
+            {
+                if(!(find_command(arg[0])))
+                {
+                    printf("%s: command not found\n",arg[0]);
+                    exit(0);
+                }
+                fd=open(file,O_RDONLY);
+                dup2(fd,0);
+                execvp(arg[0],arg);
+                exit(0);
+            }
+            break;
+        case 3:
+        //输入的命令中含有管道符|
+            if(pid==0)
+            {
+                int pid2;
+                int status2;
+                int fd2;
+                if((pid2=fork())<0)
+                {
+                    printf("fork2 error\n");
+                    return ;
+                }
+                else if(pid2==0)
+                {
+                    if(!(find_command(arg[0])))
+                    {
+                        printf("%s :command not found\n",arg[0]);
+                        exit(0);
+                    }
+                    fd2=open("/tmp/youdonotnowfile",O_WRONLY | O_CREAT | O_TRUNC,0644);
+                    dup2(fd2,1);
+                    execvp(arg[0],arg);
+                    exit(0);
+                }
+                if(waitpid(pid2,&status2,0)==-1)
+                    printf("wait for child process error\n");
+                if(!(find_command(argnext[0])))
+                {
+                    printf("%s :command not found\n",argnext[0]);
+                    exit(0);
+                }
+                fd2=open("/tmp/youdonotnowfile",O_RDONLY);
+                dup2(fd2,0);
+                execvp(argnext[0],argnext);
 
-            if(remove("/tmp/youdonotnowfile"))
-                printf("remove error\n");
+                if(remove("/tmp/youdonotnowfile"))
+                    printf("remove error\n");
+                exit(0);
+            }
+            break;
+    case 4:
+        if(pid==0)
+        {
+            if(!(find_command(arg[0])))
+            {
+                printf("%s : command not found\n",arg[0]);
+                exit(0);
+            }
+            fd=open(file,O_RDWR| O_CREAT|O_APPEND);
+            dup2(fd,1);
+            execvp(arg[0],arg);
             exit(0);
         }
         break;
@@ -323,11 +424,11 @@ int find_command(char* command)
     int i=0;
     while(path[i]!=NULL)
     {
-        if(dp=opendir(path[i])==NULL)
+        if((dp=opendir(path[i]))==NULL)
             printf("can't open /bin \n");
         while((dirp=readdir(dp))!=NULL)
         {
-            if(strncmp(dirp->d_name,command)==0)
+            if(strcmp(dirp->d_name,command)==0)
             {
                 closedir(dp);
                 return 1;
@@ -336,4 +437,50 @@ int find_command(char* command)
         closedir(dp);
         i++;
     }
+}
+int main(int argc,char* argv[])
+{
+    int i;
+    int argcount=0;
+    char arglist[100][256];
+    char **arg=NULL;
+    char *buf=NULL;
+
+    signal(SIGINT, SIG_IGN);
+
+    buf=(char*)malloc(sizeof(char)*256);
+    if(buf==NULL)
+    {
+        perror("malloc failed");
+        exit(-1);
+    }
+
+    while(1)
+    {
+        //将buf所指向的空间清零
+        memset(buf,0,256);
+        print_prompt();
+        get_input(buf);
+        
+
+        if(strcmp(buf,"\n")==0)
+            continue;
+        //若输入的命令为exit或logout则退出本程序
+        if(strcmp(buf,"exit\n")==0 || strcmp(buf,"logout\n")==0)
+            break;
+
+        for(i=0;i<100;i++)
+        {
+            arglist[i][0]='\0';
+        }
+        argcount=0;
+        explain_input(buf,&argcount,arglist);
+        do_cmd(argcount,arglist);
+    }
+    if(buf!=NULL)
+    {
+        free(buf);
+        buf=NULL;
+    }
+    exit(0);
 }

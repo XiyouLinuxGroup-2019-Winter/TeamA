@@ -42,6 +42,7 @@ void display_colour(char name[]);
 
 
 /*
+
 30: 黑
 31: 红
 32: 绿
@@ -220,7 +221,7 @@ void display_R(int flag_param,char* path)
 
         if(count>256)
             my_err("too mant files under this dir",__LINE__);
-    char ** filenames=(char**)malloc(sizeof(char*)*20000);
+    char ** filenames=(char**)malloc(sizeof(char*)*count);
     for(int i=0;i<count;i++)
         filenames[i]=(char*)malloc(sizeof(char)*PATH_MAX+1);
     
