@@ -6,16 +6,99 @@
  ************************************************************************/
 
 #include<stdio.h>
-//#include "linklist.h"
+#include <stdlib.h>
 #include "linkstack.h"
 #include "linkstack.c"
+
 typedef struct BiNode
 {
- 	int data;
-        struct BiNode  *lchild, *rchild;
+ 	char data;
+    struct BiNode  *lchild, *rchild;
 }BiNode, *BiTree;
 
-BiNode *GoLeft(BiNode *T,LinkStack *s)
+typedef struct BiTreeStackNode
+{
+    BiNode* root;
+    int flag;
+}BiTreeStackNode;
+
+BiTreeStackNode* CreateBiTreeStackNode(BiNode* node,int flag)
+{
+    BiTreeStackNode* newnode=(BiTreeStackNode*)malloc(sizeof(BiTreeStackNode));
+    newnode->root=node;
+    newnode->flag=flag;
+    return newnode;
+}
+
+void NoRecursion(BiNode* root)
+{
+    LinkStack* stack=LinkStack_Create();
+    LinkStack_Push(stack,(void*)CreateBiTreeStackNode(root,0));
+
+    while(LinkStack_Size(stack)>0)
+    {
+        //先弹出栈顶元素
+        BiTreeStackNode* node=(BiTreeStackNode*)LinkStack_Top(stack);
+        LinkStack_Pop(stack);
+
+        if(node->root==NULL)
+        {
+            continue;
+        }
+        if(node->flag==1)
+        {
+            printf("%c",node->root->data);
+        }
+        else
+        {
+            //中序遍历
+            LinkStack_Push(stack,(void*)CreateBiTreeStackNode(node->root->rchild,0));
+
+            LinkStack_Push(stack,(void*)CreateBiTreeStackNode(node->root->lchild,0));
+            node->flag=1;
+            LinkStack_Push(stack,(void*)node);
+        }
+
+        
+    }
+
+}
+void Recursion(BiNode* root)
+{
+    if(root==NULL)
+    return ;
+    printf("%c",root->data);
+
+    Recursion(root->lchild);
+    Recursion(root->rchild);
+
+}
+int main()
+{
+    BiNode node1={'A',NULL,NULL};
+    BiNode node2={'B',NULL,NULL};
+    BiNode node3={'C',NULL,NULL};
+    BiNode node4={'D',NULL,NULL};
+    BiNode node5={'E',NULL,NULL};
+    BiNode node6={'F',NULL,NULL};
+    BiNode node7={'G',NULL,NULL};
+    BiNode node8={'H',NULL,NULL};
+
+   node1.lchild=&node2;
+   node1.rchild=&node6; 
+node2.rchild=&node3;
+node3.lchild=&node4;
+node3.rchild=&node5;
+node6.rchild=&node7;
+node7.lchild=&node8;
+
+    NoRecursion(&node1);
+    printf("\n");
+    Recursion(&node1);
+    printf("\n");
+}
+
+/*BiNode *GoLeft(BiNode *T,LinkStack *s)
 {
         if (T == NULL)
         {
@@ -70,6 +153,6 @@ void main()
     t3.lchild = &t5;
     InOrder2(&t1);
 }
-
+*/
 
 

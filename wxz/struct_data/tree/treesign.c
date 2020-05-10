@@ -11,14 +11,14 @@
 
 typedef struct BiTNode 
 {
-	int data;
+	char data;
 	struct BiTNode *lchild, *rchild;
 }BiNode, *BiTree;
 BiNode* BiTree_Create()
 {
    BiNode* tmp=NULL;
     char ch;
-    scanf("%d",&ch);
+    scanf("%c",&ch);
     if(ch=='#')
         return NULL;
     else
@@ -31,15 +31,16 @@ BiNode* BiTree_Create()
         tmp->data=ch;
         tmp->lchild=BiTree_Create();
         tmp->rchild=BiTree_Create();
-        return tmp;
     }
+    return tmp;
 }
 void inOrder(BiNode *root)
 {
 	if (root != NULL)
 	{
-		inOrder(root->lchild);
+		//inOrder(root->lchild);
         printf("%c",root->data);
+        inOrder(root->lchild);
 		inOrder(root->rchild);
 	}
     return ;
@@ -71,6 +72,6 @@ int main()
     p=BiTree_Create();
 
     inOrder(p);
-    FreeTree(p);
+    //FreeTree(p);
 }
 
