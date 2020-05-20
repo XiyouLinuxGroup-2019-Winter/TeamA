@@ -23,10 +23,10 @@ void* consumer(void* arg)
     int i=0;
     while(1)
     {
-        sem_wait(&product_number);
+        sem_wait(&product_number);//--
         printf("-consumer----%d\n",queue[i]);
         queue[i]=0;
-        sem_post(&blank_number);
+        sem_post(&blank_number);//++
 
         i=(i+1)%NUM;
         sleep(rand()%3);
@@ -36,15 +36,15 @@ void* producer(void* arg)
 {
         int i=0;
         while(1)
-    {
-        sem_wait(&blank_number);
-        queue[i]=rand()%1000+1;
-        printf("-producer-------%d\n",queue[i]);
+        {
+            sem_wait(&blank_number);//--
+            queue[i]=rand()%1000+1;
+            printf("-producer-------%d\n",queue[i]);
     
-        sem_post(&product_number);
-       i=(i+1)%NUM;
-        sleep(rand()%1);
-    }
+            sem_post(&product_number);//++
+            i=(i+1)%NUM;
+            sleep(rand()%1);
+        }
 }
 int main()
 {
