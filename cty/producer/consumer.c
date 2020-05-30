@@ -1,8 +1,8 @@
 #include<stdio.h>
 #include<pthread.h>
  
-int buffer[10],top = 0,itime = 0,itime2 = 0;
- 
+int buffer[20],t = 0,time1 = 0,time2 = 0;
+pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_t thread[2];
 pthread_mutex_t mut;
 pthread_mutex_t mut2;
@@ -11,17 +11,18 @@ void producer()
 {
 	while(1)
 	{
-		if(itime == 10) return;
+		if(time1 == 20) 
+		return;
 		pthread_mutex_lock(&mut);
-		if(top == 10)
+		if(t == 20)
 		{
-			printf("buffer is full...producer is waiting...\n");
+			printf("缓冲区阻塞，生产者等待。\n");
 			pthread_mutex_unlock(&mut2);
 			continue;
 		}
-		printf("pruducter set the %d\n", itime);
-		top++;
-		itime++;
+		printf("生产者位于%d\n", time1);
+		t++;
+		time1++;
 		pthread_mutex_unlock(&mut2);
 	}
 }
@@ -31,17 +32,18 @@ void consumer()
 {
 	while(1)
 	{
-		if(itime2 == 10) return;
+		if(time2 == 20) 
+		return;
 		pthread_mutex_lock(&mut2);
-		if(top == 0)
+		if(t == 0)
 		{
-			printf("buffer is empty...consumer is waiting...\n");
+			printf("缓冲区空了，消费者等待\n");
 			pthread_mutex_unlock(&mut);
 			continue;
 		}
-		printf("consumer get the %d\n", itime2);
-		top--;
-		itime2++;
+		printf("消费者得到%d\n", time2);
+		t--;
+		time2;
 		pthread_mutex_unlock(&mut);
 	}
 }
