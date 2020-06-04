@@ -21,6 +21,9 @@ int main()
     socklen_t clt_addr_len;
     char buf[BUFSIZ];
 
+    int opt=1;
+    setsockopt(lfd,SOL_SOCKET,SO_REUSEADDR,(void*)&opt,sizeof(opt));
+
     //memset(&srv_addr,0,sizeof(srv_addr));
     bzero(&srv_addr,sizeof(srv_addr));
 
