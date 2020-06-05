@@ -1,12 +1,5 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <sys/socket.h>
-#include <unistd.h>
-#include <sys/types.h>
-#include <ctype.h>
-#include <arpa/inet.h>
-
-#define SERV_PORT 9527
+#include "wrang.h"
+#define SERV_PORT 8000
 int main()
 {
     int lfd=0,cfd=0;
@@ -25,12 +18,12 @@ int main()
 
     connect(cfd,(struct sockaddr*)&serv_addr,sizeof(serv_addr));
 
-    while(count--)
+    while(fgets(buf,BUFSIZ,stdin)!=NULL)
     {
-        write(cfd,"hello",5);
+        write(cfd,buf,strlen(buf));
         ret=read(cfd,buf,sizeof(buf));
         write(STDOUT_FILENO,buf,ret);
-        sleep(1);
+        
     }
     close(cfd);
 }

@@ -13,6 +13,11 @@
 #include <sys/wait.h>
 #include <errno.h>
 #include <pthread.h>
+#include <netinet/in.h>
+#include <poll.h>
+#include <sys/epoll.h>
+#include <sys/wait.h>
+#include <signal.h>
 void perr_exit(const char *s);
 int Accept(int fd, struct sockaddr *sa, socklen_t *salenptr);
 int Bind(int fd, const struct sockaddr *sa, socklen_t salen);
