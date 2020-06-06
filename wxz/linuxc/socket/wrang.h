@@ -18,6 +18,7 @@
 #include <sys/epoll.h>
 #include <sys/wait.h>
 #include <signal.h>
+#include <fcntl.h>
 void perr_exit(const char *s);
 int Accept(int fd, struct sockaddr *sa, socklen_t *salenptr);
 int Bind(int fd, const struct sockaddr *sa, socklen_t salen);
