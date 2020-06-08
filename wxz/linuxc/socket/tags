@@ -1,0 +1,74 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.9~svn20110310	//
+Accept	./wrang.c	/^int Accept(int fd, struct sockaddr *sa, socklen_t *salenptr)$/;"	f
+Bind	./wrang.c	/^int Bind(int fd, const struct sockaddr *sa, socklen_t salen)$/;"	f
+Close	./wrang.c	/^int Close(int fd)$/;"	f
+Connect	./wrang.c	/^int Connect(int fd, const struct sockaddr *sa, socklen_t salen)$/;"	f
+Listen	./wrang.c	/^int Listen(int fd, int backlog)$/;"	f
+MAXLINE	./thread_server.c	4;"	d	file:
+Read	./wrang.c	/^ssize_t Read(int fd, void *ptr, size_t nbytes)$/;"	f
+Readline	./wrang.c	/^ssize_t Readline(int fd, void *vptr, size_t maxlen)$/;"	f
+Readn	./wrang.c	/^ssize_t Readn(int fd, void *vptr, size_t n)$/;"	f
+SERV_PORT	./block_clinet.c	2;"	d	file:
+SERV_PORT	./clinet.c	2;"	d	file:
+SERV_PORT	./epoll_block.c	2;"	d	file:
+SERV_PORT	./epoll_heap.c	2;"	d	file:
+SERV_PORT	./epoll_server.c	2;"	d	file:
+SERV_PORT	./epoll_unblock.c	2;"	d	file:
+SERV_PORT	./poll_server.c	2;"	d	file:
+SERV_PORT	./process_clinet.c	3;"	d	file:
+SERV_PORT	./select_clinet.c	3;"	d	file:
+SERV_PORT	./select_server.c	2;"	d	file:
+SERV_PORT	./select_server_arr.c	2;"	d	file:
+SERV_PORT	./server.c	9;"	d	file:
+SRV_PORT	./process_server.c	2;"	d	file:
+SRV_PORT	./thread_server.c	3;"	d	file:
+Socket	./wrang.c	/^int Socket(int family, int type, int protocol)$/;"	f
+WRANG_H_	./wrang.h	2;"	d
+Write	./wrang.c	/^ssize_t Write(int fd, const void *ptr, size_t nbytes)$/;"	f
+Writen	./wrang.c	/^ssize_t Writen(int fd, const void *vptr, size_t n)$/;"	f
+acceptconnet	./epoll_heap.c	/^void acceptconnet(int lfd,int events,void* arg)$/;"	f
+arg	./epoll_heap.c	/^    void* arg;$/;"	m	struct:myevent_s	file:
+buf	./epoll_heap.c	/^    char buf[BUFSIZ];$/;"	m	struct:myevent_s	file:
+call_back	./epoll_heap.c	/^    void (*call_back)(int fd,int events,void* arg);$/;"	m	struct:myevent_s	file:
+catch_child	./process_server.c	/^void catch_child(int signum)$/;"	f
+cliaddr	./thread_server.c	/^    struct sockaddr_in cliaddr;$/;"	m	struct:s_info	typeref:struct:s_info::sockaddr_in	file:
+clinfd	./thread_server.c	/^    int clinfd;$/;"	m	struct:s_info	file:
+do_work	./thread_server.c	/^void *do_work(void* arg)$/;"	f
+epfd	./epoll_heap.c	/^int epfd;$/;"	v
+eventadd	./epoll_heap.c	/^void eventadd(int epfd,int events,struct myevent_s* ev)$/;"	f
+eventdel	./epoll_heap.c	/^void eventdel(int epfd,struct myevent_s* ev)$/;"	f
+events	./epoll_heap.c	/^    int events;$/;"	m	struct:myevent_s	file:
+eventset	./epoll_heap.c	/^void eventset(struct myevent_s* ev,int fd,void (*call_back)(int,int,void*),void* arg)$/;"	f
+fd	./epoll_heap.c	/^    int fd;$/;"	m	struct:myevent_s	file:
+g_events	./epoll_heap.c	/^struct myevent_s g_events[1025];$/;"	v	typeref:struct:myevent_s
+initsocket	./epoll_heap.c	/^void initsocket(int epfd,short port)$/;"	f
+last_active	./epoll_heap.c	/^    long last_active;$/;"	m	struct:myevent_s	file:
+len	./epoll_heap.c	/^    int len;$/;"	m	struct:myevent_s	file:
+main	./block_clinet.c	/^int main()$/;"	f
+main	./clinet.c	/^int main()$/;"	f
+main	./epoll_ET.c	/^int main()$/;"	f
+main	./epoll_LT.c	/^int main()$/;"	f
+main	./epoll_block.c	/^int main()$/;"	f
+main	./epoll_heap.c	/^int main(int argc,char *argv[])$/;"	f
+main	./epoll_server.c	/^int main()$/;"	f
+main	./epoll_unblock.c	/^int main()$/;"	f
+main	./poll_server.c	/^int main()$/;"	f
+main	./process_clinet.c	/^int main()$/;"	f
+main	./process_server.c	/^int main()$/;"	f
+main	./select_clinet.c	/^int main()$/;"	f
+main	./select_server.c	/^int main()$/;"	f
+main	./select_server_arr.c	/^int main()$/;"	f
+main	./server.c	/^int main()$/;"	f
+main	./thread_server.c	/^int main()$/;"	f
+my_read	./wrang.c	/^ssize_t my_read(int fd, char *ptr)$/;"	f
+myevent_s	./epoll_heap.c	/^struct myevent_s{$/;"	s	file:
+recvdata	./epoll_heap.c	/^void recvdata(int fd,int events,void* arg)$/;"	f
+s_info	./thread_server.c	/^struct s_info$/;"	s	file:
+senddata	./epoll_heap.c	/^void senddata(int fd,int events,void* arg)$/;"	f
+status	./epoll_heap.c	/^    int status;$/;"	m	struct:myevent_s	file:
+sys_err	./wrang.c	/^void sys_err(const char* s)$/;"	f
