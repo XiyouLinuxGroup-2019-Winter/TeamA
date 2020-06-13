@@ -6,7 +6,29 @@
  ************************************************************************/
 
 #include<stdio.h>
-#include "math.h"
+#include "PRS.h"
+void create(PERSON* head)
+{
+    int pnum;
+    int page;
+    char pname[20];
+    char pphone[50];
+    char pcome[100];
+    char pthing[100];
+
+    PERSON *p;
+    PERSON *tail;
+    
+}
+
+
+
+
+
+
+
+
+
 int main()
 {
     int choice;

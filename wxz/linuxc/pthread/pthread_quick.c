@@ -10,94 +10,125 @@
 #include <pthread.h>
 #include <unistd.h>
 #include <stdlib.h>
-#define MAX_NUM=1e8L;
-#define MAX=1e7L;
-int thread=100;
-int thread_num=MAX_NUM/thread;
-int num[MAX_NUM];
-int tmp_num[MAX_NUM];
-pthread_barrier_t barrier;
 
-void init()
+
+struct node
 {
-    srand(1);
-    for(int i=0;i<MAX_NUM;i++)
-        num[i]=rand()%MAX;
-}
-void qsorts(int *start,int* end)
+    int l,r;
+    int id;
+};
+int max=100;
+int a[100];
+pthread_mutex_t lock=PTHREAD_MUTEX_INITIALIZER;
+
+
+void meger(int left1,int right1,int left2,int right2)
 {
-    int nums=end-start;
-    if(num>0)
+    int n=right2-left1+1;
+    int b[n];
+    
+    int *data=b;
+    for(int i=0;i<n;i++)
+        data[i]=0;
+    int l1=left1,l2=left2;
+    int i=0;
+    while(l1<=right1 && l2<=right2)
     {
-        int flag=start[0];
-        int i=0;
-        int j=nums;
-        while(i<j)
-        {
-            while(j>i && start[j]>flag)
-                --j;
-            start[i]=start[j];
-            while(i<j && start[i]<=flag)
-                ++i;
-            start[j]=start[i];
+        if(a[l1]<a[l2])
+            data[i++]=a[l1++];
+        else   
+            data[i++]=a[l2++];
+    }
+ 
+    while(l1 <= right1) 
+        data[i++] = a[l1++];
+    while(l2 <= right2) 
+        data[i++] = a[l2++];
 
-        }
-        start[i]=flag;
+    int id=0;
+    for(i=left1;i<=right2;i++)
+        a[i]=data[id++];
 
-        qsorts(start,start+i-1);
-        qsorts(start+i+1,end);
+    free(data);
+}
+void swap(int *a,int *b)
+{
+    int temp=*a;
+    *a=*b;
+    *b=temp;
+}
+void qsorts(int left,int right)
+{
+    if(left>=right)
+        return;
+
+    
+    int i=left;
+    int j=right;
+    while(i<j)
+    {
+        while(j>i && a[i]<=a[j])
+            i++;
+        if(i!=j)
+            swap(&a[i],&a[j]);
+        while(i<j && a[i]<=a[j])
+            j--;
+        if(i!=j)
+            swap(&a[i],&a[j]);
 
     }
+       
+
+    qsorts(left,i-1);
+    qsorts(i+1,right);
+
+
+
 }
+
 void *play(void *arg)
 {
-    long long int index=(long long int)arg;
-    qsorts(num+index,num+index+thread_num-1);
-    pthread_barrier_wait(&barrier);
-    pthread_exit(NULL);
+    struct node* sort;
+    sort=(struct node*)arg;
+    printf("thread sort->id:%d sort begin!\n",pthread_self());
+    qsorts(sort->l,sort->r);
+    printf("thread sort->id:%d sort end!\n",pthread_self());
 }
-void meger()
-{
-    long index[thread];
-    for(int i=0;i<thread;i++)
-    {
-        index[i]=i*thread_num;
-    }
-    for(long i=0;i<MAX_NUM;i++)
-    {
-        long min_index;
-        long min_num=MAX;
-        for(int j=0;j<thread;j++)
-        {
-            if((index[i]<(j+1)*thread_num) && (num[index[j]]<min_num))
-            {
-                min_index=j;
-                min_num=num[index[j]];
-            }
-        }
-        tmp_num[i]=num[index[min_index]];
-        index[min_index]++;
-    }
-}
+
 int main()
 {
-    init();
-    struct timeval start,end;
-    pthread_t pid;
-    printf("%ld %ld\n",num[1],num[2]);
+    srand((unsigned)time(NULL));
+    int i;
+    for(i=0;i<100;i++)
+        a[i]=rand()%1000;
+    
+    for(i=0;i<100;i++)
+        printf("%d ",a[i]);
+    printf("\n");
+    
 
-    gettimeofday(&start,NULL);
-
-    pthread_barrier_wait(&barrier);
-    for(int i=0;i<thread;i++)
-        pthread_create(&pid,NULL,play,(void*)(i*thread_num));
-    meger();
-
-    gettimeofday(&end, NULL);
-    long long s_usec = start.tv_sec * 1000000 + start.tv_usec;
-    long long e_usec = end.tv_sec * 1000000 + end.tv_usec;
-
-    double useTime = (double)(e_usec - s_usec) / 1000000.0;
-    printf("sort use %.4f seconds\n", useTime);
-
+    struct node s[10];
+    for(i=0;i<10;i++)
+    {
+        s[i].id=i;
+        s[i].l=i*10;
+        s[i].r=i*10+9;
+    }
+    pthread_t tid[10];
+    for(i=0;i<10;i++)
+        pthread_create(&tid[i],NULL,play,(void*)&s[i]);
+    
+    for(i=0;i<10;i++)
+        pthread_join(tid[i],NULL);
+    
+    int left=0;
+    int right=9;
+    for(i=1;i<10;i++)
+    {
+        meger(left,right,s[i].l,s[i].r);
+        right+=10;
+    }
+    for(i=0;i<100;i++)
+        printf("%d ",a[i]);
+    printf("\n");
 }
