@@ -5,9 +5,14 @@
 	> Created Time: 2020年03月06日 星期五 09时22分01秒
  ************************************************************************/
 #include "PRS.h"
+int main()
+{
+    Login_Menu();
+}
 void sys_err(char *str)
 {
-
+    perror(str);
+    exit(1);
 }
 void clear_buffer()
 {
@@ -15,7 +20,7 @@ void clear_buffer()
     while((ch=getchar())!='\n' && ch!=EOF)
         ;
 }
-PERSON* Create()
+/*PERSON* Create()
 {
     PERSON *head=(PERSON*)malloc(sizeof(PERSON));
     if(head==NULL)
@@ -25,6 +30,18 @@ PERSON* Create()
     }
     head->next=NULL;
     return head;
+}*/
+PERSON* Create()
+{
+    PERSON* head=(PERSON*)malloc(sizeof(PERSON));
+    if (!head) 
+    {
+        printf("申请内存失败\n");
+        return NULL;
+    }
+    head->next = NULL;
+    return head;
+
 }
 PERSON* Create_node()
 {
@@ -90,6 +107,16 @@ void Add_head(PERSON* head)
 {
     PERSON* node=Create_node();
     PERSON* tail=head;
+
+    while(tail->next!=NULL)
+    {
+        if(tail->next->num==node->num)
+        {
+            printf("\n号码重复！\n");
+            return;
+        }
+        tail=tail->next;
+    }
     
     node->next=head->next;
     head->next=node;
@@ -100,9 +127,17 @@ void Add_tail(PERSON* head)
     PERSON* node=Create_node();
     PERSON* tail=head;
 
+    while(tail->next!=NULL)
+    {
+        if(tail->next->num==node->num)
+        {
+            printf("\n号码重复!\n");
+            return;
+        }
+        tail=tail->next;
+    }
     tail->next=node;
-    tail=node;
-    tail->next=NULL;
+    node->next=NULL;
 }
 void Delete_Num(PERSON* head,int pos)
 {
@@ -153,7 +188,7 @@ void Delete_Name(PERSON* head,char name[])
 void Find_Num(PERSON* head,int pos)
 {
     printf("在查找，请稍等..\n");
-    sleep(2000);
+    sleep(5);
     PERSON* p=head->next;
     if(p==NULL)
     {
@@ -183,7 +218,7 @@ void Find_Num(PERSON* head,int pos)
 void Find_Name(PERSON* head,char name[])
 {
     printf("在查找，请稍等..\n");
-    sleep(2000);
+    sleep(5);
     PERSON* p=head->next;
     if(p==NULL)
     {
@@ -212,7 +247,7 @@ void Find_Name(PERSON* head,char name[])
 void Combined_Query(PERSON* head,int age,char phone[])
 {
     printf("在查找，请稍等.....\n");
-    sleep(2000);
+    sleep(5);
     int flag=0;
 
     PERSON* p=head->next;
@@ -506,30 +541,32 @@ void Descending_Sort(PERSON* head)
     }
     */
 }
-void Read_File(PERSON* head)
+TNode* Read_File(TNode* head)
 {
     FILE* fp;
-    fp=fopen("Person.txt","r");
+    fp=fopen("Person","r");
     if(fp==NULL)
     {
         printf("\n文件打开失败!\n");
         return;
     }
-    PERSON* p=Create_node();
-    while(fscanf(fp,"%d\t%s\t%d\t%s\t%s\t%s\n",&p->num,p->name,&p->age,p->phone,p->come,p->thing)!=EOF)
+    TNode* pnew=(TNode*)malloc(sizeof(TNode));
+
+    while(fscanf(fp,"%d\t%s\t%d\t%s\t%s\t%s\n",&p->per.num,p->per.name,&p->per.age,p->per.phone,p->per.come,p->per.thing)!=EOF)
     {
-        Add_tail(head);
+        head->next=p;
+        head=head->next;
+        p=Create();
     }
     printf("正在写入\n");
-    sleep(1000);
+    sleep(5);
     printf("写入完成!\n");
     fclose(fp);
-    return;
 }
 void Save_File(PERSON* head)
 {
     FILE* fp;
-    fp=fopen("Person.txt","w");
+    fp=fopen("person","w");
     if(fp==NULL)
     {
         printf("\n文件打开失败!\n");
@@ -544,13 +581,14 @@ void Save_File(PERSON* head)
     {
         while(p)
         {
-            fprintf(fp,"%d\t%s\t%d\t%s\t%s\t%s\n",&p->num,p->name,&p->age,p->phone,p->come,p->thing);
+            //fprintf(fp,"%d\t%s\t%d\t%s\t%s\t%s\n",&p->num,p->name,&p->age,p->phone,p->come,p->thing);
+            fwrite(&p,sizeof(PERSON),1,fp);
             p=p->next;
         }
     }
     fclose(fp);
     printf("\n正在保存!\n");
-    sleep(1000);
+    sleep(5);
     printf("保存成功!\n");
     return; 
 }
@@ -563,7 +601,7 @@ void Create_User_File()
         {
             sys_err("fopen w+ error!");
             printf("创建用户文件失败!\n");
-            sleep(2000);
+            sleep(3);
             return;
         }
     }
@@ -582,6 +620,7 @@ void Login_Menu()
     printf("0.退出系统\n");
     printf("***********************************\n");
     printf("请输入对应的数字:");
+    //Create_User_File();
     int choice;
     while(scanf("%d", &choice)!=1||choice<0||choice>4)
     {
@@ -606,20 +645,10 @@ void Login_Menu()
         break;
     case 0:
         printf("正在退出中，请稍后...\n");
-        sleep(2000);
+        sleep(2);
         printf("再见!\n");
         exit(0);
     }
-    //switch (choice)
-    //{
-      //  case 1: input_message(); break;       /*录入模块*/
-        //case 2: output_message(); break;     /*输出模块*/
-        //case 3: renew_message(); break;      /*更新模块*/
-        //case 4: inquire_message(); break;    /*查询模块*/
-        //case 5: count_message(); break;      /*统计模块*/
-        //case 6: sort_message(); break;        /*排序模块*/
-        //case 0: break;                                    /*退出系统*/
-    //}
 }
 void Developor()
 {
@@ -630,349 +659,6 @@ void Developor()
     printf("        >学校:XUPT\n");
     printf("        >班级:DSBD-1902\n");
     printf("------------------------------------\n");
-}
-void Menu()
-{
-    display("           Welcome to 人员流动管理系统(TMS)!");
-    printf("1.添加人员信息\n");
-    printf("2.删除人员信息\n");
-    printf("3.修改人员信息\n");
-    printf("4.查找人员信息\n");
-    printf("5.按人员号码排序\n");
-    printf("6.读取人员信息\n");
-    printf("7.保存人员信息\n");
-    //printf("3.修改人员信息\n");
-    //printf("4.查找人员信息\n");
-    printf("0.退出登录\n");
-    printf("------------------------------------\n");
-    printf("请输入对应的数字:\n");
-    int choice;
-    while(scanf("%d", &choice)!=1 || choice<0 || choice>9) 
-    {
-        clear_buffer();
-        printf("\n输入错误!请重新输入:\n");
-    }
-
-    switch(choice)
-    {
-        case 1:
-            display("        TMS");
-            printf("1.头插法录入信息\n");
-            printf("2.尾插法录入信息\n");
-            printf("3.指定位置录入信息\n");
-            printf("0.返回上一步\n");
-            printf("--------------------------------------------\n");
-            printf("请输入对应的序号：");
-            int i;
-            while(scanf("%d", &i) != 1 || i< 0 || i> 3) 
-            {
-                clear_buffer();
-                printf("\n输入错误！请重新输入：");
-            }
-            switch (i)
-            {
-                case 1:
-                    display("         TMS");
-                    Add_head(list);
-                    break;
-                case 2:
-                    display("         TMS");
-                    show(list);
-                    Add_tail(list);
-                    break;
-                case 3:
-                    display("         TMS");
-                    show(head);
-            AddPlayerByPos(list);
-            break;
-        case 0:
-            return;
-            break;
-        }
-        ShowAll(list);
-        system("pause");
-        break;
-    case 2:
-        system("cls");
-        printf("--------------------------------------------\n");
-        printf("              球员信息管理系统\n");
-        printf("--------------------------------------------\n");
-        printf("1.根据球员号码删除\n");
-        printf("2.根据球员姓名删除\n");
-        printf("0.返回上一步\n");
-        printf("--------------------------------------------\n");
-        printf("请输入对应的数字：");
-        while (scanf("%d", &j) != 1 || j < 0 || j > 2) {
-            safe_flush(stdin);
-            printf("\n输入错误！请重新输入：");
-        }
-        switch (j) {
-        case 1:
-            system("cls");
-            printf("--------------------------------------------\n");
-            printf("              球员信息管理系统\n");
-            printf("--------------------------------------------\n");
-            ShowAll(list);
-            int num;
-            printf("请输入想要删除的球员的号码：");
-            while (scanf("%d", &num) != 1) {
-                printf("\n输入错误！请重新输入：");
-                safe_flush(stdin);
-            }
-            DeletePlayerByNum(list, num);
-            ShowAll(list);
-            system("pause");
-            break;
-        case 2:
-            system("cls");
-            printf("--------------------------------------------\n");
-            printf("              球员信息管理系统\n");
-            printf("--------------------------------------------\n");
-            ShowAll(list);
-            char name[100];
-            printf("请输入想要删除的球员的姓名：");
-            while (scanf("%s", name) != 1) {
-                printf("\n输入错误！请重新输入：");
-                safe_flush(stdin);
-            }
-            DeletePlayerByName(list, name);
-            ShowAll(list);
-            system("pause");
-            break;
-        case 0:
-            return;
-            break;
-        }
-        break;
-    case 3:
-        system("cls");
-        printf("--------------------------------------------\n");
-        printf("              球员信息管理系统\n");
-        printf("--------------------------------------------\n");
-        printf("1.根据球员号码查询\n");
-        printf("2.根据球员姓名查询\n");
-        printf("3.根据球员位置和状态组合查询\n");
-        printf("0.返回上一步\n");
-        printf("--------------------------------------------\n");
-        printf("请输入对应的数字：");
-        while (scanf("%d", &j) != 1 || j < 0 || j > 3) {
-            safe_flush(stdin);
-            printf("输入错误！请重新输入：");
-        }
-        switch (j) {
-        case 1:
-            system("cls");
-            printf("--------------------------------------------\n");
-            printf("              球员信息管理系统\n");
-            printf("--------------------------------------------\n");
-            int num;
-            printf("请输入要查询的球员的号码：");
-            while (scanf("%d", &num) != 1) {
-                printf("\n输入错误！请重新输入：");
-                safe_flush(stdin);
-            }
-            FindPlayerByNum(list, num);
-            break;
-        case 2:
-            system("cls");
-            printf("--------------------------------------------\n");
-            printf("              球员信息管理系统\n");
-            printf("--------------------------------------------\n");
-            char name[100];
-            printf("请输入要查询的球员的姓名：");
-            while (scanf("%s", name) != 1) {
-                printf("\n输入错误！请重新输入：");
-                safe_flush(stdin);
-            }
-            FindPlayerByName(list, name);
-            break;
-        case 3:
-            system("cls");
-            printf("--------------------------------------------\n");
-            printf("              球员信息管理系统\n");
-            printf("--------------------------------------------\n");
-            char position[20];
-            char remark[20];
-            printf("请输入要查询的球员的位置：");
-            while (scanf("%s", position) != 1) {
-                printf("\n输入错误！请重新输入：");
-                safe_flush(stdin);
-            }
-            printf("请输入要查询的球员的状态：");
-            while (scanf("%s", remark) != 1) {
-                printf("\n输入错误！请重新输入：");
-                safe_flush(stdin);
-            }
-            CombinedQuery(list, position, remark);
-            break;
-        case 0:
-            return;
-            break;
-        }
-        break;
-    case 4:
-        system("cls");
-        printf("--------------------------------------------\n");
-        printf("              球员信息管理系统\n");
-        printf("--------------------------------------------\n");
-        printf("1.根据球员号码修改\n");
-        printf("2.根据球员姓名修改\n");
-        printf("0.返回上一步\n");
-        printf("--------------------------------------------\n");
-        printf("请输入对应的数字：");
-        while (scanf("%d", &j) != 1 || j < 0 || j > 2) {
-            safe_flush(stdin);
-            printf("\n输入错误，请重新输入：");
-        }
-        switch (j) {
-        case 1:
-            system("cls");
-            printf("--------------------------------------------\n");
-            printf("              球员信息管理系统\n");
-            printf("--------------------------------------------\n");
-            int num;
-            printf("请输入要修改的球员的号码：");
-            while (scanf("%d", &num) != 1) {
-                printf("\n输入错误！请重新输入：");
-                safe_flush(stdin);
-            }
-            ChangePlayerByNum(list, num);
-            ShowAll(list);
-            system("pause");
-            break;
-        case 2:
-            system("cls");
-            printf("--------------------------------------------\n");
-            printf("              球员信息管理系统\n");
-            printf("--------------------------------------------\n");
-            char name[100];
-            printf("请输入要修改的球员的姓名：");
-            while (scanf("%s", name) != 1) {
-                printf("\n输入错误！请重新输入：");
-                safe_flush(stdin);
-            }
-            ChangePlayerByName(list, name);
-            ShowAll(list);
-            system("pause");
-            break;
-        case 0:
-            return;
-            break;
-        }
-        break;
-    case 5:
-        system("cls");
-        printf("--------------------------------------------\n");
-        printf("              球员信息管理系统\n");
-        printf("--------------------------------------------\n");
-        printf("1.按球员号码升序排序\n");
-        printf("2.按球员号码降序排序\n");
-        printf("0.返回上一步\n");
-        printf("--------------------------------------------\n");
-        printf("请输入对应的数字：");
-        while (scanf("%d", &j) != 1 || j < 0 || j > 2) {
-            safe_flush(stdin);
-            printf("\n输入错误，请重新输入：");
-        }
-        switch (j) {
-        case 1:
-            system("cls");
-            printf("--------------------------------------------\n");
-            printf("              球员信息管理系统\n");
-            printf("--------------------------------------------\n");
-            sorted(list);
-            ShowAll(list);
-            system("pause");
-            break;
-        case 2:
-            system("cls");
-            printf("--------------------------------------------\n");
-            printf("              球员信息管理系统\n");
-            printf("--------------------------------------------\n");
-            sorted_reverse(list);
-            ShowAll(list);
-            system("pause");
-            break;
-        case 0:
-            return;
-            break;
-        }
-        break;
-    case 6:
-        system("cls");
-        printf("--------------------------------------------\n");
-        printf("              球员信息管理系统\n");
-        printf("--------------------------------------------\n");
-        ShowAll(list);
-        system("pause");
-        break;
-    case 7:
-        system("cls");
-        printf("--------------------------------------------\n");
-        printf("              球员信息管理系统\n");
-        printf("--------------------------------------------\n");
-        load(list);
-        break;
-    case 8:
-        system("cls");
-        printf("--------------------------------------------\n");
-        printf("              球员信息管理系统\n");
-        printf("--------------------------------------------\n");
-        save(list);
-        break;
-    case 9:
-        system("cls");
-        printf("--------------------------------------------\n");
-        printf("              球员信息管理系统\n");
-        printf("--------------------------------------------\n");
-        printf("1.按球员位置统计数据\n");
-        printf("2.按球员状态统计数据\n");
-        printf("3.组合统计数据\n");
-        printf("0.返回上一步\n");
-        printf("--------------------------------------------\n");
-        printf("请输入对应的数字：");
-        while (scanf("%d", &j) != 1 || j < 0 || j > 3) {
-            safe_flush(stdin);
-            printf("\n输入错误，请重新输入：");
-        }
-        switch (j) {
-        case 1:
-            statistics_position(list);
-            break;
-        case 2:
-            statistics_remark(list);
-            break;
-        case 3:
-            system("cls");
-            printf("--------------------------------------------\n");
-            printf("              球员信息管理系统\n");
-            printf("--------------------------------------------\n");
-            char position[20];
-            char remark[20];
-            printf("请输入要统计的球员位置：");
-            while (scanf("%s", position) != 1) {
-                printf("\n输入错误！请重新输入：");
-                safe_flush(stdin);
-            }
-            printf("请输入要统计的球员状态：");
-            while (scanf("%s", remark) != 1) {
-                printf("\n输入错误！请重新输入：");
-                safe_flush(stdin);
-            }
-            com_statistics(list, position, remark);
-            break;
-        case 0:
-            return;
-            break;
-        }
-        break;
-    case 0:
-        printf("正在退出，请稍候...\n");
-        Sleep(3000);
-        LoginMenu();
-        break;
-    }
-}
 }
 //自定义的getch()函数
 char getch()
@@ -991,13 +677,13 @@ void Hidden_password(char *password)
 {
     char ch;
     int i=0;
-    while((ch=getch())!='\r')//当输入不为回车时
+    while((ch=getch())!='\n')//当输入不为回车时
     {
-        if(ch=='\b' && i>=1)//当密码输入为空格键并且输入字符数大于１时
+        if(ch=='\b'&&i>=1)//当密码输入为空格键并且输入字符数大于１时
         {
-            printf("\b");
-            printf(" ");
-            printf("\b");
+            putchar('\b');
+            putchar(' ');
+            putchar('\b');
             if(i)     //如果有字数
                 i--;
             else
@@ -1016,6 +702,11 @@ void Hidden_password(char *password)
 
     return;
 }
+/*void Hidden_password(char *password)
+{
+    password=getpass("请输入");
+    //printf("%s",password);
+}*/
 void Enter()
 {
     user old,new;
@@ -1024,7 +715,7 @@ void Enter()
     /*printf("------------------------------------\n");
     printf("         Welcome to 人员流动管理系统(TMS)\n");
     printf("------------------------------------\n");*/
-    display("    请登入\n");
+    display("请登入\n");
 
     if((fp=fopen("user","r"))==NULL)
     {
@@ -1033,25 +724,27 @@ void Enter()
         return;
     }
     //fread(&old,sizeof(user),1,fp);
-    puts("请输入账号:\n");
-    while(scanf("%s",new.id)!=1)
+    puts("请输入账号:");
+    while(scanf("%s",temp)!=1)
     {
-        printf("用户名错误!\n");
+        printf("账号错误!\n");
         clear_buffer();
     }
+    //scanf("%s",temp);
+    //fgets(temp,MAX,stdin);
+    getchar();
     while(!feof(fp))
     {
         fread(&old,sizeof(user),1,fp);
-        if(strcmp(new.id,old.id)==0)
+        if(strcmp(temp,old.id)==0)
         {
             puts("请输入密码:");
             Hidden_password(temp);
             if(strcmp(temp,old.password)==0)
             {
-                fclose(fp);
                 printf("\n登录成功!\n");
-                sleep(200);
-                PERSON* head=Create_node();
+                sleep(5);
+                //Menu(head);
                 while(1)
                     Menu();
                 return;
@@ -1059,15 +752,16 @@ void Enter()
             else
             {
                 puts("密码错误!\n");
-                sleep(200);
+                sleep(3);
+                //return;
                 Login_Menu();
             }
         }
         else
         {
-            printf("账号不存在!\n");
+            printf("账号%s不存在!\n",temp);
             fclose(fp);
-            sleep(200);
+            sleep(3);
             Login_Menu();
             return;
         }
@@ -1098,12 +792,13 @@ void Enter()
 void display(char* str)
 {
     int i;
+    system("clear");
     for(i=0;i<50;i++)
-        putchar("-");
-    putchar("\n");
+        putchar('-');
+    putchar('\n');
     printf("       %s\n",str);
     for(i=0;i<50;i++)
-        putchar("-");
+        putchar('-');
     putchar('\n');
     return;
 }
@@ -1112,36 +807,32 @@ void Login()
     FILE *fp;
     user old,new;
     char temp[MAX];
-    display("      注册账号");
+    display("注册账号");
     if((fp=fopen("user","r"))==NULL)
     {
         sys_err("fopen error!\n");
         printf("读取失败！\n");
         return;
     }
-    fread(&old,sizeof(struct user),1,fp);    
     puts("请输入账号:");
     while(scanf("%s",new.id)!=1) 
     {
         printf("账号错误!\n");
         clear_buffer();
     }
-    while(1)
+    //scanf("%s",new.id);
+    getchar();
+    //s_gets(new.id,MAX);
+    //fgets(new.id,MAX,stdin);
+    while(fread(&old,sizeof(struct user),1,fp))
     {
         if(strcmp(new.id,old.id)==0)
         {
             printf("\n账号重复!\n");
             fclose(fp);
-            sleep(200);
+            sleep(5);
             Login_Menu();
             return;
-        }
-        else
-        {
-            if(!feof(fp))
-                fread(&old,sizeof(struct user),1,fp);    
-            else
-                break;
         }
     }
     puts("请输入密码:");
@@ -1158,7 +849,7 @@ void Login()
             fwrite(&new,sizeof(user),1,fp);
             printf("\n账号%s注册成功!\n",new.id);
             fclose(fp);
-            sleep(200);
+            sleep(3);
             Login_Menu();
             return;
         }
@@ -1191,7 +882,7 @@ void Find_password()
     char temp[MAX];
     long long int num;
 
-    display("    找回密码:");
+    display("找回密码:");
 
     if((fp=fopen("user","r"))==NULL)
     {
@@ -1205,6 +896,8 @@ void Find_password()
         printf("账号错误!\n");
         clear_buffer();
     }
+    getchar();
+    //fgets(temp,MAX,stdin);
     while(!feof(fp))
     {
         fread(&old,sizeof(user),1,fp);
@@ -1215,14 +908,14 @@ void Find_password()
             {
                 printf("找回的密码是:%s\n",old.password);
                 fclose(fp);
-                sleep(200);
+                sleep(2);
                 Login_Menu();
-                return;
+                //return;
             }
             else
             {
                 printf("电话号码错误\n");
-                sleep(200);
+                sleep(3);
                 Login_Menu();
             }
         }
@@ -1230,16 +923,256 @@ void Find_password()
         {
             printf("账号%s不存在:\n",temp);
             fclose(fp);
-            sleep(200);
+            sleep(3);
             Login_Menu();
+            return;
         }
     }
 }
 
-
-int main()
+void Menu()
 {
-    
+    display("           Welcome to 人员流动管理系统(TMS)!");
+    printf("1.添加人员信息\n");
+    printf("2.删除人员信息\n");
+    printf("3.修改人员信息\n");
+    printf("4.查找人员信息\n");
+    printf("5.人员排序\n");
+    printf("6.打印所有人员信息\n");
+    printf("7.读取人员信息\n");
+    printf("8.保存人员信息\n");
+    //printf("3.修改人员信息\n");
+    //printf("4.查找人员信息\n");
+    printf("0.退出登录\n");
+    printf("------------------------------------\n");
+    printf("请输入对应的数字:\n");
+    int choice;
+    while(scanf("%d", &choice)!=1 || choice<0 || choice>9) 
+    {
+        clear_buffer();
+        printf("\n输入错误!请重新输入:\n");
+    }
 
+    PERSON* head;
+
+    Create_Person_File();
+    head=Create();
+    switch(choice)
+    {
+        case 1:
+            display("        TMS");
+            printf("1.头插法录入信息\n");
+            printf("2.尾插法录入信息\n");
+            printf("0.返回上一步\n");
+            printf("--------------------------------------------\n");
+            printf("请输入对应的序号：");
+            int i;
+            while(scanf("%d", &i) != 1 || i<0 || i>2) 
+            {
+                clear_buffer();
+                printf("\n输入错误！请重新输入：");
+            }
+            switch (i)
+            {
+                case 1:
+                    display("         TMS");
+                    Add_head(head);
+                    break;
+                case 2:
+                    display("         TMS");
+                    //show(head);
+                    Add_tail(head);
+                    break;
+                case 0:
+                    return;
+                    break;
+            }
+            show(head);
+            break;
+        case 2:
+            display("        TMS");
+            printf("1.根据人员号码删除\n");
+            printf("2.根据人员姓名删除\n");
+            printf("0.返回上一步\n");
+            printf("--------------------------------------------\n");
+            printf("请输入对应的序号：");
+            //int i;
+            while (scanf("%d", &i) !=1 || i<0 || i>2)
+            {
+                clear_buffer();
+                printf("\n输入错误！请重新输入:\n");
+            }
+            switch (i) 
+            {
+                case 1:
+                    display("        TMS");
+                    show(head);
+                    int num;
+                    printf("请输入想要删除的人员号码：");
+                    while(scanf("%d",&num)!=1) 
+                    {
+                        printf("\n输入错误！请重新输入：");
+                        clear_buffer();
+                    }
+                    Delete_Num(head, num);
+                    show(head);
+                    break;
+                case 2:
+                    display("        TMS");
+                    show(head);
+                    char name[100];
+                    printf("请输入想要删除的人员姓名：");
+                    while (scanf("%s", name) != 1)
+                    {
+                        printf("\n输入错误！请重新输入：");
+                        clear_buffer();
+                    }
+                    Delete_Name(head, name);
+                    show(head);
+                    break;
+                case 0:
+                    return;
+                    break;
+            }
+            break;
+        case 3:
+            display("        TMS");
+            printf("1.根据人员号码修改\n");
+            printf("0.返回上一步\n");
+            printf("--------------------------------------------\n");
+            printf("请输入对应的数字：");
+            //int i;
+            while(scanf("%d", &i) !=1 || i<0 || i>1) 
+            {
+                clear_buffer();
+                printf("\n输入错误，请重新输入：");
+            }
+            switch (i) 
+            {
+                case 1:
+                    display("        TMS");
+                    int num;
+                    printf("请输入要修改的人员号码：");
+                    while (scanf("%d", &num) !=1)
+                    {
+                        printf("\n输入错误！请重新输入：");
+                        clear_buffer();
+                    }
+                    Change_Num(head,num);
+                    show(head);
+                    break;
+                case 0:
+                    return;
+                    break;
+            }
+            break;
+        case 4:
+            display("        TMS");
+            printf("1.根据人员号码查询\n");
+            printf("2.根据人员姓名查询\n");
+            printf("3.根据年龄和电话组合查询\n");
+            printf("0.返回上一步\n");
+            printf("--------------------------------------------\n");
+            printf("请输入对应的数字：");
+            //int i;
+            while (scanf("%d", &i) !=1 || i<0 || i>3)
+            {
+                clear_buffer();
+                printf("输入错误！请重新输入：");
+            }
+            switch (i) 
+            {
+                case 1:
+                    display("        TMS");
+                    int num;
+                    printf("请输入要查询的人员号码：");
+                    while (scanf("%d", &num) != 1) 
+                    {
+                        printf("\n输入错误！请重新输入：");
+                        clear_buffer();
+                    }
+                    Find_Num(head, num);
+                    break;
+                case 2:
+                    display("        TMS");
+                    char name[100];
+                    printf("请输入要查询的人员的姓名：");
+                    while (scanf("%s", name) != 1)
+                    {
+                        printf("\n输入错误！请重新输入：");
+                        clear_buffer();
+                    }
+                    Find_Name(head,name);
+                    break;
+                case 3:
+                    display("        TMS");
+                    int age;
+                    char thing[100];
+                    printf("请输入要查询的人员年龄：");
+                    while (scanf("%s",age) != 1)
+                    {
+                        printf("\n输入错误！请重新输入：");
+                        clear_buffer();
+                    }
+                    printf("请输入要查询的人员备注高危等级：");
+                    while (scanf("%s",thing) != 1) 
+                    {
+                        printf("\n输入错误！请重新输入：");
+                        clear_buffer();
+                    }
+                    Combined_Query(head,age,thing);
+                    break;
+                case 0:
+                    return;
+                    break;
+            }
+            break;
+        case 5:
+            display("        TMS");
+            printf("1.按人员姓名字母大小升序排序\n");
+            printf("2.按人员号码降序排序\n");
+            printf("0.返回上一步\n");
+            printf("--------------------------------------------\n");
+            printf("请输入对应的数字：");
+            //int i;
+            while (scanf("%d", &i) != 1 || i<0 || i>2) 
+            {
+                clear_buffer();
+                printf("\n输入错误，请重新输入：");
+            }
+            switch (i) 
+            {
+                case 1:
+                    display("        TMS");
+                    Ascending_sort(head);
+                    show(head);
+                    break;
+                case 2:
+                    display("        TMS");
+                    Descending_Sort(head);
+                    show(head);
+                    break;
+                case 0:
+                    return;
+                    break;
+            }
+            break;
+        case 6:
+            display("        TMS");
+            show(head);
+            break;
+        case 7:
+            display("        TMS");
+            Read_File(head);
+            break;
+        case 8:
+            display("        TMS");
+            Save_File(head);
+            break;
+        case 0:
+            printf("正在退出,请勿强制关闭....\n");
+            sleep(2);
+            Login_Menu();
+            break;
+    }
 }
-
