@@ -1,0 +1,17 @@
+{
+    "version": "2.0.0",//原先是"0.1.0",但vscode版本被弃用了
+    "command": "g++",    //g++就是编译C++，gcc是编译C
+    "args": ["-g","${workspaceRoot}/1.cpp"],    //把1.cpp替换为你的cpp文件名
+    "problemMatcher": {
+        "owner": "cpp",
+        "fileLocation": ["relative", "${workspaceRoot}"],
+        "pattern": {
+            "regexp": "^(.*):(\\d+):(\\d+):\\s+(warning|error):\\s+(.*)$",
+            "file": 1,
+            "line": 2,
+            "column": 3,
+            "severity": 4,
+            "message": 5
+        }
+    }
+}
