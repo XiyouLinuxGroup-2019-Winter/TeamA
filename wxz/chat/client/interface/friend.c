@@ -1,17 +1,4 @@
-#include “client.h”
-void display(char* str)
-{
-    int i;
-    system("clear");
-    for(i=0;i<50;i++)
-        putchar('-');
-    putchar('\n');
-    printf("       %s\n",str);
-    for(i=0;i<50;i++)
-        putchar('-');
-    putchar('\n');
-    return;
-}
+#include <client.h>
 void Add_friend()
 {
     char name_t[MAX_CHAR];
@@ -95,14 +82,14 @@ void Create_group()
 {
     char name_t[30];
     char str[MAX_CHAR];
-    GROUP_INFO group;
+    group group;
     memset(str,0,sizeof(str));
     printf("请输入群名:");
     scanf("%s",group.name);
-    group.ower=entenum;
+    group.ower=enternum;
     group.flag=17;
     memcpy(str,&group,sizeof(group));
-    if(send(lfd,str,MAX,0)==-1)
+    if(send(cfd,str,MAX,0)==-1)
     {
         my_err("注册群发生错误",__LINE__);
     }
@@ -138,7 +125,7 @@ void Delete_group()
     }
     return;
 }
-void Group-menu()
+void Group_menu()
 {
     system("clear");
     int choice=1;
@@ -146,7 +133,7 @@ void Group-menu()
     {
         printf("1.");
         printf("2.");
-        printf("3.")；
+        printf("3.");
         printf("4.");
     }
 }

@@ -1,9 +1,35 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <fcntl.h>
+#include <errno.h>
+#include <pthread.h>
+#include <unistd.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 
 #define MAX 50
-#define MAX_CHAR         300
+#define MAX_CHAR 300
+
+int cfd;
+int enternum;
+
+typedef struct  message
+{
+    int flag;
+    char msg[256];
+}message;
+
+typedef struct  chat_message
+{
+    int flag;
+    char msg[256];
+    int send;
+    int receive;
+}chat_message;
+
 
 typedef struct  friend_info
 {
@@ -23,27 +49,17 @@ typedef struct group
     int admin1;//管理员
     int admin2;
     int admin3;
-}GROUP_INFO;
+}group;
 
-
-typedef struct  user_group_info
+typedef struct  file
 {
-    char group_name[20];
-    int types[10];//群中职位
-    int num;
-    int group_member_num;
-    char group_memeber_name[20][20];
-    int statue[10];
-}USER_GROUP_INFO;
-
-typedef struct user_infor
-{
-    char username [MAX_CHAR];
-    FRIEND_INFO friends [MAX_CHAR];
-    int friends_num;
-    int group_num;
-    char group [MAX_CHAR][MAX_CHAR];
-}USER_INFO;
+    int flag;
+    int send;
+    int receiver;
+    int size;
+    char name[100];
+    char data[1000];
+}file;
 
 typedef struct data
 {
@@ -64,10 +80,10 @@ typedef struct package
 
 
 
-typedef struct person_account
+typedef struct account
 {
     int flag;
-    char name[30];
+    char username[30];
     char password[30];
     char phone[30];
     char e_mail[50];
@@ -97,9 +113,15 @@ void Friend_menu();
 void Show_friend();
 
 
+int Send_cmessage(int flag,int receiver,char* buf);
+int Send_smessage(int flag,int receiver,int sender,char *buf);
+int Send_message(int flag,char* buf);
 
 
 
 
 
 void display(char* str);
+void my_err(const char* err_string,int line);
+char* Get_string(char* buf,int len);
+char getch();

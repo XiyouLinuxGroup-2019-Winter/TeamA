@@ -362,7 +362,7 @@ void Read_File_Show(TNode* head)
     TNode* p=head;
     while(p)
     {
-        printf("\n号码\t姓名\t年龄\t手机号\t来自哪里\t备注\n");
+        printf("\n号码\t姓名\t年龄\t手机号\t\t来自哪里\t备注\n");
         printf("%d\t",p->per.num);
         printf("%s\t",p->per.name);
         printf("%d\t",p->per.age);
