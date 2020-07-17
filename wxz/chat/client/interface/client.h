@@ -13,6 +13,19 @@ typedef struct  friend_info
     char name[MAX_CHAR];
 }FRIEND_INFO;
 
+
+typedef struct group
+{
+    int flag;
+    int num;//群号
+    char name[MAX];
+    int ower;
+    int admin1;//管理员
+    int admin2;
+    int admin3;
+}GROUP_INFO;
+
+
 typedef struct  user_group_info
 {
     char group_name[20];
@@ -69,12 +82,24 @@ typedef struct person_account_find
     char e_mail[50];
 }account_find;
 
-/*typedef struct package
-{
 
-};*/
 void Clear_buffer();
 void Login_menu();
 void Register();
 void Login();
 void Modify_password();
+
+
+void Add_friend();
+void Del_friend();
+void Query_friend();
+void Friend_menu();
+void Show_friend();
+
+
+
+
+
+
+
+void display(char* str);
