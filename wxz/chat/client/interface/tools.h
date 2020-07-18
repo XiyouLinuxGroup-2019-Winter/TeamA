@@ -14,7 +14,6 @@
 
 int cfd;
 int enternum;
-int prichat;
 
 typedef struct  message
 {
@@ -83,8 +82,7 @@ typedef struct package
 typedef struct account
 {
     int flag;
-    int username;
-    //char username[30];
+    char username[30];
     char password[30];
     char phone[30];
     char e_mail[50];
@@ -93,8 +91,7 @@ typedef struct account
 typedef struct person_account_find
 {
     int flag;
-    int username;
-    //char name[30];
+    char name[30];
     char password[30];
     char phone[30];
     char e_mail[50];
@@ -111,8 +108,6 @@ void Modify_password();
 void Add_friend();
 void Del_friend();
 void Query_friend();
-void Private_chat();
-void Friend_message();
 void Friend_menu();
 void Show_friend();
 

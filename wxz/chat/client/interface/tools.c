@@ -1,9 +1,18 @@
 #include "client.h"
+#include "tools.h"
 void my_err(const char* err_string,int line)
 {
     fprintf(stderr,"line:%d",line);
     perror(err_string);
     exit(1);
+}
+void Clear_buffer()
+{
+    char ch;
+    while(getchar()!='\n')
+		continue;
+    /*while((ch=getchar())!='\n' && ch!=EOF)
+            continue;*/
 }
 void display(char* str)
 {

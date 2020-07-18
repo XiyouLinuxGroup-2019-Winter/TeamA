@@ -1,5 +1,195 @@
 #include "client.h"
+void Add_friend()
+{
+    int username;
+    display("请输入要添加好友的账号:");
+    scanf("%d",&username);
+    Clear_buffer();
+    char str[MAX];
+    sprintf(str,"%d",username);
+    if(Send_cmessage(6,username,"")==1)
+        printf("好友请求发送成功");
+    return;
+}
+void Del_friend()
+{
+    char name_t[MAX_CHAR];
+    printf("请输入你要删除的好友账号:");
+    scanf("%s",name_t);
+    Clear_buffer();
+    char str[MAX_CHAR];
+    sprintf(str,"%s",name_t);
+    if(Send_message(13,name_t,"")==1);
+        printf("好友请求发送成功");
+    return;
+}
+void Query_friend()
+{
+    char name_t[MAX_CHAR];
+    printf("请输入你要查询的好友账号:");
+    scanf("%s",name_t);
+    Clear_buffer();
+    char str[MAX_CHAR];
+    sprintf(str,"%s",name_t);
+    if(Send_message(15,name_t,"")==1);
+        printf("查询好友聊天记录请求发送成功");
+    return;
+}
+void Private_chat()
+{
+    int receiver;
+    display("请输入私聊的好友账号:");
+    scanf("%d",&receiver);
+    prichat=receiver;
+    char buf[256];
+    printf("[退出聊天]---------:");
+    scanf("%s",buf)
+    do
+    {
+        Send_cmessage(7,receiver,buf);
+        printf("[退出聊天]---------:");
+        scanf("%s",buf);
+    } while (strcmp(buf,"quit"));
+    prichat=-1;
+    return;
+}
+void Friend_message()
+{
+     int fd;
+    chat_message msg;
+    if((fd = open(file_offmsg,O_RDWR)) == -1){
+        my_err(file_offmsg,__LINE__);
+    }
 
+    char buf[MAXSIZE];
+    int cnt = 0;
+    while( read(fd,buf,sizeof(msg))  != 0){
+        cnt++;
+        memcpy(&msg,buf,sizeof(msg));
+        if(msg.flag == 7 || msg.flag == 14){//聊天信息需要包装一下
+            printf("                                                              %s:[%d]\n",msg.mg,msg.sender);
+        }
+        else printf("                                                              %s ",msg.mg);
+        
+       printf("                                                              是否继续读取下一条好友通知[Y/N]? ");
+       char next;
+       getchar();
+       scanf("%c",&next);
+       if(next == 'N' || 'n' == next){
+          Delete_offmsg(cnt);
+           return ;
+       } 
+       
+    
+    }
+
+    Delete_offmsg(cnt);
+    printf("                                                              所有消息处理完毕\n");
+    close(fd);
+    
+}
+void Show_friend()
+{
+
+}
+void Friend_menu()
+{
+    int choice=1;
+    printf("\33[2J\n");
+    printf("\33[1;1H\n");
+    printf("\033[;35m\33[1m\t  ***********the list of friends************* \033[0m \n");
+    while(choice)
+    {
+        printf("1.我的好友");
+        printf("2.添加好友");
+        printf("3.删除好友");
+        printf("4.查看聊天记录");
+        printf("0.退出\n");
+
+        printf("请输入选择:");
+        scanf("%d",&choice);
+        Clear_buffer();
+        switch (choice)
+        {
+            case 1:
+                //Show_friend();
+                break;
+            case 2:
+                Add_friend();
+                break;
+            case 3:
+                Del_friend();
+                break;
+            case 4:
+                Query_friend();
+                break;
+            case 0:
+                break;
+        }
+    }
+    return;
+}
+
+
+void Create_group()
+{
+    char name_t[30];
+    char str[MAX_CHAR];
+    group group;
+    memset(str,0,sizeof(str));
+    printf("请输入群名:");
+    scanf("%s",group.name);
+    group.ower=enternum;
+    group.flag=17;
+    memcpy(str,&group,sizeof(group));
+    if(send(cfd,str,MAX,0)==-1)
+    {
+        my_err("注册群发生错误",__LINE__);
+    }
+    return;
+}
+
+void Add_group()
+{
+    int num;
+    display("请输入要加入的群号:");
+    scanf("%d",&num);
+    if(Send_cmessage(18,num,"")==1)
+    {
+        printf("  申请加群请求发送成功");
+    }
+    return ;
+}
+void Show_group()
+{
+
+}
+void Delete_group()
+{
+    char user;
+    display("请输入要退出的群账号:");
+    scanf("%s",user);
+
+    char str[30];
+    sprintf(str,"%s",user);
+    if(Send_cmessage(23,user,"")==1)
+    {
+        printf("退出群聊请求发生成功\n");
+    }
+    return;
+}
+void Group_menu()
+{
+    system("clear");
+    int choice=1;
+    while(1)
+    {
+        printf("1.");
+        printf("2.");
+        printf("3.");
+        printf("4.");
+    }
+}
 void Add_group()
 {
     
