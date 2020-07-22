@@ -109,3 +109,17 @@ int Send_message(int flag,char* buf)
     }
     return 1;
 }
+void Send_pack_message(int flag,char *send_name,char* recv_name,char* message)
+{
+    PACK pack_send_msg;
+    memset(&pack_send_msg, 0, sizeof(PACK));
+    pack_send_msg.flag=flag;
+    pack_send_msg.data.recv_fd=cfd;
+    strcpy(pack_send_msg.data.send_name,send_name);
+    strcpy(pack_send_msg.data.recv_name,recv_name);
+    strcpy(pack_send_msg.data.message, message);
+    if(send(cfd, &pack_send_msg,sizeof(PACK),0)==-1)
+    {
+        my_err("send error!",__LINE__);
+    }
+}

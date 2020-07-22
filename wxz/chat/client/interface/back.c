@@ -2,48 +2,69 @@
 #include "tools.c"
 void Add_friend()
 {
-    int flag=ADD_FRIEND;
-    char name_buf[MAX];
-
+    char name_buf[BUFSIZ];
+    message msg;
+    char username_buf[15];
+    memset(&msg,0,sizeof(message));
+    memset(name_buf,0,BUFSIZ);
+    memcpy(msg.from,username_buf,15);
     display("请输入要添加的好友账号:");
-    Get_string(name_buf,MAX);
-
-
-
-    Send_pack_message(flag,username,name_buf,"");
-
+    Get_string(msg.username,15);
+    memcpy(name_buf,&msg,sizeof(message));
+    if(send(cfd,name_buf,BUFSIZ,0)!=BUFSIZ)
+    {
+        my_err("send error!",__LINE__);
+    }
     return;
 }
 void Del_friend()
 {
-    int flag=DEL_FRIEND;
-    char name_buf[MAX];
-
+    char name_buf[BUFSIZ];
+    message msg;
+    char username_buf[15];
+    memset(&msg,0,sizeof(message));
+    memset(name_buf,0,BUFSIZ);
+    memcpy(msg.from,username_buf,15);
     display("请输入要删除的好友账号:");
-    Get_string(name_buf,MAX);
-
-    Send_pack_message(flag,username,"server",name_buf);
-
-
+    Get_string(msg.username,15);
+    memcpy(name_buf,&msg,sizeof(message));
+    if(send(cfd,name_buf,BUFSIZ,0)!=BUFSIZ)
+    {
+        my_err("send error!",__LINE__);
+    }
     return;
 }
 void Query_friend()
 {
-    char name_buf[MAX];
-    int flag=QUERY_FRIEND;
-
-    memset(name_buf,0,MAX);
-    memset(&,0,sizeof());
+    char name_buf[BUFSIZ];
+    message msg;
+    char username_buf[15];
+    memset(&msg,0,sizeof(message));
+    memset(name_buf,0,BUFSIZ);
+    memcpy(msg.from,username_buf,15);
     display("请输入要查询的好友账号:");
     Get_string(msg.username,15);
-
-    Send_pack_message(flag,username,name_buf,"");
-    
+    memcpy(name_buf,&msg,sizeof(message));
+    if(send(cfd,name_buf,BUFSIZ,0)!=BUFSIZ)
+    {
+        my_err("send error!",__LINE__);
+    }
+    return;
 }
 void View_friend_list()
 {
-    int flag=VIEW_FRIEND_LIST;
-    char 
+    char name_buf[BUFSIZ];
+    message msg;
+    char username_buf[15];
+    memset(&msg,0,sizeof(message));
+    memset(name_buf,0,BUFSIZ);
+    memcpy(msg.from,username_buf,15);
+    memcpy(name_buf,&msg,sizeof(message));
+    if(send(cfd,name_buf,BUFSIZ,0)!=BUFSIZ)
+    {
+        my_err("send error!",__LINE__);
+    }
+    return;
 }
 void Show_friend_status()
 {

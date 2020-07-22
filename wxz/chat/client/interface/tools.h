@@ -12,6 +12,20 @@
 #define MAX 50
 #define MAX_CHAR 300
 
+#define REGISTER 1
+#define LOGIN 2
+#define MODIFY 3
+#define ADD_FRIEND 4
+#define DEL_FRIEND 5
+#define QUERY_FRIEND 6
+#define VIEW_FRIEND_LIST 7
+#define SHOW_FRIEND_STATUS 8
+#define VIEW_CHAT_HISTORY 9
+#define SHIELD 10
+#define UNSHIELD 11
+#define SHOW_FRIEND 12
+
+
 int cfd;
 int enternum;
 
@@ -19,8 +33,11 @@ typedef struct  message
 {
     int flag;
     char msg[256];
+    char from[15];
+    char username[15];
+    struct group group;
 }message;
-
+message msg_t[30];
 typedef struct  chat_message
 {
     int flag;
@@ -32,9 +49,10 @@ typedef struct  chat_message
 
 typedef struct  friend_info
 {
-    int statue;
+    int status;
     //好友的信息数
     int message_num;
+
     char name[MAX_CHAR];
 }FRIEND_INFO;
 
@@ -50,7 +68,7 @@ typedef struct group
     int admin3;
 }group;
 
-typedef struct  file
+typedef struct file
 {
     int flag;
     int send;
@@ -72,7 +90,7 @@ typedef struct data
 
 typedef struct package
 {
-    int type;
+    int flag;
     DATA data;
 }PACK;
 
@@ -98,6 +116,9 @@ typedef struct person_account_find
 }account_find;
 
 
+
+
+
 void Clear_buffer();
 void Login_menu();
 void Register();
@@ -115,6 +136,7 @@ void Show_friend();
 int Send_cmessage(int flag,int receiver,char* buf);
 int Send_smessage(int flag,int receiver,int sender,char *buf);
 int Send_message(int flag,char* buf);
+void Send_pack_message(int flag,char *send_name,char* recv_name,char* message);
 
 
 

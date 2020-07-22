@@ -2,87 +2,57 @@
 #include "tools.c"
 void Add_friend()
 {
-    int flag=ADD_FRIEND;
-    char name_buf[MAX];
-
-    display("请输入要添加的好友账号:");
-    Get_string(name_buf,MAX);
-
-
-
-    Send_pack_message(flag,username,name_buf,"");
-
+    char name_buf[BUFSIZ];
+    display("请输入要添加好友的账号:");
+    scanf("%s",&name_buf);
+    Clear_buffer();
+    char str[MAX];
+    sprintf(str,"%d",username);
+    if(Send_cmessage(6,username,"")==1)
+        printf("好友请求发送成功");
     return;
 }
 void Del_friend()
 {
-    int flag=DEL_FRIEND;
-    char name_buf[MAX];
-
-    display("请输入要删除的好友账号:");
-    Get_string(name_buf,MAX);
-
-    Send_pack_message(flag,username,"server",name_buf);
-
-
+    char name_t[MAX_CHAR];
+    printf("请输入你要删除的好友账号:");
+    scanf("%s",name_t);
+    Clear_buffer();
+    char str[MAX_CHAR];
+    sprintf(str,"%s",name_t);
+    if(Send_message(13,name_t,"")==1);
+        printf("好友请求发送成功");
     return;
 }
 void Query_friend()
 {
-    char name_buf[MAX];
-    int flag=QUERY_FRIEND;
-
-    memset(name_buf,0,MAX);
-    memset(&,0,sizeof());
-    display("请输入要查询的好友账号:");
-    Get_string(msg.username,15);
-
-    Send_pack_message(flag,username,name_buf,"");
-    
-}
-void View_friend_list()
-{
-    int flag=VIEW_FRIEND_LIST;
-    char 
-}
-void Show_friend_status()
-{
-    char name_buf[BUFSIZ];
-    message msg;
-    char username_buf[15];
-    memset(&msg,0,sizeof(message));
-    memset(name_buf,0,BUFSIZ);
-    memcpy(msg.from,username_buf,15);
-    memcpy(name_buf,&msg,sizeof(message));
-    if(send(cfd,name_buf,BUFSIZ,0)!=BUFSIZ)
-    {
-        my_err("send error!",__LINE__);
-    }
+    char name_t[MAX_CHAR];
+    printf("请输入你要查询的好友账号:");
+    scanf("%s",name_t);
+    Clear_buffer();
+    char str[MAX_CHAR];
+    sprintf(str,"%s",name_t);
+    if(Send_message(15,name_t,"")==1);
+        printf("查询好友聊天记录请求发送成功");
     return;
 }
 void Private_chat()
 {
-    char name_buf[BUFSIZ];
-    message msg;
-    FILE* fp;
-    char username_buf[15];
-    memset(&msg,0,sizeof(message));
-    memset(name_buf,0,BUFSIZ);
-    memcpy(msg.from,username_buf,15);
-    printf("请输入想私聊的好友账号:");
-    Get_string(username_buf,15);
-    printf("[---------------]正在加载")
-    sleep(1);
-    system("clear");
-    printf("[---------------]正在与%s聊天(quit退出)\n",username_buf);
-    while(1)
+    int receiver;
+    display("请输入私聊的好友账号:");
+    scanf("%d",&receiver);
+    prichat=receiver;
+    char buf[256];
+    printf("[退出聊天]---------:");
+    scanf("%s",buf)
+    do
     {
-        memcpy(name_buf,&msg,sizeof(message));
-        if(send(cfd,name_buf,BUFSIZ,0)!=BUFSIZ)
-        {
-            my_err("send error!",__LINE__);
-        }
-        return;
+        Send_cmessage(7,receiver,buf);
+        printf("[退出聊天]---------:");
+        scanf("%s",buf);
+    } while (strcmp(buf,"quit"));
+    prichat=-1;
+    return;
 }
 void Friend_message()
 {
@@ -98,7 +68,7 @@ void Friend_message()
     switch (choice)
     {
     case 'y':
-        memset(apply_buf,0,BUFSIZ);
+        memset(apply_buf,BUFSIZ);
         memcpy(apply_buf,&msg,sizeof(message));
         if(send(cfd,apply_buf,BUFSIZ,0)!=BUFSIZ)
         {

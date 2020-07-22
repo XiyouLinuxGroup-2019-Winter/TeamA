@@ -1,0 +1,37 @@
+#!/bin/bash
+#program:
+#    This program shows "Hello World!" in your screen.
+#History:
+#2020/03/20 Taciturn-wu First release
+PATH=/usr/local/bin:/usr/bin:/bin:/usr/local/games:/usr/games:/sbin:/usr/sbin
+export PATH
+echo -e "Hello World! \a \n"
+exit 0
+ans_yn-2.sh
+ans_yn-3.sh
+ans_yn.sh
+a.out
+cal_1_100.sh
+cal_pi.sh
+create_3_filename.sh
+dir_perm.sh
+file_perm.sh
+hello-2.sh
+#hello.sh#
+hello.sh
+how_paras.sh
+multiplying.sh
+myshell
+myshell.c
+netstat.sh
+regular_express.txt
+shift_paras.sh
+show123-2.sh
+show123.sh
+showname.sh
+test
+test.sh
+userid.sh
+what_to_eat.sh
+yes_to_stop-2.sh
+yes_to_stop.sh
