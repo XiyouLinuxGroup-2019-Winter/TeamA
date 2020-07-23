@@ -49,10 +49,9 @@ typedef struct  chat_message
 
 typedef struct  friend_info
 {
-    int status;
+    int status[MAX_CHAR];
     //好友的信息数
-    int message_num;
-
+    int num;
     char name[MAX_CHAR];
 }FRIEND_INFO;
 
