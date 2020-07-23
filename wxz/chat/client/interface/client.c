@@ -124,7 +124,7 @@ void Private_chat()
     memcpy(msg.from,username_buf,15);
     printf("请输入想私聊的好友账号:");
     Get_string(username_buf,15);
-    printf("[---------------]正在加载")
+    printf("[---------------]正在加载");
     sleep(1);
     system("clear");
     printf("[---------------]正在与%s聊天(quit退出)\n",username_buf);
@@ -141,7 +141,7 @@ void Private_chat()
 
 void Show_friend()
 {
-
+    
 }
 void Friend_menu()
 {
@@ -244,6 +244,21 @@ void Withdraw_group()
     Send_pack_message(flag,username,"server",name_buf);
 }
 
+void View_add_group()
+{
+    int flag=VIEW_ADD_GROUP;
+    char name_buf[MAX_CHAR];
+    memset()
+}
+void View_group_member()
+{
+
+}
+void Group_menu()
+{
+
+}
+
 void Del_group()
 {
     int flag=DEL_GROUP;
@@ -255,21 +270,61 @@ void Del_group()
 }
 void Set_group_admin()
 {
-    
+    int flag=SET_GROUP_ADMIN;
+    char leader_buf[MAX];
+    char admin_buf[MAX];
+
+    printf("请输入设置某个群里的管理员:");
+    Get_string(leader_buf,MAX);
+
+    Get_string(admin_buf,MAX);
+   
+
+    Send_pack_message(flag,username,leader_buf,admin_buf);
+}
+void Kick()
+{
+    int flag=KICK;
+    char admin_buf[MAX];
+    char staff_buf[MAX];
+
+    printf("请输入踢出某个群里的人员:");
+    Get_string(admin_buf,MAX);
+
+    Get_string(staff_buf,MAX);
+   
+
+    Send_pack_message(flag,username,admin_buf,staff_buf);
+
 }
 void Group_leader_menu()
 {
-
-}
-void Group_menu()
-{
-    system("clear");
     int choice=1;
-    while(1)
+    system("clear");
+    while(choice)
     {
-        printf("1.");
-        printf("2.");
-        printf("3.");
-        printf("4.");
+        printf("\t\t\033[;33m\033[1;37m**************************\033[0m\n");
+        printf("\n\t\t\033[1;31m    群主--1,2,3/管理员--3权限     \033[0m\n");
+        printf("\t\t\033[1;31m         1.解散群  \033[0m\n");
+        printf("\t\t\033[1;31m         2.设置管理员\033[0m\n");
+        printf("\t\t\033[1;31m         3.踢人  \033[0m\n");
+        printf("\t\t\033[1;31m         0.返回  \033[0m\n");
+        printf("请输入选择:");
+        scanf("%s",&choice);
+        Clear_buffer();
+        switch (choice)
+        {
+            case 1:
+                Del_group();
+                break;
+            case 2:
+                Set_group_admin();
+                break;
+            case 3:
+                Kick();
+                break;
+            case 0:
+                break;
+        }
     }
 }

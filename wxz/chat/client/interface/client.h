@@ -34,7 +34,8 @@
 #define WITHDRAW_GROUP 18
 #define KICK 19
 #define SET_GROUP_ADMIN 20
-#define 
+#define VIEW_ADD_GROUP 21
+#define VIEW_GROUP_MEMBER 22 
 
 int cfd;
 int enternum;
@@ -142,12 +143,18 @@ void Show_friend_status();
 void View_friend_list();
 void View_chat_history();
 
-
+void Create_group();
 void Add_group();
-void Del_group();
 void Withdraw_group();
-void Set_group_admin();
+void View_add_group();
+void View_group_member();
+void Group_menu();
 
+
+void Del_group();
+void Set_group_admin();
+void Kick();
+void Group_leader_menu();
 
 int Send_cmessage(int flag,int receiver,char* buf);
 int Send_smessage(int flag,int receiver,int sender,char *buf);

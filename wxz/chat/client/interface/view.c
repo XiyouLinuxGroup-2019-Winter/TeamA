@@ -202,3 +202,34 @@ void Friend_menu()
     }
     return;
 }
+void Group_leader_menu()
+{
+    int choice=1;
+    system("clear");
+    while(choice)
+    {
+        printf("\t\t\033[;33m\033[1;37m**************************\033[0m\n");
+        printf("\n\t\t\033[1;31m    群主--1,2,3/管理员--3权限     \033[0m\n");
+        printf("\t\t\033[1;31m         1.解散群  \033[0m\n");
+        printf("\t\t\033[1;31m         2.设置管理员\033[0m\n");
+        printf("\t\t\033[1;31m         3.踢人  \033[0m\n");
+        printf("\t\t\033[1;31m         0.返回  \033[0m\n");
+        printf("请输入选择:");
+        scanf("%s",&choice);
+        Clear_buffer();
+        switch (choice)
+        {
+            case 1:
+                Del_group();
+                break;
+            case 2:
+                Set_group_admin();
+                break;
+            case 3:
+                Kick();
+                break;
+            case 0:
+                break;
+        }
+    }
+}
