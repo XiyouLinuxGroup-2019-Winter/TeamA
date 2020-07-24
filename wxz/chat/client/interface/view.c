@@ -151,7 +151,6 @@ void Friend_menu()
     
     while(choice)
     {
-        printf("\t\t\033[44;34m\033[44;37m**************************\033[0m\n");
         printf("\t\t\033[;36m\033[1m*********朋友管理*********\033[0m\n");
         printf("\t\t\033[1;36m|\033[0m--------1.添加好友-------\033[1;36m|\033[0m\n");
         printf("\t\t\033[1;36m|\033[0m--------2.删除好友-------\033[1;36m|\033[0m\n");
@@ -232,4 +231,51 @@ void Group_leader_menu()
                 break;
         }
     }
+}
+
+void Group_menu()
+{
+    int choice=1;
+    while(choice)
+    {
+        printf("\t\t\033[;34m\033[1m*********群管理*********\033[0m\n");
+        printf("\t\t\033[1;34m|\033[0m--------1.创建群-------\033[1;34m|\033[0m\n");
+        printf("\t\t\033[1;34m|\033[0m--------2.添加群-------\033[1;34m|\033[0m\n");
+        printf("\t\t\033[1;34m|\033[0m--------3.退群---------\033[1;34m|\033[0m\n");
+        printf("\t\t\033[1;34m|\033[0m--------4.已加群-------\033[1;34m|\033[0m\n");
+        printf("\t\t\033[1;34m|\033[0m--------5.群成员-------\033[1;34m|\033[0m\n");
+        printf("\t\t\033[1;34m|\033[0m-----6.查看聊天记录----\033[1;34m|\033[0m\n");
+        printf("\t\t\033[1;34m|\033[0m------7.群管理权限-----\033[1;34m|\033[0m\n");
+        printf("\t\t\033[1;34m|\033[0m-------- 0.退出--------\033[1;34m|\033[0m\n");
+        printf("请输入选择:");
+        scanf("%d",&choice);
+        Clear_buffer();
+        switch (choice)
+        {
+            case 1:
+                Create_group();
+                break;
+            case 2:
+                Add_group();
+                break;
+            case 3:
+                Withdraw_group();
+                break;
+            case 4:
+                View_add_group();
+                break;
+            case 5:
+                View_group_member();
+                break;
+            case 6:
+                View_group_record();
+                break;
+            case 7:
+                Group_leader_menu();
+                break;
+            case 0:
+                break;
+        }
+    }
+    return;
 }

@@ -1,5 +1,55 @@
 #include "client.h"
-#include "tools.c"
+#include "tools.h"
+#include "wrang.h"
+int main()
+{
+
+}
+void Init_socket()
+{
+    printf("客户端启动\n");
+    struct sockaddr_in serv_addr;
+
+
+    cfd=Socket(AF_INET,SOCK_STREAM,0);
+
+    bzero(&serv_addr,sizeof(serv_addr));
+    serv_addr.sin_family=AF_INET;
+    serv_addr.sin_port=htons(SERV_PORT);
+    inet_pton(AF_INET,SERV_ADDRESS,&serv_addr.sin_addr.s_addr);
+
+    Connect(cfd,(struct sockaddr*)&serv_addr,sizeof(serv_addr));
+
+    printf("客户端启动成功!\n");
+
+}
+void *Recv_pack()
+{
+    PACK pack_t;
+    pthread_t pid;
+    while(1)
+    {
+        if(recv(cfd,&pack_t,sizeof(PACK),0)<0)
+        {
+            my_err("recv error",__LINE__);
+        }
+
+
+
+        pthread_mutex_lock(&mutex);
+
+        
+
+        switch (pack_t.flag)
+        {
+            case :
+                break;
+            case :
+            default:
+                break;
+        }
+    }
+}
 void Add_friend()
 {
     int flag=ADD_FRIEND;
@@ -135,14 +185,15 @@ void Private_chat()
         {
             my_err("send error!",__LINE__);
         }
-        return;
+        return ;
+    }
 }
 
 
-void Show_friend()
+/*void Show_friend()
 {
     
-}
+}*/
 void Friend_menu()
 {
     int choice=1;
@@ -150,7 +201,6 @@ void Friend_menu()
     
     while(choice)
     {
-        printf("\t\t\033[44;34m\033[44;37m**************************\033[0m\n");
         printf("\t\t\033[;36m\033[1m*********朋友管理*********\033[0m\n");
         printf("\t\t\033[1;36m|\033[0m--------1.添加好友-------\033[1;36m|\033[0m\n");
         printf("\t\t\033[1;36m|\033[0m--------2.删除好友-------\033[1;36m|\033[0m\n");
@@ -205,20 +255,12 @@ void Friend_menu()
 
 void Create_group()
 {
-    char name_t[30];
-    char str[MAX_CHAR];
-    group group;
-    memset(str,0,sizeof(str));
-    printf("请输入群名:");
-    scanf("%s",group.name);
-    group.ower=enternum;
-    group.flag=17;
-    memcpy(str,&group,sizeof(group));
-    if(send(cfd,str,MAX,0)==-1)
-    {
-        my_err("注册群发生错误",__LINE__);
-    }
-    return;
+    int flag=CREAT_GROUP;
+    char name_buf[MAX];
+    printf("请输入要创建的群名称:");
+    Get_string(name_buf,MAX);
+
+    Send_pack_message(flag,username,"server",name_buf);
 }
 
 void Add_group()
@@ -248,15 +290,61 @@ void View_add_group()
 {
     int flag=VIEW_ADD_GROUP;
     char name_buf[MAX_CHAR];
-    memset()
+    //memset()
 }
 void View_group_member()
 {
 
 }
-void Group_menu()
+void View_group_record()
 {
 
+}
+void Group_menu()
+{
+    int choice=1;
+    while(choice)
+    {
+        printf("\t\t\033[;34m\033[1m*********群管理*********\033[0m\n");
+        printf("\t\t\033[1;34m|\033[0m--------1.创建群-------\033[1;34m|\033[0m\n");
+        printf("\t\t\033[1;34m|\033[0m--------2.添加群-------\033[1;34m|\033[0m\n");
+        printf("\t\t\033[1;34m|\033[0m--------3.退群---------\033[1;34m|\033[0m\n");
+        printf("\t\t\033[1;34m|\033[0m--------4.已加群-------\033[1;34m|\033[0m\n");
+        printf("\t\t\033[1;34m|\033[0m--------5.群成员-------\033[1;34m|\033[0m\n");
+        printf("\t\t\033[1;34m|\033[0m-----6.查看聊天记录----\033[1;34m|\033[0m\n");
+        printf("\t\t\033[1;34m|\033[0m------7.群管理权限-----\033[1;34m|\033[0m\n");
+        printf("\t\t\033[1;34m|\033[0m-------- 0.退出--------\033[1;34m|\033[0m\n");
+        printf("请输入选择:");
+        scanf("%d",&choice);
+        Clear_buffer();
+        switch (choice)
+        {
+            case 1:
+                Create_group();
+                break;
+            case 2:
+                Add_group();
+                break;
+            case 3:
+                Withdraw_group();
+                break;
+            case 4:
+                View_add_group();
+                break;
+            case 5:
+                View_group_member();
+                break;
+            case 6:
+                View_group_record();
+                break;
+            case 7:
+                Group_leader_menu();
+                break;
+            case 0:
+                break;
+        }
+    }
+    return;
 }
 
 void Del_group()

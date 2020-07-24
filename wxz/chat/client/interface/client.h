@@ -9,6 +9,11 @@
 #include <sys/types.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include "wrang.h"
+
+#define SERV_ADDRESS "127.0.0.1"
+#define SERV_PORT 8000
+
 #define MAX 50
 #define MAX_CHAR 300
 
@@ -36,7 +41,11 @@
 #define SET_GROUP_ADMIN 20
 #define VIEW_ADD_GROUP 21
 #define VIEW_GROUP_MEMBER 22 
+#define VIEW_GROUP_RECORD 23
 
+
+pthread_mutex_t mutex;
+pthread_cond_t cond;
 int cfd;
 int enternum;
 char username[MAX];
@@ -67,16 +76,11 @@ typedef struct  friend_info
 
 typedef struct group
 {
-    int flag;
-    int num;//群号
+    int num;
     char name[MAX];
-    int ower;
-    int admin1;//管理员
-    int admin2;
-    int admin3;
 }group;
 
-typedef struct  file
+typedef struct file
 {
     int flag;
     int send;
@@ -98,21 +102,22 @@ typedef struct data
 
 typedef struct package
 {
-    int type;
+    int flag;
     DATA data;
 }PACK;
 
 
 
 
-typedef struct account
+typedef struct account_info
 {
     int flag;
     char username[30];
     char password[30];
+    
     char phone[30];
     char e_mail[50];
-}account;
+}ACCOUNT_INFO;
 
 typedef struct person_account_find
 {
@@ -148,6 +153,7 @@ void Add_group();
 void Withdraw_group();
 void View_add_group();
 void View_group_member();
+void View_group_record();
 void Group_menu();
 
 
@@ -169,3 +175,6 @@ void display(char* str);
 void my_err(const char* err_string,int line);
 char* Get_string(char* buf,int len);
 char getch();
+
+void Init_socket();
+void *Recv_pack();
