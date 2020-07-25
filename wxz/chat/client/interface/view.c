@@ -28,10 +28,7 @@ void Clear_buffer()
         printf("该账号已存在，请重新输入\n");
     
 }*/
-/*int Send_register(char name_t[],char password_t[])
-{
 
-}*/
 void Register()
 {
     char password[30];

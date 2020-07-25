@@ -50,7 +50,7 @@ int cfd;
 int enternum;
 char username[MAX];
 
-ACCOUNT_INFO user;
+
 
 
 
@@ -82,7 +82,7 @@ typedef struct  friend_info
 typedef struct group_info
 {
     int group_num;
-    char name[MAX];
+    char name[MAX][MAX];
 }GROUP_INFO;
 
 typedef struct file
@@ -125,22 +125,23 @@ typedef struct account_info
 
     FRIEND_INFO friend [MAX_CHAR];
     GROUP_INFO group [MAX_CHAR];
+    int friend_num;
+    int group_num;
 
 }ACCOUNT_INFO;
 
-typedef struct person_account_find
-{
-    int flag;
-    char name[30];
-    char password[30];
-    char phone[30];
-    char e_mail[50];
-}account_find;
+
+ACCOUNT_INFO user;
 
 
+PACK pack_send [MAX_CHAR];
+int send_num;
+
+//PACK pack_recv
 
 
-void Clear_buffer();
+void Menu();
+
 void Login_menu();
 void Register();
 void Login();
@@ -184,6 +185,7 @@ void display(char* str);
 void my_err(const char* err_string,int line);
 char* Get_string(char* buf,int len);
 char getch();
+void Clear_buffer();
 
 void Init_socket();
 void *Recv_pack();

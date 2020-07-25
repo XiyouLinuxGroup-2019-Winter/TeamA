@@ -30,7 +30,6 @@ void *Recv_pack()
 {
     PACK pack_t;
     pthread_t pid;
-    int flag;
     while(1)
     {
         if(recv(cfd,&pack_t,sizeof(PACK),0)<0)
@@ -83,8 +82,6 @@ void Turn_worke_thread()
     pthread_t pid_recv;
     pthread_create(&pid_recv,NULL,Recv_pack,NULL);
 }
-
-
 void Add_friend()
 {
     int flag=ADD_FRIEND;
@@ -95,7 +92,7 @@ void Add_friend()
 
 
 
-    Send_pack_message(flag,user.username,"server",name_buf);
+    Send_pack_message(flag,username,name_buf,"");
 
     return;
 }
@@ -107,7 +104,7 @@ void Del_friend()
     display("请输入要删除的好友账号:");
     Get_string(name_buf,MAX);
 
-    Send_pack_message(flag,user.username,"server",name_buf);
+    Send_pack_message(flag,username,"server",name_buf);
 
 
     return;
@@ -117,10 +114,10 @@ void Query_friend()
     int flag=QUERY_FRIEND;
     char name_buf[MAX];
 
-    display("请输入要查询的好友账号:");
+    display("请输入要的好友账号:");
     Get_string(name_buf,MAX);
 
-    Send_pack_message(flag,username,"server",name_buf);
+    Send_pack_message(flag,username,name_buf,"");
 
 
     return;
@@ -159,7 +156,7 @@ void View_friend_list()
             {
                printf("\t\t\033[1;32m联系人:%s  (在线)\033[0m\n",user.friend[i].name);
                if(user.friend[i].message_num)
-                    printf("\t\t\033[1;32m未回复的消息数:%d  \033[0m\n",user.friend[i].message_num);
+                    printf("\t\t\033[1;32m未回复的消息数:%d  \033[0m\n",user.friend[i].message_num)；
                 else
                 {
                     printf("\t\t\033[1;32m暂未消息  \033[0m\n");
@@ -169,7 +166,7 @@ void View_friend_list()
             {
                 printf("\t\t\033[1;32m联系人:%s  (已下线)\033[0m\n",user.friend[i].name);
                 if(user.friend[i].message_num)
-                    printf("\t\t\033[1;32m未回复的消息数:%d  \033[0m\n",user.friend[i].message_num);
+                    printf("\t\t\033[1;32m未回复的消息数:%d  \033[0m\n",user.friend[i].message_num)；
                 else
                 {
                     printf("\t\t\033[1;32m暂未消息  \033[0m\n");
@@ -457,115 +454,4 @@ void Group_leader_menu()
                 break;
         }
     }
-}
-
-void Register()
-{
-    int flag=REGISTER;
-    char password[MAX];
-    char name[MAX];
-
-    PACK recv_register;
-    int recv_register_flag;
-
-    printf("账号:");
-    scanf("%s",name);
-    printf("密码:");
-    scanf("%s",password);
-
-    Send_pack_message(flag,name,"server",password);
-
-
-    if(recv(cfd,&recv_register,sizeof(PACK),0)==-1)
-    {
-        my_err("recv error",__LINE__);
-    }
-    recv_register_flag=recv_register.data.message[0];
-
-    if(recv_register_flag)
-        printf("注册成功!\n");
-    else
-    {
-        printf("该账号已存在!\n");
-    }
-}
-void Login()
-{
-    int flag=LOGIN;
-    char name[MAX];
-    char password[MAX];
-
-    printf("请输入账号:\n");
-    scanf("%s",name);
-    printf("请输入密码:\n");
-    scand("%s",password);
-
-    PACK recv_login;
-    int login_flag;
-
-    Send_pack_message(flag,name,"server",password);
-
-    if(recv(cfd,&recv_login,sizeof(PACK),0)<0)
-    {
-        my_err("recv error",__LINE__);
-    }
-    login_flag=recv_login.data.message[0];
-
-    if(login_flag==1)
-    {
-        printf("登录成功!\n");
-        strcpy(user.username,name);
-    }
-    if(login_flag==2)
-    {
-        printf("账号不存在!\n");
-    }
-    if(login_flag==3)
-    {
-        printf("账号已经登录!\n");
-    }
-    if(login_flag==0)
-    {
-        printf("密码不正确!\n");
-    }
-}
-
-void Login_menu()
-{
-    int choice=1;
-    while(choice)
-    {
-        printf("\t\t\033[44;34m\033[44;37m**************************\033[0m\n");
-        printf("\t\t\033[44;34m\033[44;37m*\033[37m        1.注册          \033[44;37m\33[1m*\033[0m \n");
-        printf("\t\t\033[44;34m\033[44;37m*\033[37m        2.登录          \033[44;37m\33[1m*\033[0m \n");
-        //printf("\t\t\033[44;34m\033[44;37m*\033[37m        3.修改密码      \033[44;37m\33[1m*\033[0m \n");
-        printf("\t\t\033[44;34m\033[44;37m*\033[37m        0.退出          \033[44;37m\33[1m*\033[0m \n");
-        printf("\t\t\033[44;34m\033[44;37m**************************\033[0m\n");
-        printf("\t\tchoice：");
-        scanf("%d",&choice);
-        Clear_buffer();
-        switch(choice)
-        {
-            case 1:
-                puts("注册");
-                Register();
-                break;
-            case 2:
-                puts("登录");
-                Login();
-                break;
-            /*case 3:
-                puts("找回密码");
-                Modify_password();
-                break;*/
-            case 0:
-                break;
-        }
-    }
-    return ;
-}
-
-void Menu()
-{
-
 }
