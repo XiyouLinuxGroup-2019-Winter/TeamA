@@ -42,7 +42,7 @@
 #define VIEW_ADD_GROUP 21
 #define VIEW_GROUP_MEMBER 22 
 #define VIEW_GROUP_RECORD 23
-
+#define SEND_FILE 24
 
 pthread_mutex_t mutex;
 pthread_cond_t cond;
@@ -171,6 +171,9 @@ void Del_group();
 void Set_group_admin();
 void Kick();
 void Group_leader_menu();
+
+
+void Send_file();
 
 int Send_cmessage(int flag,int receiver,char* buf);
 int Send_smessage(int flag,int receiver,int sender,char *buf);

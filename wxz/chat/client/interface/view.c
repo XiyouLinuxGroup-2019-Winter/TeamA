@@ -112,10 +112,9 @@ void Login_menu()
     while(choice)
     {
         printf("\t\t\033[44;34m\033[44;37m**************************\033[0m\n");
-        printf("\t\t\033[44;34m\033[44;37m*\033[37m        1.注册          \033[44;37m\33[1m*\033[0m \n");
-        printf("\t\t\033[44;34m\033[44;37m*\033[37m        2.登录          \033[44;37m\33[1m*\033[0m \n");
-        printf("\t\t\033[44;34m\033[44;37m*\033[37m        3.修改密码      \033[44;37m\33[1m*\033[0m \n");
-        printf("\t\t\033[44;34m\033[44;37m*\033[37m        0.退出          \033[44;37m\33[1m*\033[0m \n");
+        printf("\t\t\033[1;34m*        1.注册          \033[1;34m*\033[0m \n");
+        printf("\t\t\033[1;34m*        2.登录          \033[1;34m*\033[0m \n");
+        printf("\t\t\033[1;34m*        0.退出          \033[1;34m*\033[0m \n");
         printf("\t\t\033[44;34m\033[44;37m**************************\033[0m\n");
         printf("\t\tchoice：");
         scanf("%d",&choice);
@@ -275,4 +274,41 @@ void Group_menu()
         }
     }
     return;
+}
+
+void Menu()
+{
+    int choice=1;
+    while(choice)
+    {
+        
+        printf("\t\t\033[1;34m**************************\033[0m\n");
+        printf("\t\t\033[1;34m|        1.好友管理      \033[1;34m|\033[0m \n");
+        printf("\t\t\033[1;34m|        2.群管理        \033[1;34m|\033[0m \n");
+        printf("\t\t\033[1;34m|        3.发送文件      \033[1;34m|\033[0m \n");
+        printf("\t\t\033[1;34m|        5.离线传输      \033[1;34m|\033[0m \n");
+        printf("\t\t\033[1;34m|        0.退出          \033[1;34m|\033[0m \n");
+        printf("\t\t\033[1;34m**************************\033[0m\n");
+        printf("\t\tchoice:");
+        scanf("%d",&choice);
+
+        switch (choice)
+        {
+            case 1:
+                Friend_menu();
+                break;
+            case 2:
+                Group_menu();
+                break;
+            case 3:
+                Send_file();
+                break;
+            case 4:
+                Offline_transmission();
+                break;
+            case 0:
+                break;
+        }
+    }
+
 }
