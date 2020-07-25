@@ -50,6 +50,10 @@ int cfd;
 int enternum;
 char username[MAX];
 
+ACCOUNT_INFO user;
+
+
+
 typedef struct  message
 {
     int flag;
@@ -70,15 +74,16 @@ typedef struct  friend_info
     int statue;
     //好友的信息数
     int message_num;
+    int friend_num;
     char name[MAX_CHAR];
 }FRIEND_INFO;
 
 
-typedef struct group
+typedef struct group_info
 {
-    int num;
+    int group_num;
     char name[MAX];
-}group;
+}GROUP_INFO;
 
 typedef struct file
 {
@@ -117,6 +122,10 @@ typedef struct account_info
     
     char phone[30];
     char e_mail[50];
+
+    FRIEND_INFO friend [MAX_CHAR];
+    GROUP_INFO group [MAX_CHAR];
+
 }ACCOUNT_INFO;
 
 typedef struct person_account_find
@@ -178,3 +187,4 @@ char getch();
 
 void Init_socket();
 void *Recv_pack();
+void Turn_worke_thread();

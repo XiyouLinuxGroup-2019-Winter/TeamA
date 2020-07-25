@@ -3,6 +3,9 @@
 #include "wrang.h"
 int main()
 {
+    Init_socket();
+
+    Turn_worke_thread();
 
 }
 void Init_socket()
@@ -42,13 +45,42 @@ void *Recv_pack()
 
         switch (pack_t.flag)
         {
-            case :
+            case ADD_FRIEND:
+                flag=pack_t.data.message[0];
+                if(flag==0)
+                {
+
+                }
                 break;
-            case :
-            default:
+            case DEL_FRIEND:
+                flag=pack_t.data.message[0];
                 break;
+            case QUERY_FRIEND:
+                flag=pack_t.data.message[0];
+                break;
+            case VIEW_FRIEND_LIST:
+                flag=pack_t.data.message[0];
+                break;
+            case SHOW_FRIEND_STATUS:
+                flag=pack_t.data.message[0];
+                break;
+            case VIEW_CHAT_HISTORY:
+                flag[++]=pack_t;
+                break;
+            case SHIELD:
+                flag=pack_t.data.message[0];
+                break;
+            case UNSHIELD:
+                flag=pack_t.data.message[0];
+            
         }
+        pthread_mutex_unlock(&mutex);
     }
+}
+void Turn_worke_thread()
+{
+    pthread_t pid_recv;
+    pthread_create(&pid_recv,NULL,Recv_pack,NULL);
 }
 void Add_friend()
 {
