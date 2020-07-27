@@ -191,5 +191,5 @@ char getch();
 void Clear_buffer();
 
 void Init_socket();
-void *Recv_pack();
+void *Recv_pack(void* arg);
 void Turn_worke_thread();

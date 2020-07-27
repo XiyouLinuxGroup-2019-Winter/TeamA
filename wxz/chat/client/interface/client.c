@@ -30,7 +30,7 @@ void Init_socket()
     printf("客户端启动成功!\n");
 
 }
-void *Recv_pack()
+void *Recv_pack(void *arg)
 {
     PACK pack_t;
     pthread_t pid;
