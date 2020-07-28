@@ -1,20 +1,102 @@
+#include "server.h"
+#include "prest.h"
+#include "common.h"
+int Read_linked_list_from_file(server_list_t list)
+{
+    server_user_node_t *new;
+    server_user_t data;
+    int cnt;
+    //释放链表list中所有数据结点
+    List_Free(list,server_user_node_t);
+
+    FILE* fp=fopen("server","rb");
+    if(fp==NULL)
+    {
+        my_err("fopen error!",__LINE__);
+        return 0;
+    }
+    while(!feof(fp))
+    {
+        if(fread(&data,sizeof(server_user_t),1,fp))
+        {
+            new=(server_user_node_t*)malloc(sizeof(server_user_node_t));
+            if(new==NULL)
+            {
+                sys_err("malloc error!",__LINE__);
+                break;
+            }
+            new->data=data;
+            data.online=0;
+            data.connfd=-1;
+            //链表尾插法，list为头指针，new为新节点
+            List_AddTail(list,new);
+            cnt++;
+        }
+    }
+    fclose(fp);
+    return cnt;
+}
+int Write_infor_to(server_user_t* data)
+{
+    assert(data!=NULL);
+    FILE* fp=fopen("server","ab+");
+    int ret;
+    if(fp==NULL)
+    {
+        printf("fopen error!",__LINE__);
+        return 0;
+    }
+    ret=fwrite(data,sizeof(server_user_t),1,fp);
+    fclose(fp);
+    return ret;
+}
+int Update_user_info(server_user_t* data)
+{
+    ssert(data!=NULL);
+    FILE* fp=fopen("server","rb+");
+    if(fp==NULL)
+    {
+        sys_err("fopen error!",__LINE__);
+        return 0;
+    }
+    int flag=0;
+    server_user_t tmp;
+    while(!feof(fp))
+    {
+        if(fread(&tmp,sizeof(server_user_t),1,fp))
+        {
+            if(strcmp(tmp.username,data->username)==0)
+            {
+                printf("tmp=%s data:%s\n",tmp.username,data->username);
+                fseek(fp,sizeof(server_user_t),SEEK_CUR);
+                fwrite(data,sizeof(server_user_t),1,fp);
+                flag=1;
+                break;
+            }
+        }
+    }
+    
+    fclose(fp);
+    return flag;
+}
 int Add_syslog(syslog_t* data)
 {
     assert(data!=NULL);
     FILE* fp=fopen("syslog","ab+");
     if(fp==NULL)
     {
-        sys_err("打开文件错误!",__LINE__);
+        sys_err("fopen error!",__LINE__);
+        return 0;
     }
     int ret=fwrite(data,sizeof(syslog_t),fp);
     fclose(fp);
 
     if(ret==0)
     {
-        sys_err("文件写入错误!",__LINE__);
+        sys_err("fwrite error!",__LINE__);
         return 0;
     }
-    return 1;
+    return ret;
 }
 int Make_syslog(server_user_t tmp,char* string)
 {
@@ -43,4 +125,5 @@ int Make_syslog(server_user_t tmp,char* string)
     strcat(syslog->work,'\n');
 
     result=Add_syslog(syslog);
+    return result;
 }

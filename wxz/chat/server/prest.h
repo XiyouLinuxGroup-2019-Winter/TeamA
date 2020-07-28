@@ -1,35 +1,13 @@
-#include "./server.h"
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <fcntl.h>
-#include <errno.h>
-#include <pthread.h>
-#include <unistd.h>
-#include <sys/socket.h>
-#include <sys/types.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
+#include "List.h"
+#include "common.h"
+#include "server.h"
+ //从文件中读取链表
+int Read_linked_list_from_file(server_list_t list);
+//将信息写入
+int Write_infor_to(server_user_t* data);
+//将信息写入
+int Update_user_info(server_user_t* data);
+//将日志写入文件
+int Add_syslog(syslog_t* data);
 
-
-typedef struct syslog
-{
-    char name[20];
-    char time[100];
-    char work[20];
-}syslog_t;
-
-//服务器保存用户信息结构体
-typedef struct server_user
-{
-    char username[20];
-    char userpasd[20];
-    struct sockaddr_in useraddr;
-    int previe;
-    int many;
-    int online;      //1:开;0:关
-    int connfd;      //链接套接字
-}server_user_t;            
-
-int Add_prest_syslog(syslog_t * data);
 int Make_syslog(server_user_t tmp,char* string);
