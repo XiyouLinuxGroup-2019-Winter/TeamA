@@ -36,7 +36,7 @@ int Read_linked_list_from_file(server_list_t list)
     fclose(fp);
     return cnt;
 }
-int Write_infor_to(server_user_t* data)
+int Write_infor_to_file(server_user_t* data)
 {
     assert(data!=NULL);
     FILE* fp=fopen("server","ab+");
@@ -79,6 +79,119 @@ int Update_user_info(server_user_t* data)
     fclose(fp);
     return flag;
 }
+
+//朋友
+int Read_friendlinked_list_from_file(friend_list_t list,char* name)
+{
+    friend_node_t *new;
+    FRIEND_INFO data;
+    int cnt;
+    List_Free(list,friend_node_t);
+    
+    char buf[30];
+    strcpy(buf,"user:");
+    strcat(buf,name);
+    
+
+    FILE* fp=fopen(buf,"rb");
+    if(fp==NULL)
+    {
+        sys_err("fopen error!",__LINE__);
+        return 0;
+    }
+    while(!feof(fp))
+    {
+        if(fread(&data,sizeof(FRIEND_INFO),1,fp))
+        {
+            new=(friend_node_t*)malloc(sizeof(friend_node_t));
+            new->data=data;
+
+            List_AddTail(list,new);
+            cnt++;
+        }
+    }
+    fclose(fp);
+    return cnt;
+}
+
+//将朋友信息写入文件
+int Write_friendinfor_to_file(FRIEND_INFO* data,char* name)
+{
+    assert(data!=NULL);
+    char buf[30];
+    strcpy(buf,"user:");
+    strcat(buf,name);
+
+
+    FILE* fp=fopen(buf,"ab+");
+    if(fp==NULL)
+    {
+        sys_err("fopen error!",__LINE__);
+        return 0;
+    }
+    int ret=fwrite(data,sizeof(FRIEND_INFO),1,fp);
+
+    fclose(fp);
+    return ret;
+}
+
+int Byname_delete_friend(char* name,char* opt)
+{
+    char buf[30];
+    strcpy(buf,"user:");
+    strcat(buf,name);     
+
+    char temp[30];
+    strcpy(temp,"user:");
+    strcat(temp,name);    
+
+       
+	if(rename(buf,temp)<0)
+    {
+		sys_err("rename error!",__LINE__);
+		return 0;
+	}
+
+	FILE *fpsrv, *fptar;
+	fpsrv=fopen(temp, "rb");
+	if(fpsrv==NULL)
+    {
+		sys_err("fopen error!",__LINE__);
+		return 0;
+	}
+        
+	fptar=fopen(buf,"wb");
+	if(fptar==NULL)
+    {
+		sys_err("fopen error!",__LINE__);
+		return 0;
+	}
+
+
+	FRIEND_INFO BUF;
+	int flag=0;
+
+	while(!feof(fpsrv))
+    {
+		if(fread(&BUF,sizeof(FRIEND_INFO),1,fpsrv))
+        {
+			printf("the name is %s , the bufname is %s\n",name,BUF.name);
+			if(strcmp(opt,BUF.name)==0)
+            {
+                printf("the name is %s , the bufname is %s\n",name,BUF.name);
+				flag=1;
+				continue;
+			}
+			fwrite(&BUF,sizeof(FRIEND_INFO),1,fptar);
+		}
+	}
+
+	fclose(fptar);
+	fclose(fpsrv);
+	remove(temp);
+	return flag;
+}
+
 int Add_syslog(syslog_t* data)
 {
     assert(data!=NULL);

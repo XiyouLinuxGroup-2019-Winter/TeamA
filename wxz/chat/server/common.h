@@ -66,8 +66,18 @@ typedef struct  friend_info
     //好友的信息数
     int message_num;
     int friend_num;
-    char name[MAX_CHAR];
+    char name[MAX];
+    server_user_t data;
 }FRIEND_INFO;
+
+typedef struct friend_node
+{
+    FRIEND_INFO data;
+    struct friend_node *next;
+    struct friend_node *pre;
+}friend_node_t,friend_list_t;
+
+
 
 
 typedef struct group_info
