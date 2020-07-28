@@ -75,7 +75,7 @@ typedef struct friend_node
     FRIEND_INFO data;
     struct friend_node *next;
     struct friend_node *pre;
-}friend_node_t,friend_list_t;
+}friend_node_t,*friend_list_t;
 
 
 
@@ -126,12 +126,21 @@ typedef struct account_info
     char phone[MAX];
     char e_mail[MAX];
 
-    FRIEND_INFO friend [MAX_CHAR];
-    GROUP_INFO group [MAX_CHAR];
+    FRIEND_INFO data[MAX_CHAR];
+    GROUP_INFO data[MAX_CHAR];
     int friend_num;
     int group_num;
 
 }ACCOUNT_INFO;
+
+typedef struct account_node
+{
+    ACCOUNT_INFO data;
+    struct account_node *next;
+    struct account_node *pre;
+}user_node_t,*user_list_t;
+
+
 
 typedef struct syslog
 {
@@ -143,7 +152,7 @@ typedef struct syslog
 typedef struct server_user
 {
     char username[20];
-    char userpasd[20];
+    char password[20];
     struct sockaddr_in useraddr;
     int    previe;
     int    many;
@@ -156,9 +165,9 @@ typedef struct server_user_node
     server_user_t data;
     struct server_user_node *next;
     struct server_user_node *pre;
-}server_user_node_t,server_list_t;
+}server_user_node_t,*server_list_t;
 
-server_list_t *list_ser;
+server_list_t list_ser;
 
 ACCOUNT_INFO user;
 int user_num;

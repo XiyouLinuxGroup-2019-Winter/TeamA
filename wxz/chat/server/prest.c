@@ -240,3 +240,134 @@ int Make_syslog(server_user_t tmp,char* string)
     result=Add_syslog(syslog);
     return result;
 }
+
+int login(int connfd,server_user_t *tmp,struct sockaddr_in cli_addr,server_list_t list)
+{
+    char buf[BUFSIZ];
+
+    ACCOUNT_INFO check;
+    int ret;
+
+    while(1)
+    {
+        int flag=1;
+        if(ret=recv(connfd,buf,sizeof(buf),0)<0)
+        {
+            sys_err("recv error!",__LINE__);
+        }
+        else
+        {
+            break;
+        }
+        printf("the buf:%s\n",buf);
+        memcpy(&check,buf,sizeof(check));
+
+        if(check.statue==1)
+        {
+            server_list_t pos;
+            for(pos=list->next;pos!=list;pos=pos->next)
+            {
+                printf("the name is check :%s,pos:%s\n",check.username,pos->data.username);
+                if(strcmp(check.username,pos->data.username)==0)
+                    return 3;
+            }
+        
+
+            char temp[30];
+            strcpy(temp,"user:");
+            strcat(temp,check.username);
+            printf("username :%s\n",temp);
+
+
+            //创建一个自己的文件，以后用来存离线消息
+            FILE *fp=fopen(temp,"ab");
+	        if(NULL==fp) 
+            {
+		        sys_err("fopen error!",__LINE__);
+		        return 0;
+	        }
+	        fclose(fp);
+	        printf("the user is already submit\n");
+
+	        strcpy(tmp->username,check.username);
+            strcpy(tmp->password,check.password);
+    	    tmp->useraddr=cil_addr;
+    	    tmp->previe=check.previe;
+            tmp->many=check.many;
+            tmp->online=1;
+            tmp->connfd=connfd;
+            Add_new_user_to_file(tmp);
+           
+            return 1;
+        }   
+        else
+        {
+        
+    	    strcpy(tmp->username,check.username);
+            strcpy(tmp->username,check.password);
+    	    tmp->useraddr=cil_addr;
+    	    tmp->previe=check.previe;
+    	    tmp->many=check.many;
+    	    tmp->online=1;
+    	    tmp->connfd=connfd;
+            return 0;
+        }
+    }
+
+
+}
+
+int Add_new_user_to_file(server_user_t* data)
+{
+    int ret ;
+    ret=Write_infor_to_file(data);
+    if(0==ret)
+    {
+        sys_err("fwrite error!",__LINE__);
+        return 0;
+    }
+    return 1;
+}
+
+int Read_linked_list_into_memory(server_list_t list)
+{
+    int ret;
+    ret=Read_linked_list_from_file(list);
+    if(0==ret)
+    {
+        sys_err("fread error!",__LINE__);
+        return 0;
+    }
+    return 1;
+}
+
+int Find_server_user(server_list_t list_ser,char *username,char *password,int cfd)
+{
+    server_list_t pos;
+
+    for(pos=list_ser->next;pos!=list_ser;pos=pos->next)
+    {
+        if((strcmp(pos->data.username,username)==0)&&(strcmp(pos->data.password,password)==0))
+        {
+            printf("pos:%s %s\n",pos->data.username,username);
+            printf("pwd:%s %s\n",pos->data.password,password);
+            
+            server_user_t date;
+            date=pos->data;
+            date.online=1;
+            date.connfd=connfd;
+            //下线更改用户状态
+	        Downline_change_status(&data);
+            return 1;
+        }
+    }
+    return 0;
+}
+int Downline_change_status(server_user_t* data)
+{
+    int flag;
+
+	flag=Update_user_info(data);
+    printf("flag=%d\n",flag);
+    return 0;
+}

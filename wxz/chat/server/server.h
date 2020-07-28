@@ -108,7 +108,7 @@ typedef struct package
 typedef struct account_info
 {
     int flag;
-    int statue;
+    int status;
     int sid;
     char username[MAX];
     char password[MAX];
@@ -116,12 +116,20 @@ typedef struct account_info
     char phone[MAX];
     char e_mail[MAX];
 
-    FRIEND_INFO friend [MAX_CHAR];
-    GROUP_INFO group [MAX_CHAR];
+    FRIEND_INFO data[MAX_CHAR];
+    GROUP_INFO data[MAX_CHAR];
     int friend_num;
     int group_num;
 
 }ACCOUNT_INFO;
+
+typedef struct account_node
+{
+    ACCOUNT_INFO data;
+    struct account_node *next;
+    struct account_node *pre;
+}user_node_t,*user_list_t;
+
 
 typedef struct syslog
 {
