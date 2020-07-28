@@ -2,6 +2,6 @@
 #include <stdio.h>
 
 void sys_err(const char* s,int line);
-MYSQL Connect_mysql();
-int Use_mysql(const char *string, MYSQL mysql);
-int Close_mysql(MYSQL mysql);
+void Connect_mysql(MYSQL mysql);
+void Use_mysql(const char *string, MYSQL mysql);
+void Close_mysql(MYSQL mysql);
