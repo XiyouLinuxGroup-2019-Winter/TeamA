@@ -10,7 +10,6 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <time.h>
-#include <pthread.h>
 #include "wrang.h"
 #include "mysql.h"
 #include "prest.h"
@@ -47,11 +46,6 @@
 #define VIEW_GROUP_MEMBER 22 
 #define VIEW_GROUP_RECORD 23
 #define SEND_FILE 24
-
-
-#define DOWNLINE 0
-#define ONLINE 1
-
 
 pthread_mutex_t mutex;
 pthread_cond_t cond;
@@ -162,41 +156,11 @@ mysql_init(&mysql);
 //PACK pack_recv
 
 void Init_socket();
+
+
 void Recv_pack_message(PACK recv_t);
 void display(char* str);
 void my_err(const char* err_string,int line);
 char* Get_string(char* buf,int len);
 char getch();
 void Clear_buffer();
-
-
-void Register();
-void Login();
-void Modify_password();
-
-void Friend_menu();
-void Add_friend();
-void Del_friend();
-void Query_friend();
-void Private_chat();
-void Shield_friend();
-void Unshield_friend();
-void Show_friend_status();
-void View_friend_list();
-void View_chat_history();
-
-void Create_group();
-void Add_group();
-void Withdraw_group();
-void View_add_group();
-void View_group_member();
-void View_group_record();
-void Group_menu();
-
-
-void Del_group();
-void Set_group_admin();
-void Kick();
-void Group_leader_menu();
-
-void Send_file();
