@@ -1,4 +1,5 @@
 #include "mysql.h"
+#include "common.h"
 void sys_err(const char* s,int line,MYSQL* mysql)
 {
     fprintf(stderr,"line:%d,why:%s",line,mysql_error(mysql));
@@ -6,12 +7,12 @@ void sys_err(const char* s,int line,MYSQL* mysql)
     mysql_close(&mysql);
 }
 
-void Connect_mysql()
+void Connect_mysql(MYSQL mysql)
 {
-    MYSQL mysql;
     mysql_init(&mysql);
+    //初始化数据库
     mysql_library_init(0,NULL,NULL);
-    if(!mysql_real_connect(&mysql,"localhost","root","wxz","test",0,NULL,0))
+    if(!mysql_real_connect(&mysql,"localhost","root","wxz","bokket",0,NULL,0))
     {
         sys_err("连接失败!",__LINE__,&mysql);
     }

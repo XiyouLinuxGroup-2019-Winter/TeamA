@@ -88,6 +88,14 @@ typedef struct group_info
     char member_name[MAX][MAX];
 }GROUP_INFO;
 
+typedef struct group_node
+{
+    GROUP_INFO data;
+    struct group_node *next;
+    struct group_node *pre;
+}group_node_t,*group_list_t;
+
+
 typedef struct file
 {
     int flag
@@ -119,7 +127,7 @@ typedef struct package
 typedef struct account_info
 {
     int flag;
-    int statue;
+    int status;
     int sid;
     char username[MAX];
     char password[MAX];
@@ -149,16 +157,18 @@ typedef struct syslog
     char time[100];
     char work[20];
 }syslog_t;
+
 //服务器保存用户信息结构体
 typedef struct server_user
 {
     char username[20];
     char password[20];
     struct sockaddr_in useraddr;
-    int    previe;
-    int    many;
-    int    online;      //1:开;0:关
-    int    connfd;      //链接套接字
+    int socket_id;
+    int previe;
+    int many;
+    int online;      //1:开;0:关
+    int connfd;      //链接套接字
 }server_user_t;          
 
 typedef struct server_user_node
@@ -184,4 +194,31 @@ int file_num;
 
 int lfd;
 int epfd;
-int sockfd;
+int cfd;
+
+
+void Add_friend(PACK* pack_t);
+void Del_friend(PACK* pack_t);
+void Query_friend();
+void Private_chat();
+void Shield_friend();
+void Unshield_friend();
+void Show_friend_status();
+void View_friend_list();
+void View_chat_history();
+
+void Create_group();
+void Add_group();
+void Withdraw_group();
+void View_add_group();
+void View_group_member();
+void View_group_record();
+void Group_menu();
+
+
+void Del_group();
+void Set_group_admin();
+void Kick();
+void Group_leader_menu();
+
+void Send_file();
