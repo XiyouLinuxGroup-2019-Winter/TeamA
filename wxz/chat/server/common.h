@@ -179,8 +179,6 @@ typedef struct server_user_node
 }server_user_node_t,*server_list_t;
 
 server_list_t list_ser;
-
-ACCOUNT_INFO user;
 int user_num;
 
 PACK pack_send [MAX_CHAR*2];

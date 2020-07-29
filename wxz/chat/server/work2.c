@@ -79,11 +79,76 @@ void *work(void* arg)
     }
 
 }
+
+int Find_server_user(char *username)
+{
+    server_list_t pos;
+
+    if(user_num==0)
+        return 0;
+
+    for(pos=list_ser->next;pos!=list_ser;pos=pos->next)
+    {
+        if((strcmp(pos->data.username,username)==0))
+        {
+            printf("pos:%s %s\n",pos->data.username,username);
+            return 1;
+        }
+    }
+
+    return 0;
+}
+//登录
+void Login(PACK* pack_t)
+{
+    int flag=0;
+    int ret;
+    
+    //没有用户
+    if(ret==0)
+    {
+        flag=2;
+    }
+    server_list_t pos;
+    for(pos=list_ser->next;pos!=list_ser;pos=pos->next)
+    {
+        if((strcmp(pos->data.,username)==0))
+        {
+            printf("pos:%s %s\n",pos->data.username,username);
+            flag=1;
+            break;
+        }
+    }
+
+    server_user_t data;
+    if(flag==0)
+    {
+        ch[0]='0';
+    }
+    else
+    {
+        if(list_ser->data.online==DOWNLINE)
+        {
+            ch[0]='1';
+            list_ser->data.online=ONLINE;
+            list_ser->data.connfd=pack_t->data.send_fd;
+        }
+        else
+        {
+            ch[0]='2';
+        }
+    }
+    ch[1]='\0';
+
+    
+
+    
+}
 void Add_friend(PACK* pack_t)
 {
     char buf[BUFSIZ];
     memset(buf,0,sizeof(BUFSIZ));
 
     printf("%s\n",pack_t->data.message);
-    
+
 }
