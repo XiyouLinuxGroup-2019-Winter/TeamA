@@ -77,7 +77,8 @@ typedef struct friend_node
     struct friend_node *pre;
 }friend_node_t,*friend_list_t;
 
-
+friend_list_t head;
+pthread_rwlock_t lock;
 
 
 typedef struct group_info

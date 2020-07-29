@@ -1,16 +1,13 @@
 #include "server.h"
-#include "pthreadpool.h"
-#include "common.h"
-#include "prest.h"
 int main()
 {
 
 }
 void Init_socket()
 {
- 
-  
+
     PACK recv_t;
+    PACK *recv_pack;
     printf("服务端启动\n");
     struct sockaddr_in serv_addr;
     struct sockaddr_in cli_addr;
@@ -72,14 +69,27 @@ void Init_socket()
                 }
                 else if(n==0)
                 {
-                    
+                    for(int i=0;i<=user_num;i++)
+                    {
+                        if(ep[i].data.fd==user[i].sid)
+                        {
+                            printf("%s已下线\n",user[i].username);
+                            user[i].status=DOWNLINE;
+                            break;
+                        }
+                    }
+                    tep.data.fd=ep[i].data.fd;
+                    epoll_ctl(epfd,EPOLL_CTL_DEL,ep[i].data.fd,&tep);
+                    close(ep[i].data.fd);
+                    continue;
                 }
-                threadpool_add(work,(void*)&ep[i].data.fd);
+                recv_pack=(PACK*)malloc(sizeof(PACK));
+                memcpy(recv_pack,&recv_t,sizeof(PACK));
 
-               
+
+                pthread_create(&pid,NULL,Work,(void*)recv_pack)
             }
             
         }
     }
-    close(epfd);
 }
