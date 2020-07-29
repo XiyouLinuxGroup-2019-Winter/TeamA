@@ -67,3 +67,24 @@ void Recv_pack_message(PACK recv_t)
     printf("\033[1;33m|\033[0m 发送包的数量:%d\n",send_num);
     printf("\033[1;33m---------------------\033[0m\n");
 }
+void Send_pack(int fd,PACK* recv_pack,char* flag)
+{
+    PACK pack_send;
+    
+    memcpy(&pack_send,recv_pack,sizeof(PACK));
+    printf("%s\n%s\n",pack_send.data.recv_name,pack_send.data.send_name);
+
+    strcpy(pack_send.data.recv_name,pack_send.data.send_name);
+    strcpy(pack_send.data.send_name,"server");
+    strcpy(pack_send.data.message,flag);
+    printf("%s\n%s\n",pack_send.data.recv_name,pack_send.data.send_name);
+
+    printf("s\n",pack_send.data.message);
+    pack_send.data.recv_fd=pack_send.data.send_fd;
+    pack_send.data.send_fd=fd;
+
+    if(send(fd,&pack_send,sizeof(PACK),0)<0)
+    {
+        my_err("send error!",__LINE__);
+    }
+}

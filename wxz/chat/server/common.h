@@ -195,6 +195,9 @@ int epfd;
 int cfd;
 
 
+void Login(PACK* pack_t);
+void Register(PACK* pack_t);
+
 void Add_friend(PACK* pack_t);
 void Del_friend(PACK* pack_t);
 void Query_friend();

@@ -151,8 +151,8 @@ int lfd;
 int epfd;
 int sockfd;
 
-MYSQL* mysql;
-mysql_init(&mysql);
+MYSQL mysql;
+
 //PACK pack_recv
 
 void Init_socket();
@@ -164,3 +164,4 @@ void my_err(const char* err_string,int line);
 char* Get_string(char* buf,int len);
 char getch();
 void Clear_buffer();
+void Send_pack(int fd,PACK* recv_pack,char* flag);

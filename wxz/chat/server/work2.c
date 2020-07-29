@@ -2,7 +2,7 @@
 #include "common.h"
 #include "prest.h"
 #include "work.h"
-
+#include "tools.h"
 void *work(void* arg)
 {
     PACK* pack_t;
@@ -79,70 +79,98 @@ void *work(void* arg)
     }
 
 }
-
-int Find_server_user(char *username)
+void Register(PACK* pack_t)
 {
-    server_list_t pos;
+    char register_flag[10];
+    int flag;
+    char buf[BUFSIZ];
 
-    if(user_num==0)
-        return 0;
-
-    for(pos=list_ser->next;pos!=list_ser;pos=pos->next)
-    {
-        if((strcmp(pos->data.username,username)==0))
-        {
-            printf("pos:%s %s\n",pos->data.username,username);
-            return 1;
-        }
-    }
-
-    return 0;
-}
-//登录
-void Login(PACK* pack_t)
-{
-    int flag=0;
-    int ret;
-    
-    //没有用户
-    if(ret==0)
-    {
-        flag=2;
-    }
     server_list_t pos;
     for(pos=list_ser->next;pos!=list_ser;pos=pos->next)
     {
-        if((strcmp(pos->data.,username)==0))
+        if((strcmp(pos->data.username,username)==0)
         {
-            printf("pos:%s %s\n",pos->data.username,username);
+            printf("pos:%s\n%s\n",pos->data.username.pos->data.password);
             flag=1;
             break;
         }
     }
 
-    server_user_t data;
+    server_user_node_t *new;
+    new=(server_user_node_t*)malloc(sizeof(server_user_node_t));
+
     if(flag==0)
     {
-        ch[0]='0';
+        strcpy(new->data.username,pack_t->data.send_name);
+        strcpy(new->data.password,pack_t->data.message);
+        new->data.online=DOWNLINE;
+        
+        //链表尾插法，list为头指针，new为新节点
+        List_AddTail(list_ser,new);
+
+        memset(buf,0,sizeof(buf));
+        sprintf(buf,"insert into userinfo values('%s','%s')",pack_t->data.send_name,pack_t->data.message);
+        mysql_real_query(&mysql,buf,strlen(buf));
+        register_flag[0]='1';
     }
     else
     {
-        if(list_ser->data.online==DOWNLINE)
+        register_flag[0]='0';
+    }
+    register_flag[1]='\0';
+
+    Send_pack(pack_t->data.send_fd,pack_t,register_flag);
+    free(pack_t);
+}
+//登录
+void Login(PACK* pack_t)
+{
+    char login_flag[10];
+    int ret;
+    int flag=0;
+    
+    
+    server_list_t pos;
+    for(pos=list_ser->next;pos!=list_ser;pos=pos->next)
+    {
+        if((strcmp(pos->data.username,username)==0)&&strcmp(pos->data.password,pack_t->data.message)==0)
         {
-            ch[0]='1';
-            list_ser->data.online=ONLINE;
-            list_ser->data.connfd=pack_t->data.send_fd;
+            printf("pos:%s\n%s\n",pos->data.username.pos->data.password);
+            flag=1;
+            
+            break;
+        }
+    }
+    //账号已经登录
+    if(flag==1)
+    {
+        if(pos->data.online==ONLINE)
+            login_flag[0]='3';
+    }
+
+    //密码不正确
+    if(flag==0)
+        login_flag[0]='0';
+    else
+    {
+        if(pos->data.online==DOWNLINE)
+        {
+            //登录成功
+            login_flag[0]='1';
+            pos->data.online=ONLINE;
+            pos->data.connfd=pack_t->data.send_fd;
         }
         else
         {
-            ch[0]='2';
+            //账号不存在
+            login_flag[0]='2';
         }
     }
-    ch[1]='\0';
+    login_flag[1]='\0';
 
+    Send_pack(pack_t->data.send_fd,pack_t,login_flag);
     
-
-    
+    free(pack_t);
 }
 void Add_friend(PACK* pack_t)
 {

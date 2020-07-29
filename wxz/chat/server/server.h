@@ -165,8 +165,8 @@ int lfd;
 int epfd;
 int sockfd;
 
-MYSQL* mysql;
-mysql_init(&mysql);
+MYSQL mysql;
+
 //PACK pack_recv
 
 void Init_socket();
