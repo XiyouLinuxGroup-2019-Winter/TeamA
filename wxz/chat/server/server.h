@@ -53,8 +53,6 @@
 #define ONLINE 1
 
 
-pthread_mutex_t mutex;
-pthread_cond_t cond;
 int cfd;
 int enternum;
 char username[MAX];

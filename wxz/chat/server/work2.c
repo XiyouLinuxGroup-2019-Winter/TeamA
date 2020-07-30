@@ -121,7 +121,7 @@ void Register(PACK* pack_t)
     }
     register_flag[1]='\0';
 
-    Send_pack(pack_t->data.send_fd,pack_t,register_flag);
+    Send_recv_pack(pack_t->data.send_fd,pack_t,register_flag);
     free(pack_t);
 }
 //登录
@@ -171,7 +171,7 @@ void Login(PACK* pack_t)
     }
     login_flag[1]='\0';
 
-    Send_pack(pack_t->data.send_fd,pack_t,login_flag);
+    Send_recv_pack(pack_t->data.send_fd,pack_t,login_flag);
     
     free(pack_t);
 }
@@ -203,3 +203,94 @@ void Del_friend(PACK* pack_t)
 
     free(pack_t);
 }
+
+void Create_group(PACK* pack_t)
+{
+
+    
+    int flag;
+    group_list_t pos;
+
+    pos=Find_server_group(pack_t->data.message);
+
+    if(pos!=NULL)
+    {
+        strcpy(pack_t->data.recv_name,pack_t->data.send_name);
+        strcpy(pack_t->data.send_name,"server");
+        pack_t->data.message[0]=1;
+        Send_pack(pack_t);
+        free(pack_t);
+        return ;
+    }
+
+    //新建群信息
+    friend_node_t* new;
+    new=(friend_node_t*)malloc(sizeof(friend_node_t));
+    new->data.member_num=0;
+    //群名
+    strcpy(new->data.group_name,pack_t->data.message);
+    //群主
+    strcpy(new->data.member_name[new->data.member_num],pack_t->data.send_name);
+    new->data.type[new->data.member_num]=1;
+    new->data.member_num=1;
+
+    server_user_node_t* new_user;
+    new_user=Find_server_user(pack_t->data.send_name);
+    strcpy(new_user->data.group[new_user->data.group_num++].group_name,pack_t->data.message);
+
+    //链表尾插法，list为头指针，new为新节点
+    List_AddTail(group_ser,new);
+    group_num++;
+
+    printf("\ngroup:%s create !\n",pack_t->data.message);
+
+    strcpy(pack_t->data.recv_name,pack_t->data.send_name);
+    strcpy(pack_t->data.send_name,"server");
+
+    pack_t->data.message[0]=2;
+    Send_pack(pack_t);
+    free(pack_t);
+}
+void Add_group(PACK* pack_t)
+{
+    group_list_t pos;
+    pos=Find_server_group(pack_t->data.send_name);
+    if(pos!=NULL)
+    {
+        strcpy(pos->data.member_name[pos->data.member_num],pack_t->data.send_name);
+        pos->data.type[pos->data.member_num]=3;
+        pos->data.status[pos->data.member_num]=1;
+        pos->data.member_num++;
+
+
+        strcpy(pack_t->data.recv_name,pack_t->data.send_name);
+        strcpy(pack_t->data.send_name,"server");
+
+        pack_t->data.message[0]=2;
+
+        printf("\nuser:%s add group:%s successfully !\n",pack_t->data.recv_name,pack_t->data.message);
+
+        Send_pack(pack_t);
+        free(pack_t);
+        return ;
+    }
+    strcpy(pack_t->data.recv_name,pack_t->data.send_name);
+    strcpy(pack_t->data.send_name,"server");
+
+    pack_t->data.message[0]=1;
+    Send_pack(pack_t);
+    free(pack_t);
+}
+void Withdraw_group(PACK* pack_t)
+{
+    
+}
+void View_add_group(PACK* pack_t);
+void View_group_member(PACK* pack_t);
+void View_group_record(PACK* pack_t);
+
+
+
+void Del_group(PACK* pack_t);
+void Set_group_admin(PACK* pack_t);
+void Kick(PACK* pack_t);

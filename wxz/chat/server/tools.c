@@ -67,7 +67,7 @@ void Recv_pack_message(PACK recv_t)
     printf("\033[1;33m|\033[0m 发送包的数量:%d\n",send_num);
     printf("\033[1;33m---------------------\033[0m\n");
 }
-void Send_pack(int fd,PACK* recv_pack,char* flag)
+void Send_recv_pack(int fd,PACK* recv_pack,char* flag)
 {
     PACK pack_send;
     
@@ -87,6 +87,12 @@ void Send_pack(int fd,PACK* recv_pack,char* flag)
     {
         my_err("send error!",__LINE__);
     }
+}
+void Send_pack(PACK* send_pack_t)
+{
+    pthread_mutex_lock(&mutex);
+    memcpy(&(send_pack[send_num++]),send_pack_t,sizeof(PACK));
+    pthread_mutex_unlock(&mutex);
 }
 server_list_t Find_server_user(char *username)
 {
@@ -123,4 +129,22 @@ void Find_del_server_user(server_list_t pos,char* friend_name)
         strcpy(pos->data.friend_message[i],pos->data.frined_message[i+1]);
     }
     pos->data.frined_num--;
+}
+
+group_list_t Find_server_group(char* group_name)
+{
+    group_list_t pos=group_ser;
+    if(group_num==0)
+        return NULL;
+    if(pos==NULL)
+        return NULL;
+    for(pos=group_ser->next;pos!=group_ser;pos=pos->next)
+    {
+        if((strcmp(pos->data.group_name,group_name)==0))
+        {
+            printf("pos:%d\n%s\n",pos->data.group_num,pos->data.group_name);
+            return pos;
+        }
+    }
+    return NULL;
 }

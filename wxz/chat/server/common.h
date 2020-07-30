@@ -77,15 +77,16 @@ typedef struct friend_node
     struct friend_node *pre;
 }friend_node_t,*friend_list_t;
 
-friend_list_t head;
-pthread_rwlock_t lock;
+
 
 
 typedef struct group_info
 {
-    int group_num;
-    char name[MAX];
+    int member_num;
+    char group_name[MAX];
     char member_name[MAX][MAX];
+    int type[MAX_CHAR];
+    int status[MAX_CHAR];
 }GROUP_INFO;
 
 typedef struct group_node
@@ -99,10 +100,10 @@ typedef struct group_node
 typedef struct file
 {
     int flag
-    int size;
-    char name[100];
-    char send[MAX];
-    char recv[MAX];
+    int file_size;
+    char file_name[100];
+    char send_name[MAX];
+    char recv_name[MAX];
 }FILE_INFO;
 
 typedef struct data
@@ -176,7 +177,9 @@ typedef struct server_user
     char friend_message[MAX][MAX];
 
     int group_num;
-    char group_name[MAX][MAX];
+    char group_message[MAX][MAX];
+
+    GROUP_INFO group[MAX];//群组信息
 }server_user_t;          
 
 typedef struct server_user_node
@@ -189,13 +192,13 @@ typedef struct server_user_node
 server_list_t list_ser;
 int user_num;
 
-PACK pack_send [MAX_CHAR*2];
+PACK pack_send[MAX_CHAR*2];
 int send_num;
 
-GROUP_INFO group[MAX_CHAR];
+group_list_t group_ser;
 int group_num;
 
-FILE_INFO file [MAX_CHAR];
+FILE_INFO file[MAX_CHAR];
 int file_num;
 
 int lfd;
@@ -216,18 +219,18 @@ void Show_friend_status();
 void View_friend_list();
 void View_chat_history();
 
-void Create_group();
-void Add_group();
-void Withdraw_group();
-void View_add_group();
-void View_group_member();
-void View_group_record();
-void Group_menu();
+void Create_group(PACK* pack_t);
+void Add_group(PACK* pack_t);
+void Withdraw_group(PACK* pack_t);
+void View_add_group(PACK* pack_t);
+void View_group_member(PACK* pack_t);
+void View_group_record(PACK* pack_t);
 
 
-void Del_group();
-void Set_group_admin();
-void Kick();
-void Group_leader_menu();
+
+void Del_group(PACK* pack_t);
+void Set_group_admin(PACK* pack_t);
+void Kick(PACK* pack_t);
+
 
 void Send_file();
