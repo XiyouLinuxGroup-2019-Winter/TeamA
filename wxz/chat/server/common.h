@@ -165,10 +165,18 @@ typedef struct server_user
     char password[20];
     struct sockaddr_in useraddr;
     int socket_id;
-    int previe;
-    int many;
+    //int previe;
+    //int many;
+    
     int online;      //1:开;0:关
     int connfd;      //链接套接字
+
+
+    int friend_num;
+    char friend_message[MAX][MAX];
+
+    int group_num;
+    char group_name[MAX][MAX];
 }server_user_t;          
 
 typedef struct server_user_node
@@ -200,7 +208,7 @@ void Register(PACK* pack_t);
 
 void Add_friend(PACK* pack_t);
 void Del_friend(PACK* pack_t);
-void Query_friend();
+void Query_friend(PACK* pack_t);
 void Private_chat();
 void Shield_friend();
 void Unshield_friend();

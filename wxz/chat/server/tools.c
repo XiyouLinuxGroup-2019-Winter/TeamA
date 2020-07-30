@@ -88,3 +88,39 @@ void Send_pack(int fd,PACK* recv_pack,char* flag)
         my_err("send error!",__LINE__);
     }
 }
+server_list_t Find_server_user(char *username)
+{
+    if(user_num==0)
+        return NULL;
+    
+    server_list_t pos=list_ser;
+    if(pos==NULL)
+        return NULL;
+    for(pos=list_ser->next;pos!=list_ser;pos=pos->next)
+    {
+        if((strcmp(pos->data.username,username)==0))
+        {
+            printf("pos:%s\n%s\n",pos->data.username,pos->data.password);
+            return pos;
+        }
+    }
+    return NULL;
+}
+void Find_del_server_user(server_list_t pos,char* friend_name)
+{
+    int i;
+    int index;
+    for(pos=list_ser->next,i=0;pos!=list_ser;pos=pos->next,i++)
+    {
+        if((strcmp(pos->data.friend_message[i],friend_name)==0))
+        {
+            printf("pos:%s\n%s\n",pos->data.username,pos->data.password);
+            index=i;
+        }
+    }
+    for(pos=list_ser->next,i=index;pos!=list_ser;pos=pos->next,i++)
+    {
+        strcpy(pos->data.friend_message[i],pos->data.frined_message[i+1]);
+    }
+    pos->data.frined_num--;
+}

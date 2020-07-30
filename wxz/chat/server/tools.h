@@ -165,3 +165,5 @@ char* Get_string(char* buf,int len);
 char getch();
 void Clear_buffer();
 void Send_pack(int fd,PACK* recv_pack,char* flag);
+server_list_t Find_server_user(char *username);
+void Find_del_server_user(server_list_t pos,char* friend_name);

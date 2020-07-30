@@ -107,6 +107,8 @@ void Register(PACK* pack_t)
         
         //链表尾插法，list为头指针，new为新节点
         List_AddTail(list_ser,new);
+        user_num++;
+
 
         memset(buf,0,sizeof(buf));
         sprintf(buf,"insert into userinfo values('%s','%s')",pack_t->data.send_name,pack_t->data.message);
@@ -141,6 +143,7 @@ void Login(PACK* pack_t)
             break;
         }
     }
+
     //账号已经登录
     if(flag==1)
     {
@@ -172,11 +175,31 @@ void Login(PACK* pack_t)
     
     free(pack_t);
 }
+
 void Add_friend(PACK* pack_t)
 {
-    char buf[BUFSIZ];
-    memset(buf,0,sizeof(BUFSIZ));
+    server_list_t pos;
+    server_list_t pos_friend;
+    pos=Find_server_user(pack_t->data.send_name);
+    pos_friend=Find_server_user(pack_t->data.message);
 
-    printf("%s\n",pack_t->data.message);
+    strcpy(pos->data.friend_message[ (pos->data.friend_num) ++],pack_t->data.message);
+    //strcpy(pos->data.friend_message[ (pos->data.friend_num) ++],pos_friend->data.username);
+    strcpy(pos_friend->data.friend_message[ (pos_friend->data.friend_num) ++],pack_t->data.send_name);
+    //strcpy(pos_friend->data.friend_message[ (pos_friend->data.friend_num) ++],pos->data.username);
+    
+    free(pack_t);
+}
+void Del_friend(PACK* pack_t)
+{
+    server_list_t pos;
+    server_list_t pos_friend;
 
+    pos=Find_server_user(pack_t->data.send_name);
+    Find_del_server_user(pos,pack_t->data.message);
+
+    pos_friend=Find_server_user(pack_t->data.message);
+    Find_del_server_user(pos_friend,pack_t->data.send_name);
+
+    free(pack_t);
 }
