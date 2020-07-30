@@ -43,6 +43,7 @@
 #define VIEW_GROUP_MEMBER 22 
 #define VIEW_GROUP_RECORD 23
 #define SEND_FILE 24
+#define GROUP_CHAT 25
 
 pthread_mutex_t mutex;
 pthread_cond_t cond;
@@ -123,8 +124,8 @@ typedef struct account_info
     char phone[30];
     char e_mail[50];
 
-    FRIEND_INFO friend [MAX_CHAR];
-    GROUP_INFO group [MAX_CHAR];
+    FRIEND_INFO friend[MAX_CHAR];
+    GROUP_INFO group[MAX_CHAR];
     int friend_num;
     int group_num;
 
@@ -161,6 +162,7 @@ void View_chat_history();
 void Create_group();
 void Add_group();
 void Withdraw_group();
+void Group_chat();
 void View_add_group();
 void View_group_member();
 void View_group_record();

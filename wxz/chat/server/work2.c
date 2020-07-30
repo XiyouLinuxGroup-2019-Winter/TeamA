@@ -203,7 +203,21 @@ void Del_friend(PACK* pack_t)
 
     free(pack_t);
 }
-
+void Query_friend(PACK* pack_t)
+{
+    
+}
+void Private_chat(PACK* pack_t)
+{
+    Mysql_save_message(pack_t);
+    Send_pack(pack_t);
+    free(pack_t);
+}
+void Shield_friend(PACK* pack_t);
+void Unshield_friend(PACK* pack_t);
+void Show_friend_status(PACK* pack_t);
+void View_friend_list(PACK* pack_t);
+void View_chat_history(PACK* pack_t);
 void Create_group(PACK* pack_t)
 {
 
@@ -254,7 +268,7 @@ void Create_group(PACK* pack_t)
 void Add_group(PACK* pack_t)
 {
     group_list_t pos;
-    pos=Find_server_group(pack_t->data.send_name);
+    pos=Find_server_group(pack_t->data.message);
     if(pos!=NULL)
     {
         strcpy(pos->data.member_name[pos->data.member_num],pack_t->data.send_name);
@@ -283,14 +297,68 @@ void Add_group(PACK* pack_t)
 }
 void Withdraw_group(PACK* pack_t)
 {
+    int i,j,k;
+    group_list_t pos;
+    pos=Find_server_group(pack_t->data.message);
     
+    for(i=1;i<=group_num;i++)
+    {
+        if(strcmp(pack_t->data.message,pos->data.group_name[i])==0)
+        {
+            for(j=1;j<=pos->data.member_num;j++)
+            {
+                if(strcmp(pack_t->data.send_name,pos->data.member_name[j])==0)
+                {
+                    for(k=j;k<pos->data.member_num;k++)
+                    {
+                        strcpy(pos->data.member_name[k],pos->data.member_name[k+1]);
+                        pos->data.type[k]=pos->data.type[k+1];
+                        pos->data.status[k]=pos->data.status[k+1];
+                    }
+                    pos->data.member_num--;
+                }
+            }
+        }
+    }
 }
-void View_add_group(PACK* pack_t);
+void View_add_group(PACK* pack_t)
+{
+
+}
 void View_group_member(PACK* pack_t);
 void View_group_record(PACK* pack_t);
 
 
 
-void Del_group(PACK* pack_t);
+void Del_group(PACK* pack_t)
+{
+    int i;
+    int j;
+    group_list_t pos=Find_server_group(pack_t->data.message);
+    for(i=1;i<=group_num;i++)
+    {
+        if(strcmp(pos->data.group_name[i],pack_t->data.message)==0)
+        {
+           if(strcmp(pos->data.member_name[1],pack_t->data.send_name)==0)
+           {
+               //从链表中删除并释放结点node
+               //
+               List_FreeNode(pos);
+               pack_t->data.message[0]=2;
+           }
+           else
+           {
+               pack_t->data.message[0]=1;
+           }
+           
+        }
+    }
+    strcpy(pack_t->data.recv_name,pack_t->data.send_name);
+    strcpy(pack_t->data.send_name,"server");
+
+ 
+    Send_pack(pack_t);
+    free(pack_t);
+}
 void Set_group_admin(PACK* pack_t);
 void Kick(PACK* pack_t);

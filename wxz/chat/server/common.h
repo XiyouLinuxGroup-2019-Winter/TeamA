@@ -212,12 +212,12 @@ void Register(PACK* pack_t);
 void Add_friend(PACK* pack_t);
 void Del_friend(PACK* pack_t);
 void Query_friend(PACK* pack_t);
-void Private_chat();
-void Shield_friend();
-void Unshield_friend();
-void Show_friend_status();
-void View_friend_list();
-void View_chat_history();
+void Private_chat(PACK* pack_t);
+void Shield_friend(PACK* pack_t);
+void Unshield_friend(PACK* pack_t);
+void Show_friend_status(PACK* pack_t);
+void View_friend_list(PACK* pack_t);
+void View_chat_history(PACK* pack_t);
 
 void Create_group(PACK* pack_t);
 void Add_group(PACK* pack_t);

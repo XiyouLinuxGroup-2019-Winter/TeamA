@@ -346,6 +346,10 @@ void View_group_record()
 {
 
 }
+void Group_chat()
+{
+
+}
 void Group_menu()
 {
     int choice=1;
@@ -355,10 +359,11 @@ void Group_menu()
         printf("\t\t\033[1;34m|\033[0m--------1.创建群-------\033[1;34m|\033[0m\n");
         printf("\t\t\033[1;34m|\033[0m--------2.添加群-------\033[1;34m|\033[0m\n");
         printf("\t\t\033[1;34m|\033[0m--------3.退群---------\033[1;34m|\033[0m\n");
-        printf("\t\t\033[1;34m|\033[0m--------4.已加群-------\033[1;34m|\033[0m\n");
-        printf("\t\t\033[1;34m|\033[0m--------5.群成员-------\033[1;34m|\033[0m\n");
-        printf("\t\t\033[1;34m|\033[0m-----6.查看聊天记录----\033[1;34m|\033[0m\n");
-        printf("\t\t\033[1;34m|\033[0m------7.群管理权限-----\033[1;34m|\033[0m\n");
+        printf("\t\t\033[1;34m|\033[0m--------4.群聊---------\033[1;34m|\033[0m\n");
+        printf("\t\t\033[1;34m|\033[0m--------5.已加群-------\033[1;34m|\033[0m\n");
+        printf("\t\t\033[1;34m|\033[0m--------6.群成员-------\033[1;34m|\033[0m\n");
+        printf("\t\t\033[1;34m|\033[0m-----7.查看聊天记录----\033[1;34m|\033[0m\n");
+        printf("\t\t\033[1;34m|\033[0m------8.群管理权限-----\033[1;34m|\033[0m\n");
         printf("\t\t\033[1;34m|\033[0m-------- 0.退出--------\033[1;34m|\033[0m\n");
         printf("请输入选择:");
         scanf("%d",&choice);
@@ -375,15 +380,18 @@ void Group_menu()
                 Withdraw_group();
                 break;
             case 4:
-                View_add_group();
+                Group_chat();
                 break;
             case 5:
-                View_group_member();
+                View_add_group();
                 break;
             case 6:
-                View_group_record();
+                View_group_member();
                 break;
             case 7:
+                View_group_record();
+                break;
+            case 8:
                 Group_leader_menu();
                 break;
             case 0:
@@ -509,7 +517,7 @@ void Login()
     printf("请输入账号:\n");
     scanf("%s",name);
     printf("请输入密码:\n");
-    scand("%s",password);
+    scanf("%s",password);
 
     PACK recv_login;
     int login_flag;
