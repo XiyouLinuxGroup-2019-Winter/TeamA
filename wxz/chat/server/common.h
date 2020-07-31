@@ -52,6 +52,9 @@
 #define DOWNLINE 0
 #define ONLINE 1
 
+#define SAVE 10
+#define MAX_THREAD_NUM 10
+
 
 pthread_mutex_t mutex;
 pthread_cond_t cond;
@@ -59,6 +62,7 @@ int cfd;
 int enternum;
 char username[MAX];
 
+MYSQL mysql;
 
 typedef struct  friend_info
 {
@@ -225,7 +229,7 @@ void Withdraw_group(PACK* pack_t);
 void View_add_group(PACK* pack_t);
 void View_group_member(PACK* pack_t);
 void View_group_record(PACK* pack_t);
-
+void Group_chat(PACK* pack_t);
 
 
 void Del_group(PACK* pack_t);

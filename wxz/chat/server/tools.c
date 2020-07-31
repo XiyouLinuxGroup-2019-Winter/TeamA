@@ -148,3 +148,14 @@ group_list_t Find_server_group(char* group_name)
     }
     return NULL;
 }
+void Read_from_mysql()
+{
+
+    //初始化链表list。链表为带头结点的双向循环链表
+    List_Init(list_ser,server_list_t);
+    List_Init(group_ser,group_list_t);
+
+    
+
+
+}

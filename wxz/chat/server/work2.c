@@ -83,7 +83,7 @@ void Register(PACK* pack_t)
 {
     char register_flag[10];
     int flag;
-    char buf[BUFSIZ];
+    char buf[MAX];
 
     server_list_t pos;
     for(pos=list_ser->next;pos!=list_ser;pos=pos->next)
@@ -111,7 +111,7 @@ void Register(PACK* pack_t)
 
 
         memset(buf,0,sizeof(buf));
-        sprintf(buf,"insert into userinfo values('%s','%s')",pack_t->data.send_name,pack_t->data.message);
+        sprintf(buf,"insert into account values('%s','%s')",pack_t->data.send_name,pack_t->data.message);
         mysql_real_query(&mysql,buf,strlen(buf));
         register_flag[0]='1';
     }
@@ -203,21 +203,21 @@ void Del_friend(PACK* pack_t)
 
     free(pack_t);
 }
-void Query_friend(PACK* pack_t)
+/*void Query_friend(PACK* pack_t)
 {
     
-}
+}*/
 void Private_chat(PACK* pack_t)
 {
     Mysql_save_message(pack_t);
     Send_pack(pack_t);
     free(pack_t);
 }
-void Shield_friend(PACK* pack_t);
+/*void Shield_friend(PACK* pack_t);
 void Unshield_friend(PACK* pack_t);
 void Show_friend_status(PACK* pack_t);
 void View_friend_list(PACK* pack_t);
-void View_chat_history(PACK* pack_t);
+void View_chat_history(PACK* pack_t);*/
 void Create_group(PACK* pack_t)
 {
 
@@ -321,13 +321,46 @@ void Withdraw_group(PACK* pack_t)
         }
     }
 }
-void View_add_group(PACK* pack_t)
+/*void View_add_group(PACK* pack_t)
 {
 
 }
 void View_group_member(PACK* pack_t);
-void View_group_record(PACK* pack_t);
+void View_group_record(PACK* pack_t);*/
+void Group_chat(PACK* pack_t)
+{
+    group_list_t pos;
+    pos=Find_server_group(pack_t->data.recv_name);
+    char send_name[SAVE];
 
+    int i;
+    int len=strlen(pack_t->data.message);
+    for(i=len;i>=0;i--)
+    {
+        pack_t->data.message[i+SAVE]=pack_t->data.message[i];
+    }
+    //把客户端消息copy
+    strcpy(send_name,pack_t->data.send_name);
+
+    for(i=0;i<SAVE;i++)
+    {
+        pack_t->data.message[i]=pack_t->data.send_name[i];
+    }
+    strcpy(pack_t->data.send_name,pack_t->data.recv_name);
+
+    for(i=1;i<=pos->data.member_num;i++)
+    {
+        strcpy(pack_t->data.recv_name,pos->data.member_name[i]);
+        if(strcmp(send_name,pos->data.member_name[i])!=0)
+        {
+            Mysql_save_message(pack_t);
+
+            Send_pack(pack_t);
+        }
+    }
+    free(pack_t);
+
+}
 
 
 void Del_group(PACK* pack_t)
@@ -360,5 +393,5 @@ void Del_group(PACK* pack_t)
     Send_pack(pack_t);
     free(pack_t);
 }
-void Set_group_admin(PACK* pack_t);
-void Kick(PACK* pack_t);
+/*void Set_group_admin(PACK* pack_t);
+void Kick(PACK* pack_t);*/

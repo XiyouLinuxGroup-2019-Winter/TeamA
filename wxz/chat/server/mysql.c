@@ -59,9 +59,29 @@ void Use_mysql(const char *string, MYSQL mysql)
         mysql_free_result(result);
     }
 }
+void Mysql_save_message(PACK* pack_t)
+{
+    char buf[MAX];
+    memset(buf,0,MAX);
+    
+    sprintf(buf,"insert into message values('%s','%s','%s')",pack_t->data.send_name,pack_t->data.recv_name,pack_t->data.message);
+    int ret;
+    ret=mysql_real_query(&mysql,buf,strlen(buf));
+
+    if(ret)
+    {
+        sys_err("发送MYSQL语句失败！",__LINE__,&mysql);
+        return ;
+    }
+    printf("the message write into the mysql\n");
+
+}
 void Close_mysql(MYSQL mysql)
 {
     mysql_close(&mysql);
+    mysql_free_result(result);
     mysql_library_end();
     printf("MYSQL数据库关闭!\n");
 }
+void Send_record(PACK* pack_t);
+

@@ -4,6 +4,23 @@
 #include "prest.h"
 int main()
 {
+    int sys_log;
+
+
+    Read_from_mysql();
+
+    printf("线程池启动\n");
+    pool_init(MAX_THREAD_NUM);
+    printf("线程池启动成功!\n");
+    sleep(2);
+
+
+    Init_socket();
+
+    Connect_mysql(&mysql);
+
+    Close_mysql(&mysql);
+    pool_destroy();
 
 }
 void Init_socket()
@@ -102,6 +119,7 @@ void Init_socket()
             
         }
     }
+    free(pack_t);
     close(epfd);
     close(lfd);
 }
