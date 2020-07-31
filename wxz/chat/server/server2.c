@@ -1,7 +1,4 @@
 #include "server.h"
-#include "pthreadpool.h"
-#include "common.h"
-#include "prest.h"
 int main()
 {
     int sys_log;

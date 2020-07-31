@@ -1,7 +1,4 @@
-#include "common.h"
-#include "prest.h"
 #include "server.h"
-#include "pthreadpool.h"
 
 void *work(void *arg);
 

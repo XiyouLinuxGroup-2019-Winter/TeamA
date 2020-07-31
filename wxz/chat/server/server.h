@@ -11,9 +11,11 @@
 #include <arpa/inet.h>
 #include <time.h>
 #include <pthread.h>
+#include <mysql/mysql.h>
 #include "wrang.h"
 #include "mysql.h"
 #include "prest.h"
+#include "pthreadpool.h"
 
 #define SERV_ADDRESS "127.0.0.1"
 #define SERV_PORT 8000
@@ -52,11 +54,17 @@
 #define DOWNLINE 0
 #define ONLINE 1
 
+#define SAVE 10
+#define MAX_THREAD_NUM 10
 
+
+pthread_mutex_t mutex;
+pthread_cond_t cond;
 int cfd;
 int enternum;
-char username[MAX];
 
+
+extern MYSQL mysql;
 
 typedef struct  friend_info
 {
@@ -64,24 +72,44 @@ typedef struct  friend_info
     //好友的信息数
     int message_num;
     int friend_num;
-    char name[MAX_CHAR];
+    char name[MAX];
+    server_user_t data;
 }FRIEND_INFO;
+
+typedef struct friend_node
+{
+    FRIEND_INFO data;
+    struct friend_node *next;
+    struct friend_node *pre;
+}friend_node_t,*friend_list_t;
+
+
 
 
 typedef struct group_info
 {
-    int group_num;
-    char name[MAX];
+    int member_num;
+    char group_name[MAX];
     char member_name[MAX][MAX];
+    int type[MAX_CHAR];
+    int status[MAX_CHAR];
 }GROUP_INFO;
+
+typedef struct group_node
+{
+    GROUP_INFO data;
+    struct group_node *next;
+    struct group_node *pre;
+}group_node_t,*group_list_t;
+
 
 typedef struct file
 {
     int flag
-    int size;
-    char name[100];
-    char send[MAX];
-    char recv[MAX];
+    int file_size;
+    char file_name[100];
+    char send_name[MAX];
+    char recv_name[MAX];
 }FILE_INFO;
 
 typedef struct data
@@ -129,6 +157,7 @@ typedef struct account_node
 }user_node_t,*user_list_t;
 
 
+
 typedef struct syslog
 {
     char name[20];
@@ -136,73 +165,78 @@ typedef struct syslog
     char work[20];
 }syslog_t;
 
+//服务器保存用户信息结构体
 typedef struct server_user
 {
     char username[20];
-    char userpasd[20];
+    char password[20];
     struct sockaddr_in useraddr;
-    int    previe    ;
-    int    many      ;
-    int    online    ;      //1:开;0:关
-    int    connfd    ;      //链接套接字
-}server_user_t;             //服务器保存用户信息结构体
+    int socket_id;
+    //int previe;
+    //int many;
+    
+    int online;      //1:开;0:关
+    int connfd;      //链接套接字
 
-ACCOUNT_INFO user;
-int user_num;
 
-PACK pack_send [MAX_CHAR*2];
-int send_num;
+    int friend_num;
+    char friend_message[MAX][MAX];
 
-GROUP_INFO group[MAX_CHAR];
-int group_num;
+    int group_num;
+    char group_message[MAX][MAX];
 
-FILE_INFO file [MAX_CHAR];
+    GROUP_INFO group[MAX];//群组信息
+}server_user_t;          
+
+typedef struct server_user_node
+{
+    server_user_t data;
+    struct server_user_node *next;
+    struct server_user_node *pre;
+}server_user_node_t,*server_list_t;
+
+extern server_list_t list_ser;
+extern int user_num;
+
+extern PACK pack_send[MAX_CHAR*2];
+extern int send_num;
+
+extern group_list_t group_ser;
+extern int group_num;
+
+FILE_INFO file[MAX_CHAR];
 int file_num;
 
 int lfd;
 int epfd;
-int sockfd;
-
-MYSQL mysql;
-
-//PACK pack_recv
-
-void Init_socket();
-void Recv_pack_message(PACK recv_t);
-void display(char* str);
-void my_err(const char* err_string,int line);
-char* Get_string(char* buf,int len);
-char getch();
-void Clear_buffer();
+int cfd;
 
 
-void Register();
-void Login();
-void Modify_password();
+void Login(PACK* pack_t);
+void Register(PACK* pack_t);
 
-void Friend_menu();
-void Add_friend();
-void Del_friend();
-void Query_friend();
-void Private_chat();
-void Shield_friend();
-void Unshield_friend();
-void Show_friend_status();
-void View_friend_list();
-void View_chat_history();
+void Add_friend(PACK* pack_t);
+void Del_friend(PACK* pack_t);
+void Query_friend(PACK* pack_t);
+void Private_chat(PACK* pack_t);
+void Shield_friend(PACK* pack_t);
+void Unshield_friend(PACK* pack_t);
+void Show_friend_status(PACK* pack_t);
+void View_friend_list(PACK* pack_t);
+void View_chat_history(PACK* pack_t);
 
-void Create_group();
-void Add_group();
-void Withdraw_group();
-void View_add_group();
-void View_group_member();
-void View_group_record();
-void Group_menu();
+void Create_group(PACK* pack_t);
+void Add_group(PACK* pack_t);
+void Withdraw_group(PACK* pack_t);
+void View_add_group(PACK* pack_t);
+void View_group_member(PACK* pack_t);
+void View_group_record(PACK* pack_t);
+void Group_chat(PACK* pack_t);
 
 
-void Del_group();
-void Set_group_admin();
-void Kick();
-void Group_leader_menu();
+void Del_group(PACK* pack_t);
+void Set_group_admin(PACK* pack_t);
+void Kick(PACK* pack_t);
+
 
 void Send_file();

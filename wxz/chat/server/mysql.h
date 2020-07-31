@@ -1,7 +1,4 @@
-#include <mysql/mysql.h>
-#include <stdio.h>
-#include "common.h"
-
+#include "final.h"
 
 
 void sys_err(const char* s,int line);

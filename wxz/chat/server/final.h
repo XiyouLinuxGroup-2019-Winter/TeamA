@@ -13,9 +13,9 @@
 #include <pthread.h>
 #include <mysql/mysql.h>
 #include "wrang.h"
-#include "mysql.h"
-#include "prest.h"
+//#include "prest.h"
 #include "pthreadpool.h"
+
 
 #define SERV_ADDRESS "127.0.0.1"
 #define SERV_PORT 8000
@@ -64,7 +64,7 @@ int cfd;
 int enternum;
 
 
-extern MYSQL mysql;
+MYSQL mysql;
 
 typedef struct  friend_info
 {
@@ -241,3 +241,26 @@ void Kick(PACK* pack_t);
 
 
 void Send_file();
+
+
+
+
+void sys_err(const char* s,int line);
+void Connect_mysql(MYSQL mysql);
+void Use_mysql(const char *string, MYSQL mysql);
+void Close_mysql(MYSQL mysql);
+void Mysql_save_message(PACK* pack_t);
+
+
+
+void Recv_pack_message(PACK recv_t);
+void display(char* str);
+void my_err(const char* err_string,int line);
+char* Get_string(char* buf,int len);
+char getch();
+void Clear_buffer();
+void Send_recv_pack(int fd,PACK* recv_pack,char* flag);
+server_list_t Find_server_user(char *username);
+void Find_del_server_user(server_list_t pos,char* friend_name);
+group_list_t Find_server_group(char* group_name);
+void Read_from_mysql();cd 

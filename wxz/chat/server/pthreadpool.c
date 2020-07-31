@@ -1,5 +1,4 @@
-#include<stdio.h>
-#include "pthreadpool.h"  
+#include "final.h"
 
 void pool_init(int max_thread_num)  
 {  
