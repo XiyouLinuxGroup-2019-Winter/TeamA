@@ -14,7 +14,7 @@
 #include <mysql/mysql.h>
 #include "wrang.h"
 //#include "prest.h"
-#include "pthreadpool.h"
+#include "List.h"
 
 
 #define SERV_ADDRESS "127.0.0.1"
@@ -60,11 +60,9 @@
 
 pthread_mutex_t mutex;
 pthread_cond_t cond;
-int cfd;
-int enternum;
 
 
-MYSQL mysql;
+
 
 typedef struct  friend_info
 {
@@ -73,7 +71,6 @@ typedef struct  friend_info
     int message_num;
     int friend_num;
     char name[MAX];
-    server_user_t data;
 }FRIEND_INFO;
 
 typedef struct friend_node
@@ -88,9 +85,11 @@ typedef struct friend_node
 
 typedef struct group_info
 {
-    int member_num;
-    char group_name[MAX];
     char member_name[MAX][MAX];
+    int member_num;
+    
+    char group_name[MAX];
+ 
     int type[MAX_CHAR];
     int status[MAX_CHAR];
 }GROUP_INFO;
@@ -105,7 +104,7 @@ typedef struct group_node
 
 typedef struct file
 {
-    int flag
+    int flag;
     int file_size;
     char file_name[100];
     char send_name[MAX];
@@ -128,33 +127,6 @@ typedef struct package
     DATA data;
 }PACK;
 
-
-
-
-typedef struct account_info
-{
-    int flag;
-    int status;
-    int sid;
-    char username[MAX];
-    char password[MAX];
-    
-    char phone[MAX];
-    char e_mail[MAX];
-
-    FRIEND_INFO data[MAX_CHAR];
-    GROUP_INFO data[MAX_CHAR];
-    int friend_num;
-    int group_num;
-
-}ACCOUNT_INFO;
-
-typedef struct account_node
-{
-    ACCOUNT_INFO data;
-    struct account_node *next;
-    struct account_node *pre;
-}user_node_t,*user_list_t;
 
 
 
@@ -195,14 +167,15 @@ typedef struct server_user_node
     struct server_user_node *pre;
 }server_user_node_t,*server_list_t;
 
-extern server_list_t list_ser;
-extern int user_num;
+server_list_t list_ser;
+int user_num;
 
-extern PACK pack_send[MAX_CHAR*2];
-extern int send_num;
+PACK pack_send[MAX_CHAR*2];
+int send_num;
 
-extern group_list_t group_ser;
-extern int group_num;
+
+struct group_node* group_ser;
+int group_num;
 
 FILE_INFO file[MAX_CHAR];
 int file_num;
@@ -211,6 +184,10 @@ int lfd;
 int epfd;
 int cfd;
 
+
+void Init_socket();
+
+void *work(void* arg);
 
 void Login(PACK* pack_t);
 void Register(PACK* pack_t);
@@ -242,13 +219,10 @@ void Kick(PACK* pack_t);
 
 void Send_file();
 
-
-
-
+MYSQL mysql;
 void sys_err(const char* s,int line);
-void Connect_mysql(MYSQL mysql);
-void Use_mysql(const char *string, MYSQL mysql);
-void Close_mysql(MYSQL mysql);
+void Connect_mysql();
+void Close_mysql();
 void Mysql_save_message(PACK* pack_t);
 
 
@@ -263,4 +237,47 @@ void Send_recv_pack(int fd,PACK* recv_pack,char* flag);
 server_list_t Find_server_user(char *username);
 void Find_del_server_user(server_list_t pos,char* friend_name);
 group_list_t Find_server_group(char* group_name);
-void Read_from_mysql();cd 
+void Read_from_mysql();
+
+void Send_pack(PACK* send_pack_t);
+
+
+
+typedef struct threadpool_task_t  
+{  
+    //回调函数，任务运行时会调用此函数，也可声明成其它形式
+    void *(*process) (void *arg);  
+    void *arg;/*回调函数的参数*/  
+    struct threadpool_task_t *next;  
+  
+}threadpool_task;  
+ 
+
+
+//线程池结构  
+typedef struct  
+{  
+    pthread_mutex_t lock;  
+    pthread_cond_t cond;  
+  
+    //链表结构，线程池中所有等待任务  
+   threadpool_task *queue_head;  
+  
+    //是否销毁线程池  
+    int shutdown;  
+    pthread_t *threads;  
+    //线程池中允许的活动线程数目  
+    int max_thread_num;  
+    //当前等待队列的任务数目 
+    int queue_size;  
+  
+}threadpool_t; 
+
+threadpool_t *pool;
+
+int threadpool_add(void *(*process)(void *arg),void *arg);  
+int threadpool_destroy();
+void *thread_routine(void *arg); 
+void pool_init(int max_thread_num);  
+
+void *myfunc(void* arg);

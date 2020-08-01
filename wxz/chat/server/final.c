@@ -1,4 +1,5 @@
 #include "final.h"
+
 int main()
 {
     int sys_log;
@@ -14,9 +15,9 @@ int main()
 
     Init_socket();
 
-    Connect_mysql(&mysql);
+    Connect_mysql();
 
-    Close_mysql(&mysql);
+
     pool_destroy();
 
 }
@@ -55,6 +56,8 @@ void Init_socket()
     tep.data.fd=lfd;
     epoll_ctl(epfd,EPOLL_CTL_ADD,lfd,&tep);
 
+    int i;
+    int ret;
     while(1)
     {
         ret=epoll_wait(epfd,ep,1024,-1);
@@ -75,7 +78,7 @@ void Init_socket()
             else if(ep[i].events & EPOLLIN)
             {
                 int n=recv(ep[i].data.fd,&recv_t,sizeof(PACK),0);
-                recv_t.data.send_fd=events[i].data.fd;
+                recv_t.data.send_fd=ep[i].data.fd;
 
                 Recv_pack_message(recv_t);
 
@@ -93,7 +96,7 @@ void Init_socket()
                     {
                         if(pos->data.socket_id==ep[i].data.fd)
                         {
-                            List_DelNode(pos);
+                            List_FreeNode(pos);
                             printf("%s downline\n",pos->data.username);
                             break;
                         }
@@ -106,8 +109,8 @@ void Init_socket()
                 }
 
                 PACK *recv_pack_t;
-                recv_pack_t=(recv_pack_t*)malloc(sizeof(PACK));
-                memcpy(recv_pack,&recv_t,sizeof(PACK));
+                recv_pack_t=(PACK*)malloc(sizeof(PACK));
+                memcpy(recv_pack_t,&recv_t,sizeof(PACK));
 
                 threadpool_add(work,(void*)recv_pack_t);
 
@@ -116,69 +119,34 @@ void Init_socket()
             
         }
     }
-    free(pack_t);
+
     close(epfd);
     close(lfd);
 }
-void sys_err(const char* s,int line,MYSQL mysql)
+void sys_err(const char* s,int line)
 {
-    fprintf(stderr,"line:%d,why:%s",line,mysql_error(&mysql));
+    fprintf(stderr,"line:%d",line);
     perror(s);
     mysql_close(&mysql);
 }
 
-void Connect_mysql(MYSQL mysql)
+void Connect_mysql()
 {
     mysql_init(&mysql);
     //初始化数据库
     mysql_library_init(0,NULL,NULL);
     if(!mysql_real_connect(&mysql,"localhost","root","wxz","bokket",0,NULL,0))
     {
-        sys_err("连接失败!",__LINE__,&mysql);
+        sys_err("connect error!",__LINE__);
     }
     if(mysql_set_character_set(&mysql,"utf8"))
     {
-        sys_err("设置中文字符集失败!",__LINE__,&mysql);
+        sys_err("设置中文字符集失败!",__LINE__);
     }
     printf("连接MYSQL数据库成功!\n");
 }
 
-void Use_mysql(const char *string, MYSQL mysql)
-{
-	int i;
-	MYSQL_RES   *result;
-	MYSQL_ROW   row;
-	MYSQL_FIELD *field;
 
-	if(mysql_query(&mysql, string))
-    {
-        sys_err("发送MYSQL语句失败！",__LINE__,&mysql);
-    }
-
-	
-	result=mysql_store_result(&mysql);
-    if(result==NULL)
-    {
-        sys_err("查询失败!\n",__LINE__,&mysql);
-    }
-    else
-    {
-       while((field=mysql_num_fields(result))
-            printf("%-20s",field->name);
-        printf("\n");
-
-        while(row=mysql_fetch_row(result))
-        {
-	        for(i=0;i<mysql_num_fields(result);i++)
-            {
-                if(row[i])
-		            printf("%-20s\n",cols[i]);
-            }
-            printf("\n");
-        }
-        mysql_free_result(result);
-    }
-}
 void Mysql_save_message(PACK* pack_t)
 {
     char buf[MAX];
@@ -190,16 +158,16 @@ void Mysql_save_message(PACK* pack_t)
 
     if(ret)
     {
-        sys_err("发送MYSQL语句失败！",__LINE__,&mysql);
+        sys_err("发送MYSQL语句失败！",__LINE__);
         return ;
     }
     printf("the message write into the mysql\n");
 
 }
-void Close_mysql(MYSQL mysql)
+void Close_mysql()
 {
     mysql_close(&mysql);
-    mysql_free_result(result);
+    //mysql_free_result(result);
     mysql_library_end();
     printf("MYSQL数据库关闭!\n");
 }
@@ -243,40 +211,38 @@ void *work(void* arg)
                 Unshield_friend(pack_t);
                 break;
             case CREAT_GROUP:
-                Create_group();
+                Create_group(pack_t);
                 break;
             case ADD_GROUP:
-                Add_group();
+                Add_group(pack_t);
                 break;
             case WITHDRAW_GROUP:
-                Withdraw_group();
+                Withdraw_group(pack_t);
                 break;
-            case VIEW_ADD_GROUP():
-                View_add_group();
+            case VIEW_ADD_GROUP:
+                View_add_group(pack_t);
                 break;
             case VIEW_GROUP_MEMBER:
-                View_group_member();
+                View_group_member(pack_t);
                 break;        
             case VIEW_GROUP_RECORD:
-                View_group_record();
+                View_group_record(pack_t);
                 break;
-            case DEL_GROUP():
-                Del_group();
+            case DEL_GROUP:
+                Del_group(pack_t);
                 break;
             case SET_GROUP_ADMIN:
-                Set_group_admin();
+                Set_group_admin(pack_t);
                 break;
             case KICK:
-                Kick();
+                Kick(pack_t);
                 break;
             case SEND_FILE:
-                Send_file();
+                Send_file(pack_t);
                 break;
             case 0:
                 break;
         }
-    }
-
 }
 void Register(PACK* pack_t)
 {
@@ -287,9 +253,9 @@ void Register(PACK* pack_t)
     server_list_t pos;
     for(pos=list_ser->next;pos!=list_ser;pos=pos->next)
     {
-        if((strcmp(pos->data.username,username)==0)
+        if(strcmp(pos->data.username,pack_t->data.send_name)==0)
         {
-            printf("pos:%s\n%s\n",pos->data.username.pos->data.password);
+            printf("pos:%s\n%s\n",pos->data.username,pos->data.password);
             flag=1;
             break;
         }
@@ -334,9 +300,9 @@ void Login(PACK* pack_t)
     server_list_t pos;
     for(pos=list_ser->next;pos!=list_ser;pos=pos->next)
     {
-        if((strcmp(pos->data.username,username)==0)&&strcmp(pos->data.password,pack_t->data.message)==0)
+        if((strcmp(pos->data.username,pack_t->data.send_name)==0)&&strcmp(pos->data.password,pack_t->data.message)==0)
         {
-            printf("pos:%s\n%s\n",pos->data.username.pos->data.password);
+            printf("pos:%s\n%s\n",pos->data.username,pos->data.password);
             flag=1;
             
             break;
@@ -414,9 +380,9 @@ void Private_chat(PACK* pack_t)
 }
 /*void Shield_friend(PACK* pack_t);
 void Unshield_friend(PACK* pack_t);*/
-void Show_friend_status(PACK* pack_t);
+void Show_friend_status(PACK* pack_t)
 {
-    char status[MAX_CHAR2*2];
+    char status[MAX_CHAR*2];
     char buf[MAX_CHAR];
     char name_t[MAX_CHAR];
     int cnt;
@@ -437,10 +403,10 @@ void Show_friend_status(PACK* pack_t);
             {
                 memset(buf,0,sizeof(buf));
                 if(pos->data.online==ONLINE)
-                    sprintf(buf,"[%s]:[%d]\0",pos->data.username,ONLINE);
+                    sprintf(buf,"[%s]:[%d]",pos->data.username,ONLINE);
                 else
                 {
-                    sprintf(buf,"[%s]:[%d]\0",pos->data.username,DOWNLINE);
+                    sprintf(buf,"[%s]:[%d]",pos->data.username,DOWNLINE);
                 }
                 printf("buf=%s\n",buf);
                 for(k=0;k<SAVE;k++)
@@ -452,8 +418,8 @@ void Show_friend_status(PACK* pack_t);
 
     strcpy(pack_t->data.recv_name,pack_t->data.send_name);
     strcpy(pack_t->data.send_name,"server");
-    memcpy(pack_t->date.message,status,sizeof(status));
-    pack_t->data.recv_fd=pack->data.send_fd;
+    memcpy(pack_t->data.message,status,sizeof(status));
+    pack_t->data.recv_fd=pack_t->data.send_fd;
     pack_t->data.send_fd=lfd;
 
     Send_pack(pack_t);
@@ -482,8 +448,8 @@ void Create_group(PACK* pack_t)
     }
 
     //新建群信息
-    friend_node_t* new;
-    new=(friend_node_t*)malloc(sizeof(friend_node_t));
+    group_node_t* new;
+    new=(group_node_t*)malloc(sizeof(group_node_t));
     new->data.member_num=0;
     //群名
     strcpy(new->data.group_name,pack_t->data.message);
@@ -547,7 +513,7 @@ void Withdraw_group(PACK* pack_t)
     
     for(i=1;i<=group_num;i++)
     {
-        if(strcmp(pack_t->data.message,pos->data.group_name[i])==0)
+        if(strcmp(pack_t->data.message,pos->data.group_name)==0)
         {
             for(j=1;j<=pos->data.member_num;j++)
             {
@@ -567,14 +533,14 @@ void Withdraw_group(PACK* pack_t)
 }
 void View_add_group(PACK* pack_t)
 {
-    char status[MAX_CHAR2*2];
+    char status[MAX_CHAR*2];
     char buf[MAX_CHAR];
     char name_t[MAX_CHAR];
     int cnt;
 
     memset(status,0,sizeof(status));
-    group_list_t pos;
-    pos=Find_server_group(pack_t->data.message);
+    server_list_t pos;
+    pos=Find_server_user(pack_t->data.send_name);
     
     
     status[cnt++]=pos->data.group_num;
@@ -583,7 +549,7 @@ void View_add_group(PACK* pack_t)
     {
         memset(buf,0,sizeof(buf));
         strcpy(name_t,pos->data.group_message[i]);
-        sprintf(buf,"[%s]\0",name_t);
+        sprintf(buf,"[%s]",name_t);
         for(j=0;j<SAVE;j++)
             status[j+cnt]=buf[j];
         cnt+=SAVE;
@@ -593,8 +559,8 @@ void View_add_group(PACK* pack_t)
 
     strcpy(pack_t->data.recv_name,pack_t->data.send_name);
     strcpy(pack_t->data.send_name,"server");
-    memcpy(pack_t->date.message,status,sizeof(status));
-    pack_t->data.recv_fd=pack->data.send_fd;
+    memcpy(pack_t->data.message,status,sizeof(status));
+    pack_t->data.recv_fd=pack_t->data.send_fd;
     pack_t->data.send_fd=lfd;
 
     Send_pack(pack_t);
@@ -602,9 +568,9 @@ void View_add_group(PACK* pack_t)
 }
 void View_group_member(PACK* pack_t)
 {
-    char status[MAX_CHAR2*2];
-    char type_t[MAX_CHAR];
-    char status_t[MAX_CHAR];
+    char status[MAX_CHAR*2];
+    int type_t;
+    int status_t;
     char buf[MAX_CHAR];
     char name_t[MAX_CHAR];
     int cnt;
@@ -622,9 +588,9 @@ void View_group_member(PACK* pack_t)
     {
         memset(buf,0,sizeof(buf));
         strcpy(name_t,pos->data.member_name[i]);
-        strcpy(type_t,pos->data.type[i]);
-        strcpy(status_t,pos->data.status[i]);
-        sprintf(buf,"[%s]:[权限:%s]([%s])\0",name_t,type_t,status_t);
+        type_t=pos->data.type[i];
+        status_t=pos->data.status[i];
+        sprintf(buf,"[%s]:[权限:%d]([%d])",name_t,type_t,status_t);
         for(j=0;j<SAVE;j++)
             status[j+cnt]=buf[j];
         cnt+=SAVE;
@@ -633,8 +599,8 @@ void View_group_member(PACK* pack_t)
 
     strcpy(pack_t->data.recv_name,pack_t->data.send_name);
     strcpy(pack_t->data.send_name,"server");
-    memcpy(pack_t->date.message,status,sizeof(status));
-    pack_t->data.recv_fd=pack->data.send_fd;
+    memcpy(pack_t->data.message,status,sizeof(status));
+    pack_t->data.recv_fd=pack_t->data.send_fd;
     pack_t->data.send_fd=lfd;
 
     Send_pack(pack_t);
@@ -685,7 +651,7 @@ void Del_group(PACK* pack_t)
     group_list_t pos=Find_server_group(pack_t->data.message);
     for(i=1;i<=group_num;i++)
     {
-        if(strcmp(pos->data.group_name[i],pack_t->data.message)==0)
+        if(strcmp(pos->data.group_name,pack_t->data.message)==0)
         {
            if(strcmp(pos->data.member_name[1],pack_t->data.send_name)==0)
            {
@@ -771,8 +737,8 @@ void Recv_pack_message(PACK recv_t)
     printf("\n\033[1;33m--------PACK--------\033[0m\n");
     printf("\033[1;33m|\033[0m 类型  :\n");
     printf("\033[1;33m|\033[0m 发送包的名字  :%s\n",recv_t.data.send_name);
-    printf("\033[1;33m|\033[0m 接受包的名字  :%d\n",recv_t.data.recv_name);
-    printf("\033[1;33m|\033[0m 信息  :%d\n",recv_t.data.message);
+    printf("\033[1;33m|\033[0m 接受包的名字  :%s\n",recv_t.data.recv_name);
+    printf("\033[1;33m|\033[0m 信息  :%s\n",recv_t.data.message);
     printf("\033[1;33m|\033[0m 发送者fd  :%d\n",recv_t.data.send_fd);
     printf("\033[1;33m|\033[0m 接收者fd  :%d\n",recv_t.data.recv_fd);
     printf("\033[1;33m|\033[0m 发送包的数量:%d\n",send_num);
@@ -790,7 +756,7 @@ void Send_recv_pack(int fd,PACK* recv_pack,char* flag)
     strcpy(pack_send.data.message,flag);
     printf("%s\n%s\n",pack_send.data.recv_name,pack_send.data.send_name);
 
-    printf("s\n",pack_send.data.message);
+    printf("%s\n",pack_send.data.message);
     pack_send.data.recv_fd=pack_send.data.send_fd;
     pack_send.data.send_fd=fd;
 
@@ -870,4 +836,183 @@ void Read_from_mysql()
     
 
 
+}*/
+
+void pool_init(int max_thread_num)  
+{  
+    
+    pool=(threadpool_t *)malloc(sizeof(threadpool_t));  
+  
+    pthread_mutex_init(&(pool->lock),NULL);  
+    pthread_cond_init(&(pool->cond),NULL);  
+  
+    pool->queue_head=NULL;  
+  
+    pool->max_thread_num=max_thread_num;  
+    pool->queue_size=0;  
+  
+    pool->shutdown=0;  
+  
+    pool->threads=(pthread_t *)malloc(max_thread_num*sizeof(pthread_t));  
+    int i=0;  
+    for(i=0;i<max_thread_num;i++)  
+    {   
+        pthread_create(&(pool->threads[i]),NULL,thread_routine,NULL);  
+    }  
+}  
+  
+  
+  
+//向线程池中加入任务  
+int threadpool_add(void *(*process)(void *arg),void *arg)  
+{  
+    //构造一个新任务  
+    threadpool_task *newworker=(threadpool_task *)malloc(sizeof(threadpool_task));  
+    newworker->process=process;  
+    newworker->arg=arg;  
+    //置为空
+    newworker->next=NULL;
+  
+    pthread_mutex_lock(&(pool->lock));  
+    //将任务加入到等待队列中  
+    threadpool_task *member=pool->queue_head;  
+    if(member!=NULL)  
+    {  
+        while(member->next!=NULL)  
+            member=member->next;  
+        member->next=newworker;  
+    }  
+    else  
+    {  
+        pool->queue_head=newworker;  
+    }  
+  
+    assert(pool->queue_head!=NULL);  
+  
+    pool->queue_size++;  
+    pthread_mutex_unlock (&(pool->lock));
+
+    /*等待队列中有任务了，唤醒一个等待线程； 
+    如果所有线程都在忙碌，这句没有任何作用*/  
+    pthread_cond_signal(&(pool->cond));  
+    return 0;  
+}  
+  
+  
+  
+/*销毁线程池，等待队列中的任务不会再被执行，正在运行的线程会一直 
+把任务运行完后再退出*/  
+int pool_destroy ()  
+{  
+    if(pool->shutdown)  
+        return -1;//防止两次调用  
+    pool->shutdown=1;  
+  
+    //唤醒所有等待线程，线程池要销毁了  
+    pthread_cond_broadcast(&(pool->cond));  
+  
+    //阻塞等待线程退出，否则就成僵尸了  
+    int i;  
+    for(i=0;i<pool->max_thread_num;i++)  
+        pthread_join(pool->threads[i],NULL);  
+    free(pool->threads);  
+  
+    //销毁等待队列  
+    threadpool_task *head=NULL;  
+    while(pool->queue_head!=NULL)  
+    {  
+        head=pool->queue_head;  
+        pool->queue_head=pool->queue_head->next;  
+        free(head);  
+    }  
+    //条件变量和互斥量销毁  
+    pthread_mutex_destroy(&(pool->lock));  
+    pthread_cond_destroy(&(pool->cond));  
+      
+    free(pool);  
+    //指针置空  
+    pool=NULL;  
+    return 0;  
+}  
+  
+  
+  
+void *thread_routine(void *arg)  
+{  
+    printf("starting thread 0x%ld\n",pthread_self());  
+    while (1)  
+    {  
+        pthread_mutex_lock(&(pool->lock));  
+        /*如果等待队列为0并且不销毁线程池，则处于阻塞状态; 
+        pthread_cond_wait是一个原子操作，等待前会解锁，唤醒后会加锁*/  
+        while (pool->queue_size==0&&!pool->shutdown)  
+        {  
+            printf("thread 0x%ld is waiting\n",pthread_self());  
+            pthread_cond_wait(&(pool->cond), &(pool->lock));  
+        }  
+  
+        //线程池要销毁  
+        if (pool->shutdown)  
+        {  
+            //遇到break,continue,return等跳转语句，不要忘记先解锁  
+            pthread_mutex_unlock(&(pool->lock));  
+            printf ("thread 0x%ld will exit\n",pthread_self());  
+            pthread_exit(NULL);  
+        }  
+  
+        printf("thread 0x%ld is starting to work\n",pthread_self());  
+  
+  
+        assert(pool->queue_size!= 0);  
+        assert(pool->queue_head!=NULL);  
+          
+        //等待队列长度减去1，并取出链表中的头元素  
+        pool->queue_size--;  
+        threadpool_task *worker=pool->queue_head;  
+        pool->queue_head=worker->next;  
+        pthread_mutex_unlock(&(pool->lock));  
+  
+        //调用回调函数，执行任务  
+        (*(worker->process))(worker->arg);  
+        free(worker);  
+        worker=NULL;  
+    }  
+    //这一句是不可达的  
+    pthread_exit(NULL);  
+}  
+
+
+/*
+//测试
+void *myfunc(void* arg)
+{  
+    printf("threadid is 0x%ld,working on task %d\n",pthread_self(),*(int *)arg);  
+    
+    //休息一秒，延长任务的执行时间 
+    sleep(1); 
+    return NULL; 
+}  
+  
+int main(int argc,char **argv)  
+{  
+    //static threadpool_t *pool;
+    //线程池中最多三个活动线程 
+    pool_init (3);
+    
+  
+      
+    //连续向池中投入10个任务
+    int *workingnum=(int *)malloc(sizeof(int)*10);  
+    int i;  
+    for(i=0;i<10;i++)  
+    {  
+        workingnum[i]=i;  
+        threadpool_add(myfunc,&workingnum[i]);  
+    }  
+    //等待所有任务完成  
+    sleep (5);  
+    //销毁线程池  
+    pool_destroy();  
+    free(workingnum);  
+    return 0;  
 }*/
