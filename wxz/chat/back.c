@@ -4,74 +4,75 @@ void *work(void* arg)
     PACK* pack_t;
     pack_t=(PACK*)arg;
 
-    switch(pack_t->flag)
-    {
-        case LOGIN:
-            Login(pack_t);
-            break;
-        case REGISTER:
-            Register(pack_t);
-            break;
-        case ADD_FRIEND:
-            Add_friend(pack_t);
-            break;
-        case DEL_FRIEND:
-            Del_friend(pack_t);
-            break;
-        case QUERY_FRIEND:
-            Query_friend(pack_t);
-            break;
-        case PRIVATE_CHAT:
-            Private_chat(pack_t);
-            break;
-        //写在一起比较好
-        case SHOW_FRIEND_STATUS:
-        case VIEW_FRIEND_LIST:
-            Show_friend_status(pack_t);
-            break;
-        case VIEW_CHAT_HISTORY:
-            View_chat_history(pack_t);
-            break;
-        case SHIELD:
-            Shield_friend(pack_t);
-            break;
-        case UNSHIELD:
-            Unshield_friend(pack_t);
-            break;
-        case CREAT_GROUP:
-            Create_group(pack_t);
-            break;
-        case ADD_GROUP:
-            Add_group(pack_t);
-            break;
-        case WITHDRAW_GROUP:
-            Withdraw_group(pack_t);
-            break;
-        case VIEW_ADD_GROUP:
-            View_add_group(pack_t);
-            break;
-        case VIEW_GROUP_MEMBER:
-            View_group_member(pack_t);
-            break;        
-        case VIEW_GROUP_RECORD:
-            View_group_record(pack_t);
-            break;
-        case DEL_GROUP:
-            Del_group(pack_t);
-            break;
-        case SET_GROUP_ADMIN:
-            Set_group_admin(pack_t);
-            break;
-        case KICK:
-            Kick(pack_t);
-            break;
-        case SEND_FILE:
-            Send_file(pack_t);
-            break;
-        case 0:
-            break;
+        switch(pack_t->flag)
+        {
+            case LOGIN:
+                Login(pack_t);
+                break;
+            case REGISTER:
+                Register(pack_t);
+                break;
+            case ADD_FRIEND:
+                Add_friend(pack_t);
+                break;
+            case DEL_FRIEND:
+                Del_friend(pack_t);
+                break;
+            case QUERY_FRIEND:
+                Query_friend(pack_t);
+                break;
+            case PRIVATE_CHAT:
+                Private_chat(pack_t);
+                break;
+            //写在一起比较好
+            case SHOW_FRIEND_STATUS:
+            case VIEW_FRIEND_LIST:
+                Show_friend_status(pack_t);
+                break;
+            case VIEW_CHAT_HISTORY:
+                View_chat_history(pack_t);
+                break;
+            case SHIELD:
+                Shield_friend(pack_t);
+                break;
+            case UNSHIELD:
+                Unshield_friend(pack_t);
+                break;
+            case CREAT_GROUP:
+                Create_group();
+                break;
+            case ADD_GROUP:
+                Add_group();
+                break;
+            case WITHDRAW_GROUP:
+                Withdraw_group();
+                break;
+            case VIEW_ADD_GROUP():
+                View_add_group();
+                break;
+            case VIEW_GROUP_MEMBER:
+                View_group_member();
+                break;        
+            case VIEW_GROUP_RECORD:
+                View_group_record();
+                break;
+            case DEL_GROUP():
+                Del_group();
+                break;
+            case SET_GROUP_ADMIN:
+                Set_group_admin();
+                break;
+            case KICK:
+                Kick();
+                break;
+            case SEND_FILE:
+                Send_file();
+                break;
+            case 0:
+                break;
+        }
     }
-    return NULL;
+
 }
 void Register(PACK* pack_t)
 {
@@ -82,9 +83,9 @@ void Register(PACK* pack_t)
     server_list_t pos;
     for(pos=list_ser->next;pos!=list_ser;pos=pos->next)
     {
-        if(strcmp(pos->data.username,pack_t->data.send_name)==0)
+        if((strcmp(pos->data.username,username)==0)
         {
-            printf("pos:%s\n%s\n",pos->data.username,pos->data.password);
+            printf("pos:%s\n%s\n",pos->data.username.pos->data.password);
             flag=1;
             break;
         }
@@ -129,9 +130,9 @@ void Login(PACK* pack_t)
     server_list_t pos;
     for(pos=list_ser->next;pos!=list_ser;pos=pos->next)
     {
-        if((strcmp(pos->data.username,pack_t->data.send_name)==0)&&strcmp(pos->data.password,pack_t->data.message)==0)
+        if((strcmp(pos->data.username,username)==0)&&strcmp(pos->data.password,pack_t->data.message)==0)
         {
-            printf("pos:%s\n%s\n",pos->data.username,pos->data.password);
+            printf("pos:%s\n%s\n",pos->data.username.pos->data.password);
             flag=1;
             
             break;
@@ -207,77 +208,11 @@ void Private_chat(PACK* pack_t)
     Send_pack(pack_t);
     free(pack_t);
 }
-void Shield_friend(PACK* pack_t)
+/*void Shield_friend(PACK* pack_t);
+void Unshield_friend(PACK* pack_t);*/
+void Show_friend_status(PACK* pack_t);
 {
-    char buf[MAX];
-    int flag=SHIELD;
-    char shield_flag[10];
-
-    int flag_t;
-    friend_list_t pos;
-    
-    for(pos=friend_ser->next;pos!=friend_ser;pos=pos->next)
-    {
-        if((strcmp(pos->data.name_1,pack_t->data.message)==0)&&(strcmp(pos->data.name_2,pack_t->data.send_name)==0) || (strcmp(pos->data.name_1,pack_t->data.send_name)==0)&&(strcmp(pos->data.name_2,pack_t->data.message)==0)) 
-        {
-            flag_t=1;
-            break;
-        }
-    }
-
-    if(flag==0)
-        shield_flag[0]='1';
-    else
-    {
-        pos->data.statue=1;//屏蔽好友
-        memset(buf,0,sizeof(buf));
-        sprintf(buf,"update friend set status=%d where name_1='%s' and name_2='%s'",1,pack_t->data.send_name,pack_t->data.message);
-        mysql_real_query(&mysql,buf,strlen(buf));
-
-        shield_flag[0]='1';
-    }
-    shield_flag[1]='\0';
-    
-    Send_pack_type(pack_t->data.send_fd,flag,pack_t,shield_flag);
-}
-void Unshield_friend(PACK* pack_t)
-{
-    char buf[MAX];
-    int flag=SHIELD;
-    char shield_flag[10];
-
-    int flag_t;
-    friend_list_t pos;
-    
-    for(pos=friend_ser->next;pos!=friend_ser;pos=pos->next)
-    {
-        if((strcmp(pos->data.name_1,pack_t->data.message)==0)&&(strcmp(pos->data.name_2,pack_t->data.send_name)==0) || (strcmp(pos->data.name_1,pack_t->data.send_name)==0)&&(strcmp(pos->data.name_2,pack_t->data.message)==0)) 
-        {
-            flag_t=1;
-            break;
-        }
-    }
-
-    if(flag==0)
-        shield_flag[0]='1';
-    else
-    {
-        pos->data.statue=0;//解除屏蔽
-        memset(buf,0,sizeof(buf));
-        sprintf(buf,"update friend set status=%d where name_1='%s' and name_2='%s'",0,pack_t->data.send_name,pack_t->data.message);
-        mysql_real_query(&mysql,buf,strlen(buf));
-
-        shield_flag[0]='1';
-    }
-    shield_flag[1]='\0';
-    
-    Send_pack_type(pack_t->data.send_fd,flag,pack_t,shield_flag);
-}
-//一起实现
-/*void View_friend_list(PACK* pack_t);*/
-void Show_friend_status(PACK* pack_t)
-{
-    char status[MAX_CHAR*2];
+    char status[MAX_CHAR2*2];
     char buf[MAX_CHAR];
     char name_t[MAX_CHAR];
     int cnt;
@@ -298,10 +233,10 @@ void Show_friend_status(PACK* pack_t)
             {
                 memset(buf,0,sizeof(buf));
                 if(pos->data.online==ONLINE)
-                    sprintf(buf,"[%s]:[%d]",pos->data.username,ONLINE);
+                    sprintf(buf,"[%s]:[%d]\0",pos->data.username,ONLINE);
                 else
                 {
-                    sprintf(buf,"[%s]:[%d]",pos->data.username,DOWNLINE);
+                    sprintf(buf,"[%s]:[%d]\0",pos->data.username,DOWNLINE);
                 }
                 printf("buf=%s\n",buf);
                 for(k=0;k<SAVE;k++)
@@ -313,13 +248,15 @@ void Show_friend_status(PACK* pack_t)
 
     strcpy(pack_t->data.recv_name,pack_t->data.send_name);
     strcpy(pack_t->data.send_name,"server");
-    memcpy(pack_t->data.message,status,sizeof(status));
-    pack_t->data.recv_fd=pack_t->data.send_fd;
+    memcpy(pack_t->date.message,status,sizeof(status));
+    pack_t->data.recv_fd=pack->data.send_fd;
     pack_t->data.send_fd=lfd;
 
     Send_pack(pack_t);
     free(pack_t);
 }
+
+/*void View_friend_list(PACK* pack_t);*/
 //void View_chat_history(PACK* pack_t);
 void Create_group(PACK* pack_t)
 {
@@ -341,8 +278,8 @@ void Create_group(PACK* pack_t)
     }
 
     //新建群信息
-    group_node_t* new;
-    new=(group_node_t*)malloc(sizeof(group_node_t));
+    friend_node_t* new;
+    new=(friend_node_t*)malloc(sizeof(friend_node_t));
     new->data.member_num=0;
     //群名
     strcpy(new->data.group_name,pack_t->data.message);
@@ -406,7 +343,7 @@ void Withdraw_group(PACK* pack_t)
     
     for(i=1;i<=group_num;i++)
     {
-        if(strcmp(pack_t->data.message,pos->data.group_name)==0)
+        if(strcmp(pack_t->data.message,pos->data.group_name[i])==0)
         {
             for(j=1;j<=pos->data.member_num;j++)
             {
@@ -426,14 +363,14 @@ void Withdraw_group(PACK* pack_t)
 }
 void View_add_group(PACK* pack_t)
 {
-    char status[MAX_CHAR*2];
+    char status[MAX_CHAR2*2];
     char buf[MAX_CHAR];
     char name_t[MAX_CHAR];
     int cnt;
 
     memset(status,0,sizeof(status));
-    server_list_t pos;
-    pos=Find_server_user(pack_t->data.send_name);
+    group_list_t pos;
+    pos=Find_server_group(pack_t->data.message);
     
     
     status[cnt++]=pos->data.group_num;
@@ -442,7 +379,7 @@ void View_add_group(PACK* pack_t)
     {
         memset(buf,0,sizeof(buf));
         strcpy(name_t,pos->data.group_message[i]);
-        sprintf(buf,"[%s]",name_t);
+        sprintf(buf,"[%s]\0",name_t);
         for(j=0;j<SAVE;j++)
             status[j+cnt]=buf[j];
         cnt+=SAVE;
@@ -452,8 +389,8 @@ void View_add_group(PACK* pack_t)
 
     strcpy(pack_t->data.recv_name,pack_t->data.send_name);
     strcpy(pack_t->data.send_name,"server");
-    memcpy(pack_t->data.message,status,sizeof(status));
-    pack_t->data.recv_fd=pack_t->data.send_fd;
+    memcpy(pack_t->date.message,status,sizeof(status));
+    pack_t->data.recv_fd=pack->data.send_fd;
     pack_t->data.send_fd=lfd;
 
     Send_pack(pack_t);
@@ -461,9 +398,9 @@ void View_add_group(PACK* pack_t)
 }
 void View_group_member(PACK* pack_t)
 {
-    char status[MAX_CHAR*2];
-    int type_t;
-    int status_t;
+    char status[MAX_CHAR2*2];
+    char type_t[MAX_CHAR];
+    char status_t[MAX_CHAR];
     char buf[MAX_CHAR];
     char name_t[MAX_CHAR];
     int cnt;
@@ -481,9 +418,9 @@ void View_group_member(PACK* pack_t)
     {
         memset(buf,0,sizeof(buf));
         strcpy(name_t,pos->data.member_name[i]);
-        type_t=pos->data.type[i];
-        status_t=pos->data.status[i];
-        sprintf(buf,"[%s]:[权限:%d]([%d])",name_t,type_t,status_t);
+        strcpy(type_t,pos->data.type[i]);
+        strcpy(status_t,pos->data.status[i]);
+        sprintf(buf,"[%s]:[权限:%s]([%s])\0",name_t,type_t,status_t);
         for(j=0;j<SAVE;j++)
             status[j+cnt]=buf[j];
         cnt+=SAVE;
@@ -492,8 +429,8 @@ void View_group_member(PACK* pack_t)
 
     strcpy(pack_t->data.recv_name,pack_t->data.send_name);
     strcpy(pack_t->data.send_name,"server");
-    memcpy(pack_t->data.message,status,sizeof(status));
-    pack_t->data.recv_fd=pack_t->data.send_fd;
+    memcpy(pack_t->date.message,status,sizeof(status));
+    pack_t->data.recv_fd=pack->data.send_fd;
     pack_t->data.send_fd=lfd;
 
     Send_pack(pack_t);
@@ -544,7 +481,7 @@ void Del_group(PACK* pack_t)
     group_list_t pos=Find_server_group(pack_t->data.message);
     for(i=1;i<=group_num;i++)
     {
-        if(strcmp(pos->data.group_name,pack_t->data.message)==0)
+        if(strcmp(pos->data.group_name[i],pack_t->data.message)==0)
         {
            if(strcmp(pos->data.member_name[1],pack_t->data.send_name)==0)
            {

@@ -1,4 +1,4 @@
-#include "mysql.h"
+#include "final.h"
 void sys_err(const char* s,int line)
 {
     fprintf(stderr,"line:%d",line);
@@ -6,7 +6,7 @@ void sys_err(const char* s,int line)
     mysql_close(&mysql);
 }
 
-void Connect_mysql(MYSQL mysql)
+void Connect_mysql()
 {
     mysql_init(&mysql);
     //初始化数据库
@@ -21,8 +21,34 @@ void Connect_mysql(MYSQL mysql)
     }
     printf("连接MYSQL数据库成功!\n");
 }
+void Mysql_save_message(PACK* pack_t)
+{
+    char buf[MAX];
+    memset(buf,0,MAX);
+    
+    sprintf(buf,"insert into message values('%s','%s','%s')",pack_t->data.send_name,pack_t->data.recv_name,pack_t->data.message);
+    int ret;
+    ret=mysql_real_query(&mysql,buf,strlen(buf));
 
-void Use_mysql(const char *string, MYSQL mysql)
+    if(ret)
+    {
+        sys_err("query error！",__LINE__);
+        return ;
+    }
+    printf("the message write into the mysql\n");
+
+}
+void Close_mysql(MYSQL mysql)
+{
+    mysql_close(&mysql);
+    //mysql_free_result(result);
+    mysql_library_end();
+    printf("MYSQL数据库关闭!\n");
+}
+void Send_record(PACK* pack_t);
+
+
+/*void Use_mysql(const char *string, MYSQL mysql)
 {
 	int i;
 	MYSQL_RES   *result;
@@ -57,30 +83,4 @@ void Use_mysql(const char *string, MYSQL mysql)
         }
         mysql_free_result(result);
     }
-}
-void Mysql_save_message(PACK* pack_t)
-{
-    char buf[MAX];
-    memset(buf,0,MAX);
-    
-    sprintf(buf,"insert into message values('%s','%s','%s')",pack_t->data.send_name,pack_t->data.recv_name,pack_t->data.message);
-    int ret;
-    ret=mysql_real_query(&mysql,buf,strlen(buf));
-
-    if(ret)
-    {
-        sys_err("发送MYSQL语句失败！",__LINE__,&mysql);
-        return ;
-    }
-    printf("the message write into the mysql\n");
-
-}
-void Close_mysql(MYSQL mysql)
-{
-    mysql_close(&mysql);
-    //mysql_free_result(result);
-    mysql_library_end();
-    printf("MYSQL数据库关闭!\n");
-}
-void Send_record(PACK* pack_t);
-
+}*/

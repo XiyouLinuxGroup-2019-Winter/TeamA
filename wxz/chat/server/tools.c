@@ -60,8 +60,8 @@ void Recv_pack_message(PACK recv_t)
     printf("\n\033[1;33m--------PACK--------\033[0m\n");
     printf("\033[1;33m|\033[0m 类型  :\n");
     printf("\033[1;33m|\033[0m 发送包的名字  :%s\n",recv_t.data.send_name);
-    printf("\033[1;33m|\033[0m 接受包的名字  :%d\n",recv_t.data.recv_name);
-    printf("\033[1;33m|\033[0m 信息  :%d\n",recv_t.data.message);
+    printf("\033[1;33m|\033[0m 接受包的名字  :%s\n",recv_t.data.recv_name);
+    printf("\033[1;33m|\033[0m 信息  :%s\n",recv_t.data.message);
     printf("\033[1;33m|\033[0m 发送者fd  :%d\n",recv_t.data.send_fd);
     printf("\033[1;33m|\033[0m 接收者fd  :%d\n",recv_t.data.recv_fd);
     printf("\033[1;33m|\033[0m 发送包的数量:%d\n",send_num);
@@ -79,7 +79,30 @@ void Send_recv_pack(int fd,PACK* recv_pack,char* flag)
     strcpy(pack_send.data.message,flag);
     printf("%s\n%s\n",pack_send.data.recv_name,pack_send.data.send_name);
 
-    printf("s\n",pack_send.data.message);
+    printf("%s\n",pack_send.data.message);
+    pack_send.data.recv_fd=pack_send.data.send_fd;
+    pack_send.data.send_fd=fd;
+
+    if(send(fd,&pack_send,sizeof(PACK),0)<0)
+    {
+        my_err("send error!",__LINE__);
+    }
+}
+void Send_pack_type(int fd,int type,PACK* recv_pack,char* flag)
+{
+    PACK pack_send;
+    
+    memcpy(&pack_send,recv_pack,sizeof(PACK));
+    printf("%s\n%s\n",pack_send.data.recv_name,pack_send.data.send_name);
+
+    pack_send.flag=type;
+    strcpy(pack_send.data.recv_name,pack_send.data.send_name);
+    strcpy(pack_send.data.send_name,"server");
+    strcpy(pack_send.data.message,flag);
+    printf("%d\n",pack_send.flag);
+    printf("%s\n%s\n",pack_send.data.recv_name,pack_send.data.send_name);
+
+    printf("%s\n",pack_send.data.message);
     pack_send.data.recv_fd=pack_send.data.send_fd;
     pack_send.data.send_fd=fd;
 
@@ -91,7 +114,7 @@ void Send_recv_pack(int fd,PACK* recv_pack,char* flag)
 void Send_pack(PACK* send_pack_t)
 {
     pthread_mutex_lock(&mutex);
-    memcpy(&(send_pack[send_num++]),send_pack_t,sizeof(PACK));
+    memcpy(&(pack_send[send_num++]),send_pack_t,sizeof(PACK));
     pthread_mutex_unlock(&mutex);
 }
 server_list_t Find_server_user(char *username)
@@ -126,9 +149,9 @@ void Find_del_server_user(server_list_t pos,char* friend_name)
     }
     for(pos=list_ser->next,i=index;pos!=list_ser;pos=pos->next,i++)
     {
-        strcpy(pos->data.friend_message[i],pos->data.frined_message[i+1]);
+        strcpy(pos->data.friend_message[i],pos->data.friend_message[i+1]);
     }
-    pos->data.frined_num--;
+    pos->data.friend_num--;
 }
 
 group_list_t Find_server_group(char* group_name)
@@ -142,20 +165,20 @@ group_list_t Find_server_group(char* group_name)
     {
         if((strcmp(pos->data.group_name,group_name)==0))
         {
-            printf("pos:%d\n%s\n",pos->data.group_num,pos->data.group_name);
+            printf("pos:%s\n",pos->data.group_name);
             return pos;
         }
     }
     return NULL;
 }
+
 void Read_from_mysql()
 {
 
     //初始化链表list。链表为带头结点的双向循环链表
-    List_Init(list_ser,server_list_t);
-    List_Init(group_ser,group_list_t);
-
-    
+    List_Init(list_ser,server_user_node_t);
+    List_Init(group_ser,group_node_t);
 
 
 }
+

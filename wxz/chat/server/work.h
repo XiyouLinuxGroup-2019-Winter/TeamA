@@ -1,4 +1,4 @@
-#include "server.h"
+#include "final.h"
 
 void *work(void *arg);
 
@@ -33,5 +33,4 @@ void Send_file();
 
 //记录离线消息
 void Log_downline_message();
-//从文件中读取好友信息到链表
-int Add_friend_infor_to_list(friend_list_t head,pthread_rwlock_t lock,char* name);
+

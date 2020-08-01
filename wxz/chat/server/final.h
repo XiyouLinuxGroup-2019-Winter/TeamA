@@ -11,10 +11,12 @@
 #include <arpa/inet.h>
 #include <time.h>
 #include <pthread.h>
-#include "mysql.h"
+#include <mysql/mysql.h>
 #include "wrang.h"
 //#include "prest.h"
 #include "List.h"
+
+
 
 
 #define SERV_ADDRESS "127.0.0.1"
@@ -57,13 +59,6 @@
 #define SAVE 10
 #define MAX_THREAD_NUM 10
 
-
-pthread_mutex_t mutex;
-pthread_cond_t cond;
-
-
-
-
 typedef struct  friend_info
 {
     int statue;
@@ -71,6 +66,9 @@ typedef struct  friend_info
     int message_num;
     int friend_num;
     char name[MAX];
+
+    char name_1[MAX];
+    char name_2[MAX];
 }FRIEND_INFO;
 
 typedef struct friend_node
@@ -80,7 +78,7 @@ typedef struct friend_node
     struct friend_node *prev;
 }friend_node_t,*friend_list_t;
 
-
+friend_list_t friend_ser;
 
 
 typedef struct group_info
@@ -128,8 +126,6 @@ typedef struct package
 }PACK;
 
 
-
-
 typedef struct syslog
 {
     char name[20];
@@ -167,6 +163,10 @@ typedef struct server_user_node
     struct server_user_node *prev;
 }server_user_node_t,*server_list_t;
 
+
+pthread_mutex_t mutex;
+pthread_cond_t cond;
+
 server_list_t list_ser;
 int user_num;
 
@@ -185,7 +185,6 @@ int file_num;
 int lfd;
 int epfd;
 int cfd;
-
 
 void Init_socket();
 
@@ -220,66 +219,3 @@ void Kick(PACK* pack_t);
 
 
 void Send_file();
-
-MYSQL mysql;
-void sys_err(const char* s,int line);
-void Connect_mysql();
-void Close_mysql();
-void Mysql_save_message(PACK* pack_t);
-
-
-
-void Recv_pack_message(PACK recv_t);
-void display(char* str);
-void my_err(const char* err_string,int line);
-char* Get_string(char* buf,int len);
-char getch();
-void Clear_buffer();
-void Send_recv_pack(int fd,PACK* recv_pack,char* flag);
-server_list_t Find_server_user(char *username);
-void Find_del_server_user(server_list_t pos,char* friend_name);
-group_list_t Find_server_group(char* group_name);
-void Read_from_mysql();
-
-void Send_pack(PACK* send_pack_t);
-
-
-
-typedef struct threadpool_task_t  
-{  
-    //回调函数，任务运行时会调用此函数，也可声明成其它形式
-    void *(*process) (void *arg);  
-    void *arg;/*回调函数的参数*/  
-    struct threadpool_task_t *next;  
-  
-}threadpool_task;  
- 
-
-
-//线程池结构  
-typedef struct  
-{  
-    pthread_mutex_t lock;  
-    pthread_cond_t cond;  
-  
-    //链表结构，线程池中所有等待任务  
-   threadpool_task *queue_head;  
-  
-    //是否销毁线程池  
-    int shutdown;  
-    pthread_t *threads;  
-    //线程池中允许的活动线程数目  
-    int max_thread_num;  
-    //当前等待队列的任务数目 
-    int queue_size;  
-  
-}threadpool_t; 
-
-threadpool_t *pool;
-
-int threadpool_add(void *(*process)(void *arg),void *arg);  
-int threadpool_destroy();
-void *thread_routine(void *arg); 
-void pool_init(int max_thread_num);  
-
-void *myfunc(void* arg);
