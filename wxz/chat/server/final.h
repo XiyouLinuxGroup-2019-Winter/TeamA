@@ -11,7 +11,7 @@
 #include <arpa/inet.h>
 #include <time.h>
 #include <pthread.h>
-#include <mysql/mysql.h>
+#include "mysql.h"
 #include "wrang.h"
 //#include "prest.h"
 #include "List.h"
@@ -77,7 +77,7 @@ typedef struct friend_node
 {
     FRIEND_INFO data;
     struct friend_node *next;
-    struct friend_node *pre;
+    struct friend_node *prev;
 }friend_node_t,*friend_list_t;
 
 
@@ -87,7 +87,7 @@ typedef struct group_info
 {
     char member_name[MAX][MAX];
     int member_num;
-    
+
     char group_name[MAX];
  
     int type[MAX_CHAR];
@@ -98,7 +98,7 @@ typedef struct group_node
 {
     GROUP_INFO data;
     struct group_node *next;
-    struct group_node *pre;
+    struct group_node *prev;
 }group_node_t,*group_list_t;
 
 
@@ -164,7 +164,7 @@ typedef struct server_user_node
 {
     server_user_t data;
     struct server_user_node *next;
-    struct server_user_node *pre;
+    struct server_user_node *prev;
 }server_user_node_t,*server_list_t;
 
 server_list_t list_ser;
@@ -179,6 +179,8 @@ int group_num;
 
 FILE_INFO file[MAX_CHAR];
 int file_num;
+
+
 
 int lfd;
 int epfd;

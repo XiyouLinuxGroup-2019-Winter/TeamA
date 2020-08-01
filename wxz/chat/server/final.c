@@ -123,126 +123,80 @@ void Init_socket()
     close(epfd);
     close(lfd);
 }
-void sys_err(const char* s,int line)
-{
-    fprintf(stderr,"line:%d",line);
-    perror(s);
-    mysql_close(&mysql);
-}
 
-void Connect_mysql()
-{
-    mysql_init(&mysql);
-    //初始化数据库
-    mysql_library_init(0,NULL,NULL);
-    if(!mysql_real_connect(&mysql,"localhost","root","wxz","bokket",0,NULL,0))
-    {
-        sys_err("connect error!",__LINE__);
-    }
-    if(mysql_set_character_set(&mysql,"utf8"))
-    {
-        sys_err("设置中文字符集失败!",__LINE__);
-    }
-    printf("连接MYSQL数据库成功!\n");
-}
-
-
-void Mysql_save_message(PACK* pack_t)
-{
-    char buf[MAX];
-    memset(buf,0,MAX);
-    
-    sprintf(buf,"insert into message values('%s','%s','%s')",pack_t->data.send_name,pack_t->data.recv_name,pack_t->data.message);
-    int ret;
-    ret=mysql_real_query(&mysql,buf,strlen(buf));
-
-    if(ret)
-    {
-        sys_err("发送MYSQL语句失败！",__LINE__);
-        return ;
-    }
-    printf("the message write into the mysql\n");
-
-}
-void Close_mysql()
-{
-    mysql_close(&mysql);
-    //mysql_free_result(result);
-    mysql_library_end();
-    printf("MYSQL数据库关闭!\n");
-}
 void *work(void* arg)
 {
     PACK* pack_t;
     pack_t=(PACK*)arg;
 
-        switch(pack_t->flag)
-        {
-            case LOGIN:
-                Login(pack_t);
-                break;
-            case REGISTER:
-                Register(pack_t);
-                break;
-            case ADD_FRIEND:
-                Add_friend(pack_t);
-                break;
-            case DEL_FRIEND:
-                Del_friend(pack_t);
-                break;
-            case QUERY_FRIEND:
-                Query_friend(pack_t);
-                break;
-            case PRIVATE_CHAT:
-                Private_chat(pack_t);
-                break;
-            //写在一起比较好
-            case SHOW_FRIEND_STATUS:
-            case VIEW_FRIEND_LIST:
-                Show_friend_status(pack_t);
-                break;
-            case VIEW_CHAT_HISTORY:
-                View_chat_history(pack_t);
-                break;
-            case SHIELD:
-                Shield_friend(pack_t);
-                break;
-            case UNSHIELD:
-                Unshield_friend(pack_t);
-                break;
-            case CREAT_GROUP:
-                Create_group(pack_t);
-                break;
-            case ADD_GROUP:
-                Add_group(pack_t);
-                break;
-            case WITHDRAW_GROUP:
-                Withdraw_group(pack_t);
-                break;
-            case VIEW_ADD_GROUP:
-                View_add_group(pack_t);
-                break;
-            case VIEW_GROUP_MEMBER:
-                View_group_member(pack_t);
-                break;        
-            case VIEW_GROUP_RECORD:
-                View_group_record(pack_t);
-                break;
-            case DEL_GROUP:
-                Del_group(pack_t);
-                break;
-            case SET_GROUP_ADMIN:
-                Set_group_admin(pack_t);
-                break;
-            case KICK:
-                Kick(pack_t);
-                break;
-            case SEND_FILE:
-                Send_file(pack_t);
-                break;
-            case 0:
-                break;
-        }
+    switch(pack_t->flag)
+    {
+        case LOGIN:
+            Login(pack_t);
+            break;
+        case REGISTER:
+            Register(pack_t);
+            break;
+        case ADD_FRIEND:
+            Add_friend(pack_t);
+            break;
+        case DEL_FRIEND:
+            Del_friend(pack_t);
+            break;
+        case QUERY_FRIEND:
+            Query_friend(pack_t);
+            break;
+        case PRIVATE_CHAT:
+            Private_chat(pack_t);
+            break;
+        //写在一起比较好
+        case SHOW_FRIEND_STATUS:
+        case VIEW_FRIEND_LIST:
+            Show_friend_status(pack_t);
+            break;
+        case VIEW_CHAT_HISTORY:
+            View_chat_history(pack_t);
+            break;
+        case SHIELD:
+            Shield_friend(pack_t);
+            break;
+        case UNSHIELD:
+            Unshield_friend(pack_t);
+            break;
+        case CREAT_GROUP:
+            Create_group(pack_t);
+            break;
+        case ADD_GROUP:
+            Add_group(pack_t);
+            break;
+        case WITHDRAW_GROUP:
+            Withdraw_group(pack_t);
+            break;
+        case VIEW_ADD_GROUP:
+            View_add_group(pack_t);
+            break;
+        case VIEW_GROUP_MEMBER:
+            View_group_member(pack_t);
+            break;        
+        case VIEW_GROUP_RECORD:
+            View_group_record(pack_t);
+            break;
+        case DEL_GROUP:
+            Del_group(pack_t);
+            break;
+        case SET_GROUP_ADMIN:
+            Set_group_admin(pack_t);
+            break;
+        case KICK:
+            Kick(pack_t);
+            break;
+        case SEND_FILE:
+            Send_file(pack_t);
+            break;
+        case 0:
+            break;
+    }
+    return NULL;
 }
 void Register(PACK* pack_t)
 {
@@ -768,7 +722,7 @@ void Send_recv_pack(int fd,PACK* recv_pack,char* flag)
 void Send_pack(PACK* send_pack_t)
 {
     pthread_mutex_lock(&mutex);
-    memcpy(&(send_pack[send_num++]),send_pack_t,sizeof(PACK));
+    memcpy(&(pack_send[send_num++]),send_pack_t,sizeof(PACK));
     pthread_mutex_unlock(&mutex);
 }
 server_list_t Find_server_user(char *username)
@@ -803,9 +757,9 @@ void Find_del_server_user(server_list_t pos,char* friend_name)
     }
     for(pos=list_ser->next,i=index;pos!=list_ser;pos=pos->next,i++)
     {
-        strcpy(pos->data.friend_message[i],pos->data.frined_message[i+1]);
+        strcpy(pos->data.friend_message[i],pos->data.friend_message[i+1]);
     }
-    pos->data.frined_num--;
+    pos->data.friend_num--;
 }
 
 group_list_t Find_server_group(char* group_name)
@@ -819,7 +773,7 @@ group_list_t Find_server_group(char* group_name)
     {
         if((strcmp(pos->data.group_name,group_name)==0))
         {
-            printf("pos:%d\n%s\n",pos->data.group_num,pos->data.group_name);
+            printf("pos:%s\n",pos->data.group_name);
             return pos;
         }
     }
@@ -838,181 +792,3 @@ void Read_from_mysql()
 
 }*/
 
-void pool_init(int max_thread_num)  
-{  
-    
-    pool=(threadpool_t *)malloc(sizeof(threadpool_t));  
-  
-    pthread_mutex_init(&(pool->lock),NULL);  
-    pthread_cond_init(&(pool->cond),NULL);  
-  
-    pool->queue_head=NULL;  
-  
-    pool->max_thread_num=max_thread_num;  
-    pool->queue_size=0;  
-  
-    pool->shutdown=0;  
-  
-    pool->threads=(pthread_t *)malloc(max_thread_num*sizeof(pthread_t));  
-    int i=0;  
-    for(i=0;i<max_thread_num;i++)  
-    {   
-        pthread_create(&(pool->threads[i]),NULL,thread_routine,NULL);  
-    }  
-}  
-  
-  
-  
-//向线程池中加入任务  
-int threadpool_add(void *(*process)(void *arg),void *arg)  
-{  
-    //构造一个新任务  
-    threadpool_task *newworker=(threadpool_task *)malloc(sizeof(threadpool_task));  
-    newworker->process=process;  
-    newworker->arg=arg;  
-    //置为空
-    newworker->next=NULL;
-  
-    pthread_mutex_lock(&(pool->lock));  
-    //将任务加入到等待队列中  
-    threadpool_task *member=pool->queue_head;  
-    if(member!=NULL)  
-    {  
-        while(member->next!=NULL)  
-            member=member->next;  
-        member->next=newworker;  
-    }  
-    else  
-    {  
-        pool->queue_head=newworker;  
-    }  
-  
-    assert(pool->queue_head!=NULL);  
-  
-    pool->queue_size++;  
-    pthread_mutex_unlock (&(pool->lock));
-
-    /*等待队列中有任务了，唤醒一个等待线程； 
-    如果所有线程都在忙碌，这句没有任何作用*/  
-    pthread_cond_signal(&(pool->cond));  
-    return 0;  
-}  
-  
-  
-  
-/*销毁线程池，等待队列中的任务不会再被执行，正在运行的线程会一直 
-把任务运行完后再退出*/  
-int pool_destroy ()  
-{  
-    if(pool->shutdown)  
-        return -1;//防止两次调用  
-    pool->shutdown=1;  
-  
-    //唤醒所有等待线程，线程池要销毁了  
-    pthread_cond_broadcast(&(pool->cond));  
-  
-    //阻塞等待线程退出，否则就成僵尸了  
-    int i;  
-    for(i=0;i<pool->max_thread_num;i++)  
-        pthread_join(pool->threads[i],NULL);  
-    free(pool->threads);  
-  
-    //销毁等待队列  
-    threadpool_task *head=NULL;  
-    while(pool->queue_head!=NULL)  
-    {  
-        head=pool->queue_head;  
-        pool->queue_head=pool->queue_head->next;  
-        free(head);  
-    }  
-    //条件变量和互斥量销毁  
-    pthread_mutex_destroy(&(pool->lock));  
-    pthread_cond_destroy(&(pool->cond));  
-      
-    free(pool);  
-    //指针置空  
-    pool=NULL;  
-    return 0;  
-}  
-  
-  
-  
-void *thread_routine(void *arg)  
-{  
-    printf("starting thread 0x%ld\n",pthread_self());  
-    while (1)  
-    {  
-        pthread_mutex_lock(&(pool->lock));  
-        /*如果等待队列为0并且不销毁线程池，则处于阻塞状态; 
-        pthread_cond_wait是一个原子操作，等待前会解锁，唤醒后会加锁*/  
-        while (pool->queue_size==0&&!pool->shutdown)  
-        {  
-            printf("thread 0x%ld is waiting\n",pthread_self());  
-            pthread_cond_wait(&(pool->cond), &(pool->lock));  
-        }  
-  
-        //线程池要销毁  
-        if (pool->shutdown)  
-        {  
-            //遇到break,continue,return等跳转语句，不要忘记先解锁  
-            pthread_mutex_unlock(&(pool->lock));  
-            printf ("thread 0x%ld will exit\n",pthread_self());  
-            pthread_exit(NULL);  
-        }  
-  
-        printf("thread 0x%ld is starting to work\n",pthread_self());  
-  
-  
-        assert(pool->queue_size!= 0);  
-        assert(pool->queue_head!=NULL);  
-          
-        //等待队列长度减去1，并取出链表中的头元素  
-        pool->queue_size--;  
-        threadpool_task *worker=pool->queue_head;  
-        pool->queue_head=worker->next;  
-        pthread_mutex_unlock(&(pool->lock));  
-  
-        //调用回调函数，执行任务  
-        (*(worker->process))(worker->arg);  
-        free(worker);  
-        worker=NULL;  
-    }  
-    //这一句是不可达的  
-    pthread_exit(NULL);  
-}  
-
-
-/*
-//测试
-void *myfunc(void* arg)
-{  
-    printf("threadid is 0x%ld,working on task %d\n",pthread_self(),*(int *)arg);  
-    
-    //休息一秒，延长任务的执行时间 
-    sleep(1); 
-    return NULL; 
-}  
-  
-int main(int argc,char **argv)  
-{  
-    //static threadpool_t *pool;
-    //线程池中最多三个活动线程 
-    pool_init (3);
-    
-  
-      
-    //连续向池中投入10个任务
-    int *workingnum=(int *)malloc(sizeof(int)*10);  
-    int i;  
-    for(i=0;i<10;i++)  
-    {  
-        workingnum[i]=i;  
-        threadpool_add(myfunc,&workingnum[i]);  
-    }  
-    //等待所有任务完成  
-    sleep (5);  
-    //销毁线程池  
-    pool_destroy();  
-    free(workingnum);  
-    return 0;  
-}*/

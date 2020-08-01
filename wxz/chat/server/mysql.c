@@ -1,7 +1,7 @@
-#include "final.h"
-void sys_err(const char* s,int line,MYSQL mysql)
+#include "mysql.h"
+void sys_err(const char* s,int line)
 {
-    fprintf(stderr,"line:%d,why:%s",line,mysql_error(&mysql));
+    fprintf(stderr,"line:%d",line);
     perror(s);
     mysql_close(&mysql);
 }
@@ -13,11 +13,11 @@ void Connect_mysql(MYSQL mysql)
     mysql_library_init(0,NULL,NULL);
     if(!mysql_real_connect(&mysql,"localhost","root","wxz","bokket",0,NULL,0))
     {
-        sys_err("连接失败!",__LINE__,&mysql);
+        sys_err("connect error!",__LINE__);
     }
     if(mysql_set_character_set(&mysql,"utf8"))
     {
-        sys_err("设置中文字符集失败!",__LINE__,&mysql);
+        sys_err("set error!",__LINE__);
     }
     printf("连接MYSQL数据库成功!\n");
 }
@@ -31,18 +31,18 @@ void Use_mysql(const char *string, MYSQL mysql)
 
 	if(mysql_query(&mysql, string))
     {
-        sys_err("发送MYSQL语句失败！",__LINE__,&mysql);
+        sys_err("query error！",__LINE__);
     }
 
 	
 	result=mysql_store_result(&mysql);
     if(result==NULL)
     {
-        sys_err("查询失败!\n",__LINE__,&mysql);
+        sys_err("store error!\n",__LINE__);
     }
     else
     {
-       while((field=mysql_num_fields(result))
+       while((field=mysql_num_fields(result)))
             printf("%-20s",field->name);
         printf("\n");
 
@@ -78,7 +78,7 @@ void Mysql_save_message(PACK* pack_t)
 void Close_mysql(MYSQL mysql)
 {
     mysql_close(&mysql);
-    mysql_free_result(result);
+    //mysql_free_result(result);
     mysql_library_end();
     printf("MYSQL数据库关闭!\n");
 }
