@@ -18,7 +18,7 @@ int main()
     Connect_mysql();
 
 
-    pool_destroy();
+    threadpool_destroy();
 
 }
 void Init_socket()

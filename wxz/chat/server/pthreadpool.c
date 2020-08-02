@@ -64,7 +64,7 @@ int threadpool_add(void *(*process)(void *arg),void *arg)
   
 /*销毁线程池，等待队列中的任务不会再被执行，正在运行的线程会一直 
 把任务运行完后再退出*/  
-int pool_destroy ()  
+int threadpool_destroy()  
 {  
     if(pool->shutdown)  
         return -1;//防止两次调用  
