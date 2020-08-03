@@ -48,29 +48,15 @@
 pthread_mutex_t mutex;
 pthread_cond_t cond;
 int cfd;
-int enternum;
-char username[MAX];
 
 
-
-
-
-typedef struct  message
+typedef struct message
 {
     int flag;
-    char msg[256];
+    char messsge[256];
 }message;
 
-typedef struct  chat_message
-{
-    int flag;
-    char msg[256];
-    int send;
-    int receive;
-}chat_message;
-
-
-typedef struct  friend_info
+typedef struct friend_info
 {
     int statue;
     //好友的信息数
@@ -83,7 +69,11 @@ typedef struct  friend_info
 typedef struct group_info
 {
     int group_num;
-    char name[MAX][MAX];
+    char group_name[MAX][MAX];
+    int type[10];
+    int status[10];
+    int member_num;
+    char member_name[MAX][MAX];
 }GROUP_INFO;
 
 typedef struct file
@@ -123,8 +113,7 @@ typedef struct account_info
     
     char phone[30];
     char e_mail[50];
-
-    FRIEND_INFO friend[MAX_CHAR];
+    FRIEND_INFO friends[MAX_CHAR];
     GROUP_INFO group[MAX_CHAR];
     int friend_num;
     int group_num;
@@ -138,6 +127,8 @@ ACCOUNT_INFO user;
 PACK pack_send [MAX_CHAR];
 int send_num;
 
+PACK check_friend[MAX_CHAR];
+int check_friend_num;
 //PACK pack_recv
 
 
@@ -194,4 +185,6 @@ void Clear_buffer();
 
 void Init_socket();
 void *Recv_pack(void* arg);
-void Turn_worke_thread();
+void Turn_worker_thread();
+
+void *Update_status(void* arg);

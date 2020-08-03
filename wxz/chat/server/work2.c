@@ -30,7 +30,7 @@ void *work(void* arg)
             Show_friend_status(pack_t);
             break;
         case VIEW_CHAT_HISTORY:
-            View_chat_history(pack_t);
+            //View_chat_history(pack_t);
             break;
         case SHIELD:
             Shield_friend(pack_t);
@@ -54,19 +54,19 @@ void *work(void* arg)
             View_group_member(pack_t);
             break;        
         case VIEW_GROUP_RECORD:
-            View_group_record(pack_t);
+            //View_group_record(pack_t);
             break;
         case DEL_GROUP:
             Del_group(pack_t);
             break;
         case SET_GROUP_ADMIN:
-            Set_group_admin(pack_t);
+            //Set_group_admin(pack_t);
             break;
         case KICK:
-            Kick(pack_t);
+            //Kick(pack_t);
             break;
         case SEND_FILE:
-            Send_file(pack_t);
+            //Send_file(pack_t);
             break;
         case 0:
             break;

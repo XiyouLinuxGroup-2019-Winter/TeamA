@@ -5,7 +5,7 @@ int main()
 {
     Init_socket();
 
-    Turn_worke_thread();
+    Turn_worker_thread();
 
 
     Login_menu();
@@ -30,6 +30,21 @@ void Init_socket()
     printf("客户端启动成功!\n");
 
 }
+
+void *Update_status(void* arg)
+{
+    int i;
+    while(1)
+    {
+        pthread_mutex_lock(&mutex);
+        for(i=1;i<=friend_;i++)
+        {
+            
+        }
+        pthread_mutex_unlock(&mutex);
+        usleep(1);
+    }
+}
 void *Recv_pack(void *arg)
 {
     PACK pack_t;
@@ -46,7 +61,14 @@ void *Recv_pack(void *arg)
 
         pthread_mutex_lock(&mutex);
 
-        
+        for(int i=1;i<=check_friend_num;i++)
+        {
+            if(strcmp(user.friends[i].name,pack_t.data.send_name)==0)
+            {
+                user.friends[i].message_num++;
+                break;
+            }
+        }
 
         switch (pack_t.flag)
         {
@@ -60,14 +82,13 @@ void *Recv_pack(void *arg)
             case DEL_FRIEND:
                 flag=pack_t.data.message[0];
                 break;
-            case QUERY_FRIEND:
+            /*case QUERY_FRIEND:
                 flag=pack_t.data.message[0];
-                break;
+                break;*/
+            //一起实现
             case VIEW_FRIEND_LIST:
-                flag=pack_t.data.message[0];
-                break;
             case SHOW_FRIEND_STATUS:
-                flag=pack_t.data.message[0];
+                check_friend[++check_friend_num]=pack_t;
                 break;
             case VIEW_CHAT_HISTORY:
                 flag[++]=pack_t;
@@ -77,18 +98,132 @@ void *Recv_pack(void *arg)
                 break;
             case UNSHIELD:
                 flag=pack_t.data.message[0];
+            case GROUP_CHAT:
+                flag=pack_t.data.message[0];
+            case CREAT_GROUP:
+                flag=pack_t.data.message[0];
+            case ADD_GROUP:
+                flag=pack_t.data.message[0];
+            case DEL_GROUP:
+                flag=pack_t.data.message[0];
+            case 
+
+            
             
         }
         pthread_mutex_unlock(&mutex);
     }
 }
-void Turn_worke_thread()
+void Turn_worker_thread()
 {
     pthread_t pid_recv;
     pthread_create(&pid_recv,NULL,Recv_pack,NULL);
 }
 
+void Register()
+{
+    int flag=REGISTER;
+    char password[MAX];
+    char name[MAX];
 
+    PACK recv_register;
+    int recv_register_flag;
+
+    printf("账号:");
+    scanf("%s",name);
+    printf("密码:");
+    scanf("%s",password);
+
+    Send_pack_message(flag,name,"server",password);
+
+
+    if(recv(cfd,&recv_register,sizeof(PACK),0)==-1)
+    {
+        my_err("recv error",__LINE__);
+    }
+    recv_register_flag=recv_register.data.message[0];
+
+    if(recv_register_flag)
+        printf("注册成功!\n");
+    else
+    {
+        printf("该账号已存在!\n");
+    }
+}
+void Login()
+{
+    int flag=LOGIN;
+    char name[MAX];
+    char password[MAX];
+
+    printf("请输入账号:\n");
+    scanf("%s",name);
+    printf("请输入密码:\n");
+    scanf("%s",password);
+
+    PACK recv_login;
+    int login_flag;
+
+    Send_pack_message(flag,name,"server",password);
+
+    if(recv(cfd,&recv_login,sizeof(PACK),0)<0)
+    {
+        my_err("recv error",__LINE__);
+    }
+    login_flag=recv_login.data.message[0];
+
+    if(login_flag==1)
+    {
+        printf("登录成功!\n");
+        strcpy(user.username,name);
+    }
+    if(login_flag==2)
+    {
+        printf("账号不存在!\n");
+    }
+    if(login_flag==3)
+    {
+        printf("账号已经登录!\n");
+    }
+    if(login_flag==0)
+    {
+        printf("密码不正确!\n");
+    }
+}
+
+void Login_menu()
+{
+    int choice=1;
+    while(choice)
+    {
+        printf("\t\t\033[44;34m\033[44;37m**************************\033[0m\n");
+        printf("\t\t\033[1;34m*        1.注册          \033[1;34m*\033[0m \n");
+        printf("\t\t\033[1;34m*        2.登录          \033[1;34m*\033[0m \n");
+        printf("\t\t\033[1;34m*        0.退出          \033[1;34m*\033[0m \n");
+        printf("\t\t\033[44;34m\033[44;37m**************************\033[0m\n");
+        printf("\t\tchoice：");
+        scanf("%d",&choice);
+        Clear_buffer();
+        switch(choice)
+        {
+            case 1:
+                puts("注册");
+                Register();
+                break;
+            case 2:
+                puts("登录");
+                Login();
+                break;
+            /*case 3:
+                puts("找回密码");
+                Modify_password();
+                break;*/
+            case 0:
+                break;
+        }
+    }
+    return ;
+}
 void Add_friend()
 {
     int flag=ADD_FRIEND;
