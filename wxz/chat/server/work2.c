@@ -176,7 +176,7 @@ void Add_friend(PACK* pack_t)
 {
 
     int flag=ADD_FRIEND_APPLY;
-    char buf[MAX_CHAR];
+    char buf[MAX];
     int flag_t;
     int flag_tt;
     friend_list_t pos;
@@ -284,7 +284,7 @@ void Add_friend(PACK* pack_t)
 
 void Del_friend(PACK* pack_t)
 {
-    char buf[MAX_CHAR];
+    char buf[MAX];
     int flag=DEL_FRIEND_APPLY;
     char flag_del[10];
     int flag_t;
@@ -331,10 +331,30 @@ void Del_friend(PACK* pack_t)
 
     free(pack_t);*/
 }
-/*void Query_friend(PACK* pack_t)
+void Query_friend(PACK* pack_t)
 {
+    char buf[MAX];
+    int flag=QUERY_FRIEND_APPLY;
+    char flag_query[10];
+
+    int flag_t;
+    friend_list_t pos;
+    for(pos=friend_ser->next;pos!=friend_ser;pos=pos->next)
+    {
+        if((strcmp(pos->data.username,pack_t->data.send_name)==0)&&(strcmp(pos->data.friend_name,pack_t->data.message)==0)) 
+        {
+            flag_t=1;
+            break;
+        }
+    }
+    if(flag_t==0)
+    {
+        flag_query[0]='0';
+        Send_pack_type_name(pack_t->data.send_fd,flag,pack_t,flag_query);
+    }
     
-}*/
+
+}
 void Private_chat(PACK* pack_t)
 {
     Mysql_save_message(pack_t);
@@ -344,15 +364,15 @@ void Private_chat(PACK* pack_t)
 void Shield_friend(PACK* pack_t)
 {
     char buf[MAX];
-    int flag=SHIELD;
-    char shield_flag[10];
+    int flag=SHIELD_APPLY;
+    char flag_shield[10];
 
     int flag_t;
     friend_list_t pos;
     
     for(pos=friend_ser->next;pos!=friend_ser;pos=pos->next)
     {
-        if((strcmp(pos->data.name_1,pack_t->data.message)==0)&&(strcmp(pos->data.name_2,pack_t->data.send_name)==0) || (strcmp(pos->data.name_1,pack_t->data.send_name)==0)&&(strcmp(pos->data.name_2,pack_t->data.message)==0)) 
+        if((strcmp(pos->data.username,pack_t->data.send_name)==0)&&(strcmp(pos->data.friend_name,pack_t->data.message)==0)) 
         {
             flag_t=1;
             break;
@@ -360,52 +380,58 @@ void Shield_friend(PACK* pack_t)
     }
 
     if(flag_t==0)
-        shield_flag[0]='0';
+    {
+        flag_shield[0]='0';
+        Send_pack_type_name(pack_t->data.send_fd,flag,pack_t,flag_shield);
+    }
     else
     {
-        pos->data.statue=1;//屏蔽好友
+        pos->data.status=0;//屏蔽好友
         memset(buf,0,sizeof(buf));
-        sprintf(buf,"update friend set status=%d where name_1='%s' and name_2='%s'",1,pack_t->data.send_name,pack_t->data.message);
+        sprintf(buf,"update friend set status=%d where username='%s' and friend_name='%s'",pos->data.status,pack_t->data.send_name,pack_t->data.message);
         mysql_real_query(&mysql,buf,strlen(buf));
 
-        shield_flag[0]='1';
+        flag_shield[0]='1';
+        flag_shield[1]='\0';
+
+        Send_pack_type_name(pack_t->data.send_fd,flag,pack_t,flag_shield);
     }
-    shield_flag[1]='\0';
-    
-    Send_pack_type(pack_t->data.send_fd,flag,pack_t,shield_flag);
 }
 void Unshield_friend(PACK* pack_t)
 {
     char buf[MAX];
-    int flag=SHIELD;
-    char shield_flag[10];
+    int flag=UNSHIELD_APPLY;
+    char flag_unshield[10];
 
     int flag_t;
     friend_list_t pos;
     
     for(pos=friend_ser->next;pos!=friend_ser;pos=pos->next)
     {
-        if((strcmp(pos->data.name_1,pack_t->data.message)==0)&&(strcmp(pos->data.name_2,pack_t->data.send_name)==0) || (strcmp(pos->data.name_1,pack_t->data.send_name)==0)&&(strcmp(pos->data.name_2,pack_t->data.message)==0)) 
+        if((strcmp(pos->data.username,pack_t->data.send_name)==0)&&(strcmp(pos->data.friend_name,pack_t->data.message)==0)) 
         {
             flag_t=1;
             break;
         }
     }
 
-    if(flag==0)
-        shield_flag[0]='1';
+    if(flag_t==0)
+    {
+        flag_unshield[0]='0';
+        Send_pack_type_name(pack_t->data.send_fd,flag,pack_t,flag_unshield);
+    }
     else
     {
-        pos->data.statue=0;//解除屏蔽
+        pos->data.status=1;//解除屏蔽
         memset(buf,0,sizeof(buf));
-        sprintf(buf,"update friend set status=%d where name_1='%s' and name_2='%s'",0,pack_t->data.send_name,pack_t->data.message);
+        sprintf(buf,"update friend set status=%d where username='%s' and friend_name='%s'",pos->data.status,pack_t->data.send_name,pack_t->data.message);
         mysql_real_query(&mysql,buf,strlen(buf));
 
-        shield_flag[0]='1';
+        flag_unshield[0]='1';
+        flag_unshield[1]='\0';
+
+        Send_pack_type_name(pack_t->data.send_fd,flag,pack_t,flag_unshield);
     }
-    shield_flag[1]='\0';
-    
-    Send_pack_type(pack_t->data.send_fd,flag,pack_t,shield_flag);
 }
 //一起实现
 void View_friend_list(PACK* pack_t)
@@ -417,7 +443,7 @@ void View_friend_list(PACK* pack_t)
 
     int rows;
     memset(buf,0,sizeof(buf));
-    sprintf(buf,"select *from friend where ")
+    sprintf(buf,"select *from friend where ");
 
 }
 void Show_friend_status(PACK* pack_t)

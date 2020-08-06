@@ -10,6 +10,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include "wrang.h"
+#include "tool.h"
 
 #define SERV_ADDRESS "127.0.0.1"
 #define SERV_PORT 8000
@@ -47,6 +48,9 @@
 
 #define ADD_FRIEND_APPLY 26
 #define DEL_FRIEND_APPLY 27
+#define QUERY_FRIEND_APPLY 28
+#define SHIELD_APPLY 29
+#define UNSHIELD_APPLY 30
 
 pthread_mutex_t mutex;
 pthread_cond_t cond;
@@ -149,9 +153,12 @@ void Update_friend_message();
 void Del_friend_apply(PACK recv_pack);
 void Del_friend();
 void Query_friend();
+void Query_friend_apply(PACK recv_pack);
 void Private_chat();
 void Shield_friend();
+void Shield_friend_apply(PACK recv_pack);
 void Unshield_friend();
+void Unshield_friend_apply(PACK recv_pack);
 void Show_friend_status();
 void View_friend_list();
 void View_chat_history();
