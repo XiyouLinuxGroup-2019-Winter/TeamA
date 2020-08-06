@@ -61,40 +61,7 @@ char* Get_string(char* buf,int len)
 	return str;
 }
 
-int Send_cmessage(int flag,int receiver,char* buf)
-{
-    char str[BUFSIZ];
-    chat_message msg;
-    msg.flag=flag;
-    strcpy(msg.msg,buf);
-    msg.send=enternum;
-    msg.receive=receiver;
-    memcpy(str,&msg,sizeof(msg));
-    if(send(cfd,str,BUFSIZ,0)==-1)
-    {
-        my_err("send error",__LINE__);
-        return 0;
-    }
-    return 1;
-}
 
-int Send_smessage(int flag,int receiver,int sender,char *buf)
-{
-    char str[BUFSIZ];
-    chat_message msg;
-    msg.flag=flag;
-    strcpy(msg.msg,buf);
-    msg.send=sender;
-    msg.receive=receiver;
-    memcpy(str,&msg,sizeof(msg));
-    
-    if(send(cfd,str,BUFSIZ,0)==-1)
-    {
-        my_err("send error",__LINE__);
-        return 0;
-    }
-    return 1;
-}
 int Send_message(int flag,char* buf)
 {
     char str[BUFSIZ];

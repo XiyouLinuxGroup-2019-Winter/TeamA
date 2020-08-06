@@ -1,4 +1,5 @@
 #include "final.h"
+MYSQL mysql;
 void my_err(const char* err_string,int line)
 {
     fprintf(stderr,"line:%d",line);
@@ -54,6 +55,12 @@ char* Get_string(char* buf,int len)
 				continue;
 	}
 	return str;
+}
+void Mysql_with_error(MYSQL* mysql)
+{
+    fprintf(stderr,"%s\n",mysql_error(mysql));
+    mysql_close(mysql);
+    return ;
 }
 void Recv_pack_message(PACK recv_t)
 {

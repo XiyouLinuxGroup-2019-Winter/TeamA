@@ -76,9 +76,9 @@ void *Recv_pack(void *arg)
             case DEL_FRIEND_APPLY:
                 Del_friend_apply(pack_t);
                 break;
-            case QUERY_FRIEND_APPLY:
+            /*case QUERY_FRIEND_APPLY:
                 Query_friend_apply(pack_t);
-                break;
+                break;*/
             //一起实现
             case VIEW_FRIEND_LIST:
             case SHOW_FRIEND_STATUS:
@@ -308,7 +308,7 @@ void Del_friend_apply(PACK recv_pack)
         printf("%s不是你的好友",recv_pack.data.send_name);
     }
 }
-void Query_friend()
+/*void Query_friend()
 {
     int flag=QUERY_FRIEND;
     char name_buf[MAX];
@@ -329,14 +329,12 @@ void Query_friend_apply(PACK recv_pack)
     if(flag_query==1)
     {
         printf("查询%s成功!\n",recv_pack.data.send_name);
-        printf("[%s]----------password[%d]",recv_pack.data.send_name,);
-
     }
     else if(flag_query==0)
         printf("%s不是你的好友!\n",recv_pack.data.send_name);
     
     pthread_cond_signal(&cond);
-}
+}*/
 void Shield_friend()
 {
     int flag=SHIELD;
@@ -502,7 +500,7 @@ void Friend_menu()
                 Del_friend();
                 break;
             case 3:
-                Query_friend();
+                //Query_friend();
                 break;
             case 4:
                 Private_chat();

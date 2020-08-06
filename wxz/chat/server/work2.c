@@ -19,7 +19,7 @@ void *work(void* arg)
             Del_friend(pack_t);
             break;
         case QUERY_FRIEND:
-            Query_friend(pack_t);
+            //Query_friend(pack_t);
             break;
         case PRIVATE_CHAT:
             Private_chat(pack_t);
@@ -331,7 +331,7 @@ void Del_friend(PACK* pack_t)
 
     free(pack_t);*/
 }
-void Query_friend(PACK* pack_t)
+/*void Query_friend(PACK* pack_t)
 {
     char buf[MAX];
     int flag=QUERY_FRIEND_APPLY;
@@ -352,9 +352,25 @@ void Query_friend(PACK* pack_t)
         flag_query[0]='0';
         Send_pack_type_name(pack_t->data.send_fd,flag,pack_t,flag_query);
     }
-    
+    else
+    {
+        
+        memset(buf,0,sizeof(buf));
+        sprintf(buf,"select *from friend where username='%s' and friend_name='%s'",pack_t->data.send_name,pack_t->data.message);
+        int ret=mysql_real_query(&mysql,buf,strlen(buf));
+        if(ret)
+        {
+            Mysql_with_error(&mysql);
+        }
+        
+        flag_query[0]='1';
+        flag_query[1]='\0';
 
-}
+        Send_pack_type_name(pack_t->data.send_fd,flag,pack_t,flag_query);
+    
+    }
+
+}*/
 void Private_chat(PACK* pack_t)
 {
     Mysql_save_message(pack_t);

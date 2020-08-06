@@ -253,6 +253,7 @@ void Server_friend(friend_list_t friend_ser);
 void Server_group(group_list_t group_ser);
 void Server_group_member(group_list_t group_ser);
 
+void Mysql_with_error(MYSQL* mysql);
 
 
 int threadpool_add(void *(*process)(void *arg),void *arg);  

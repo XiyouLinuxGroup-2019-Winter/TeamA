@@ -1,4 +1,4 @@
-#inlude "client.h"
+#include "client.h"
 int Send_cmessage(int flag,int receiver,char* buf);
 int Send_smessage(int flag,int receiver,int sender,char *buf);
 int Send_message(int flag,char* buf);
