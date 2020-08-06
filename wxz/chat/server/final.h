@@ -52,6 +52,10 @@
 #define VIEW_GROUP_MEMBER 22 
 #define VIEW_GROUP_RECORD 23
 #define SEND_FILE 24
+#define GROUP_CHAT 25
+
+#define ADD_FRIEND_APPLY 26
+#define DEL_FRIEND_APPLY 27
 
 
 #define DOWNLINE 0
@@ -62,14 +66,13 @@
 
 typedef struct  friend_info
 {
-    int statue;
+    int status;
     //好友的信息数
     //int message_num;
     int friend_num;
-    char name[MAX];
+    char username[MAX];
 
-    char name_1[MAX];
-    char name_2[MAX];
+    char friend_name[MAX];
 }FRIEND_INFO;
 
 typedef struct friend_node
@@ -195,6 +198,7 @@ void Login(PACK* pack_t);
 void Register(PACK* pack_t);
 
 void Add_friend(PACK* pack_t);
+void Add_friend_apply(PACK* pack_t);
 void Del_friend(PACK* pack_t);
 void Query_friend(PACK* pack_t);
 void Private_chat(PACK* pack_t);
@@ -235,6 +239,7 @@ void Recv_pack_message(PACK recv_t);//收到包的信息
 void Send_recv_pack(int fd,PACK* recv_pack,char* flag);
 void Send_pack(PACK* send_pack_t);
 void Send_pack_type(int fd,int type,PACK* recv_pack,char* flag);
+void Send_pack_type_name(int fd,int type,PACK* recv_pack,char* flag);
 
 server_list_t Find_server_user(char *username);
 void Find_del_server_user(server_list_t pos,char* friend_name);

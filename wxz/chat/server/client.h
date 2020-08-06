@@ -45,6 +45,9 @@
 #define SEND_FILE 24
 #define GROUP_CHAT 25
 
+#define ADD_FRIEND_APPLY 26
+#define DEL_FRIEND_APPLY 27
+
 pthread_mutex_t mutex;
 pthread_cond_t cond;
 int cfd;
@@ -130,7 +133,7 @@ int send_num;
 PACK check_friend[MAX_CHAR];
 int check_friend_num;
 //PACK pack_recv
-
+PACK friend_apply;
 
 void Menu();
 
@@ -140,7 +143,10 @@ void Login();
 void Modify_password();
 
 void Friend_menu();
+void Add_friend_apply(PACK recv_pack);
 void Add_friend();
+void Update_friend_message();
+void Del_friend_apply(PACK recv_pack);
 void Del_friend();
 void Query_friend();
 void Private_chat();

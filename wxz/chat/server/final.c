@@ -80,12 +80,12 @@ void Init_socket()
                 int n=recv(ep[i].data.fd,&recv_t,sizeof(PACK),0);
                 recv_t.data.send_fd=ep[i].data.fd;
 
-                Recv_pack_message(recv_t);
+                
 
                 if(n<0)
                 {
                     close(ep[i].data.fd);
-                    sys_err("接收错误!",__LINE__);
+                    sys_err("recv error!",__LINE__);
                     continue;
                 }
                 else if(n==0)
@@ -93,14 +93,14 @@ void Init_socket()
                     server_list_t pos;
                     //使用指针pos依次遍历链表list_ser
                     List_ForEach(list_ser,pos)
+                    
+                    if(pos->data.connfd==ep[i].data.fd)
                     {
-                        if(pos->data.socket_id==ep[i].data.fd)
-                        {
-                            List_FreeNode(pos);
-                            printf("%s downline\n",pos->data.username);
-                            break;
-                        }
+                        List_FreeNode(pos);
+                        printf("%s downline\n",pos->data.username);
+                        break;
                     }
+                    
                     printf("客户端连接断开\n");
                     tep.data.fd=ep[i].data.fd;
                     epoll_ctl(epfd,EPOLL_CTL_DEL,ep[i].data.fd,&tep);
@@ -108,6 +108,8 @@ void Init_socket()
                     continue;
                 }
 
+
+                Recv_pack_message(recv_t);
                 PACK *recv_pack_t;
                 recv_pack_t=(PACK*)malloc(sizeof(PACK));
                 memcpy(recv_pack_t,&recv_t,sizeof(PACK));

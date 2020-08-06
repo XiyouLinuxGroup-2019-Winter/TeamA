@@ -91,13 +91,15 @@ void Send_recv_pack(int fd,PACK* recv_pack,char* flag)
 void Send_pack_type(int fd,int type,PACK* recv_pack,char* flag)
 {
     PACK pack_send;
-    
+    char recv_name_t[MAX];
     memcpy(&pack_send,recv_pack,sizeof(PACK));
     printf("%s\n%s\n",pack_send.data.recv_name,pack_send.data.send_name);
 
+
+    strcpy(recv_name_t,pack_send.data.recv_name);
     pack_send.flag=type;
     strcpy(pack_send.data.recv_name,pack_send.data.send_name);
-    strcpy(pack_send.data.send_name,"server");
+    strcpy(pack_send.data.send_name,recv_name_t);
     strcpy(pack_send.data.message,flag);
     printf("%d\n",pack_send.flag);
     printf("%s\n%s\n",pack_send.data.recv_name,pack_send.data.send_name);
@@ -105,11 +107,36 @@ void Send_pack_type(int fd,int type,PACK* recv_pack,char* flag)
     printf("%s\n",pack_send.data.message);
     pack_send.data.recv_fd=pack_send.data.send_fd;
     pack_send.data.send_fd=fd;
-
+   
+    
     if(send(fd,&pack_send,sizeof(PACK),0)<0)
     {
         my_err("send error!",__LINE__);
     }
+}
+void Send_pack_type_name(int fd,int type,PACK* recv_pack,char* flag)
+{
+    PACK pack_send;
+    memcpy(&pack_send,recv_pack,sizeof(PACK));
+ 
+    pack_send.flag=type;
+    strcpy(pack_send.data.recv_name,pack_send.data.send_name);
+    strcpy(pack_send.data.send_name,pack_send.data.message);
+    strcpy(pack_send.data.message,flag);
+    printf("%d\n",pack_send.flag);
+    printf("%s\n%s\n",pack_send.data.recv_name,pack_send.data.send_name);
+
+    printf("%s\n",pack_send.data.message);
+
+    pack_send.data.recv_fd=pack_send.data.send_fd;
+    pack_send.data.send_fd=fd;
+   
+    
+    if(send(fd,&pack_send,sizeof(PACK),0)<0)
+    {
+        my_err("send error!",__LINE__);
+    }
+
 }
 void Send_pack(PACK* send_pack_t)
 {

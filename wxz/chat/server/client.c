@@ -72,15 +72,11 @@ void *Recv_pack(void *arg)
 
         switch (pack_t.flag)
         {
-            case ADD_FRIEND:
-                flag=pack_t.data.message[0];
-                if(flag==0)
-                {
-
-                }
+            case ADD_FRIEND_APPLY:
+                Add_friend_apply(pack_t);
                 break;
-            case DEL_FRIEND:
-                flag=pack_t.data.message[0];
+            case DEL_FRIEND_APPLY:
+                Del_friend_apply(pack_t);
                 break;
             /*case QUERY_FRIEND:
                 flag=pack_t.data.message[0];
@@ -95,6 +91,13 @@ void *Recv_pack(void *arg)
                 break;
             case SHIELD:
                 flag=pack_t.data.message[0];
+                if(flag==0)
+                {
+                    printf("\t没有此好友!\n");
+                }
+                else if(flag==1)
+                    printf("\t屏蔽成功!\n");
+                pthread_cond_signal(&cond);
                 break;
             case UNSHIELD:
                 flag=pack_t.data.message[0];
@@ -106,10 +109,21 @@ void *Recv_pack(void *arg)
                 flag=pack_t.data.message[0];
             case DEL_GROUP:
                 flag=pack_t.data.message[0];
-            case 
-
-            
-            
+                break;
+            case WITHDRAW_GROUP:
+                break;
+            case KICK:
+                flag=pack_t.data.message[0];
+            case SET_GROUP_ADMIN:
+                flag=pack_t.data.message[0];
+            case VIEW_ADD_GROUP:
+                flag=pack_t.data.message[0];
+            case VIEW_GROUP_MEMBER:
+                flag=pack_t.data.message[0];
+            case VIEW_GROUP_RECORD:
+                flag=pack_t.data.message[0];
+            case SEND_FILE:
+                flag=pack_t.data.message[0];  
         }
         pthread_mutex_unlock(&mutex);
     }
@@ -224,6 +238,34 @@ void Login_menu()
     }
     return ;
 }
+void Add_friend_apply(PACK recv_pack)
+{
+    int flag_add;
+    char choice;
+    flag_add=recv_pack.data.message[0];
+    if(flag_add==0)
+    {
+        printf("---[%s]想要添加你为好友!\n",recv_pack.data.send_name);
+        
+        printf("[1]:同意\t\t[2]:不同意\n");
+        scanf("%c",&choice);
+        switch (choice)
+        {
+            case 'y':
+                Send_pack_message(ADD_FRIEND,recv_pack.data.recv_name,"server","y");
+            case 2:
+                Send_pack_message(ADD_FRIEND,recv_pack.data.recv_name,"server","n");
+        }
+    }
+    else if(flag_add==1)
+        printf("%s同意了%s的请求,添加成功!\n",recv_pack.data.send_name,recv_pack.data.recv_name);
+    else if(flag_add==2)
+        printf("%s拒绝了%s的请求!\n",recv_pack.data.send_name,recv_pack.data.recv_name);
+    else if(flag_add==3)
+        printf("%s不存在!\n",recv_pack.data.send_name);
+    else if(flag_add==4)
+        printf("%s已经是你的好友!\n",recv_pack.data.send_name);
+}
 void Add_friend()
 {
     int flag=ADD_FRIEND;
@@ -232,11 +274,23 @@ void Add_friend()
     display("请输入要添加的好友账号:");
     Get_string(name_buf,MAX);
 
+    Send_pack_message(flag,user.username,name_buf,"");
 
-
-    Send_pack_message(flag,user.username,"server",name_buf);
-
+    Update_friend_message();
     return;
+}
+void Update_friend_message()
+{
+    PACK friend_message;
+    friend_message.flag=VIEW_FRIEND_LIST;
+    strcpy(friend_message.data.send_name,friend_message.data.recv_name);
+    strcpy(friend_message.data.recv_name,"server");
+    memset(friend_message.data.message,0,sizeof(friend_message.data.message));
+    if(send(cfd,&friend_message,sizeof(PACK),0)<0)
+    {
+        my_err("send error!",__LINE__);
+    }
+
 }
 void Del_friend()
 {
@@ -247,9 +301,21 @@ void Del_friend()
     Get_string(name_buf,MAX);
 
     Send_pack_message(flag,user.username,"server",name_buf);
-
+    Update_friend_message();
 
     return;
+}
+void Del_friend_apply(PACK recv_pack)
+{
+    int flag_del=recv_pack.data.message[0];
+    if(flag_del==1)
+    {
+        printf("删除好友%s成功!",recv_pack.data.send_name);
+    }
+    if(flag_del==0)
+    {
+        printf("%s不是你的好友",recv_pack.data.send_name);
+    }
 }
 void Query_friend()
 {
@@ -259,7 +325,7 @@ void Query_friend()
     display("请输入要查询的好友账号:");
     Get_string(name_buf,MAX);
 
-    Send_pack_message(flag,username,"server",name_buf);
+    Send_pack_message(flag,user.username,"server",name_buf);
 
 
     return;
@@ -268,25 +334,34 @@ void Shield_friend()
 {
     int flag=SHIELD;
     char name_buf[MAX];
+    pthread_mutex_lock(&mutex);
     printf("请输入要屏蔽的好友名称:");
     Get_string(name_buf,MAX);
 
-    Send_pack_message(flag,username,"server",name_buf);
-
+    Send_pack_message(flag,user.username,"server",name_buf);
+    pthread_cond_wait(&cond,&mutex);
+    pthread_mutex_unlock(&mutex);
 }
 void Unshield_friend()
 {
     int flag=UNSHIELD;
     char name_buf[MAX];
+    pthread_mutex_lock(&mutex);
     printf("请输入要解除屏蔽的好友名称:");
     Get_string(name_buf,MAX);
 
-    Send_pack_message(flag,username,"server",name_buf);
+    Send_pack_message(flag,user.username,"server",name_buf);
+    pthread_cond_wait(&cond,&mutex);
+    pthread_mutex_unlock(&mutex);
 }
 void View_friend_list()
 {
-    pthread_mutex_lock(&mutex);
+    int flag=VIEW_FRIEND_LIST;
+    char buf[MAX_CHAR];
+    memset(buf,0,sizeof(buf));
 
+    pthread_mutex_lock(&mutex);
+    Send_pack_message(flag,user.username,"server","1")
     printf("\n\t\t\033[0;34m**********好友列表*********\033[0m\n");
     if(user.friend_num==0)
         printf("\t\t暂无好友!,请先添加\n");
@@ -294,21 +369,21 @@ void View_friend_list()
     {
         for(int i=1;i<=user.friend_num;i++)
         {
-            if(user.friend[i].statue==1)
+            if(user.friends[i].statue==1)
             {
-               printf("\t\t\033[1;32m联系人:%s  (在线)\033[0m\n",user.friend[i].name);
-               if(user.friend[i].message_num)
-                    printf("\t\t\033[1;32m未回复的消息数:%d  \033[0m\n",user.friend[i].message_num);
+               printf("\t\t\033[1;32m联系人:%s  (在线)\033[0m\n",user.friends[i].name);
+               if(user.friends[i].message_num)
+                    printf("\t\t\033[1;32m未回复的消息数:%d  \033[0m\n",user.friends[i].message_num);
                 else
                 {
                     printf("\t\t\033[1;32m暂未消息  \033[0m\n");
                 }
             }
-            else if(user.friend[i].statue==2)
+            else if(user.friends[i].statue==2)
             {
-                printf("\t\t\033[1;32m联系人:%s  (已下线)\033[0m\n",user.friend[i].name);
-                if(user.friend[i].message_num)
-                    printf("\t\t\033[1;32m未回复的消息数:%d  \033[0m\n",user.friend[i].message_num);
+                printf("\t\t\033[1;32m联系人:%s  (已下线)\033[0m\n",user.friends[i].name);
+                if(user.friends[i].message_num)
+                    printf("\t\t\033[1;32m未回复的消息数:%d  \033[0m\n",user.friends[i].message_num);
                 else
                 {
                     printf("\t\t\033[1;32m暂未消息  \033[0m\n");

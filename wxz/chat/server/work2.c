@@ -68,6 +68,9 @@ void *work(void* arg)
         case SEND_FILE:
             //Send_file(pack_t);
             break;
+        case GROUP_CHAT:
+            Group_chat(pack_t);
+            break;
         case 0:
             break;
     }
@@ -98,6 +101,8 @@ void Register(PACK* pack_t)
         strcpy(new->data.username,pack_t->data.send_name);
         strcpy(new->data.password,pack_t->data.message);
         new->data.online=DOWNLINE;
+        new->data.friend_num=0;
+        new->data.group_num=0;
         
         //链表尾插法，list为头指针，new为新节点
         List_AddTail(list_ser,new);
@@ -105,7 +110,7 @@ void Register(PACK* pack_t)
 
 
         memset(buf,0,sizeof(buf));
-        sprintf(buf,"insert into account values('%s','%s')",pack_t->data.send_name,pack_t->data.message);
+        sprintf(buf,"insert into account values('%s','%s','%d')",pack_t->data.send_name,pack_t->data.message,pos->data.online);
         mysql_real_query(&mysql,buf,strlen(buf));
         register_flag[0]='1';
     }
@@ -129,7 +134,7 @@ void Login(PACK* pack_t)
     server_list_t pos;
     for(pos=list_ser->next;pos!=list_ser;pos=pos->next)
     {
-        if((strcmp(pos->data.username,pack_t->data.send_name)==0)&&strcmp(pos->data.password,pack_t->data.message)==0)
+        if((strcmp(pos->data.username,pack_t->data.send_name)==0)&&(strcmp(pos->data.password,pack_t->data.message)==0))
         {
             printf("pos:%s\n%s\n",pos->data.username,pos->data.password);
             flag=1;
@@ -138,19 +143,16 @@ void Login(PACK* pack_t)
         }
     }
 
-    //账号已经登录
-    if(flag==1)
-    {
-        if(pos->data.online==ONLINE)
-            login_flag[0]='3';
-    }
-
-    //密码不正确
+    
+    //没有注册
     if(flag==0)
-        login_flag[0]='0';
+        login_flag[0]='2';
     else
     {
-        if(pos->data.online==DOWNLINE)
+        //账号已经登录
+        if(pos->data.online==ONLINE)
+            login_flag[0]='3';
+        else if(pos->data.online==DOWNLINE)
         {
             //登录成功
             login_flag[0]='1';
@@ -159,8 +161,8 @@ void Login(PACK* pack_t)
         }
         else
         {
-            //账号不存在
-            login_flag[0]='2';
+            //密码错误
+            login_flag[0]='0';
         }
     }
     login_flag[1]='\0';
@@ -172,7 +174,101 @@ void Login(PACK* pack_t)
 
 void Add_friend(PACK* pack_t)
 {
-    server_list_t pos;
+
+    int flag=ADD_FRIEND_APPLY;
+    char buf[MAX_CHAR];
+    int flag_t;
+    int flag_tt;
+    friend_list_t pos;
+
+    char flag_add[10];
+    
+    for(pos=friend_ser->next;pos!=friend_ser;pos=pos->next)
+    {
+        if((strcmp(pos->data.username,pack_t->data.send_name)==0)&&(strcmp(pos->data.friend_name,pack_t->data.recv_name)==0))
+        {
+            printf("pos:%s\n%s\n",pos->data.username,pos->data.friend_name);
+            flag_t=1;
+        }
+    }
+
+
+    if(flag_t==0)
+    {
+        
+        server_list_t pos_friend;
+    
+        for(pos_friend=list_ser->next;pos_friend!=list_ser;pos_friend=pos_friend->next)
+        {
+            if((strcmp(pos_friend->data.username,pack_t->data.recv_name)==0))
+            {
+                printf("pos_friend:%s\n,password:%s\n",pos_friend->data.username,pos_friend->data.password);
+                flag_tt=1;      
+            }
+        }
+        //好友不存在
+        if(flag_tt==0)
+        {
+            flag_add[0]='3';
+            flag_add[1]='\0';
+            Send_pack_type(pack_t->data.send_fd,flag,pack_t,flag_add);
+            return ;
+        }
+        else
+        {
+            if(pack_t->data.message[0]=='0')
+            {
+                flag=ADD_FRIEND_APPLY;
+                flag_add[0]='0';
+
+                flag_add[1]='\0';
+                //更改接受者名字
+                char recv_name_t[MAX];
+                strcpy(recv_name_t,pack_t->data.recv_name);
+                strcpy(pack_t->data.recv_name,pack_t->data.send_name);
+                strcpy(pack_t->data.send_name,recv_name_t);
+                Send_pack_type(pos_friend->data.connfd,flag,pack_t,flag_add);
+            }
+            else if(pack_t->data.message[0]=='y')
+            {
+                friend_node_t *new=(friend_node_t*)malloc(sizeof(friend_node_t));
+
+                flag_add[0]='1';
+                strcpy(new->data.username,pack_t->data.recv_name);
+                strcpy(new->data.friend_name,pack_t->data.send_name);
+                new->data.status=1;//朋友
+                List_AddTail(friend_ser,new);
+
+                memset(buf,0,sizeof(buf));
+                sprintf(buf,"insert into friend values('%s','%s','%d')",pack_t->data.recv_name,pack_t->data.send_name,1);
+                mysql_real_query(&mysql,buf,strlen(buf));
+                
+                char recv_name_t[MAX];
+                strcpy(recv_name_t,pack_t->data.recv_name);
+                strcpy(pack_t->data.recv_name,pack_t->data.send_name);
+                strcpy(pack_t->data.send_name,recv_name_t);
+                Send_pack_type(pos_friend->data.connfd,flag,pack_t,flag_add);
+
+            }
+            else if(pack_t->data.message[0]=='n')
+            {
+                flag_add[0]='2';
+                char recv_name_t[MAX];
+                strcpy(recv_name_t,pack_t->data.recv_name);
+                strcpy(pack_t->data.recv_name,pack_t->data.send_name);
+                strcpy(pack_t->data.send_name,recv_name_t);
+                Send_pack_type(pos_friend->data.connfd,flag,pack_t,flag_add);
+            }
+        }
+    }
+    //已经为好友
+    else if(flag_t==1)
+    {
+        flag_add[0]='4';
+        Send_pack_type(pack_t->data.send_fd,flag,pack_t,flag_add);
+        return ;
+    }
+    /*se_pos_friendrver_list_t pos;
     server_list_t pos_friend;
     pos=Find_server_user(pack_t->data.send_name);
     pos_friend=Find_server_user(pack_t->data.message);
@@ -182,11 +278,49 @@ void Add_friend(PACK* pack_t)
     strcpy(pos_friend->data.friend_message[ (pos_friend->data.friend_num) ++],pack_t->data.send_name);
     //strcpy(pos_friend->data.friend_message[ (pos_friend->data.friend_num) ++],pos->data.username);
     
-    free(pack_t);
+    free(pack_t);*/
+    
 }
+
 void Del_friend(PACK* pack_t)
 {
-    server_list_t pos;
+    char buf[MAX_CHAR];
+    int flag=DEL_FRIEND_APPLY;
+    char flag_del[10];
+    int flag_t;
+
+    friend_list_t pos;
+
+    for(pos=friend_ser->next;pos!=friend_ser;pos=pos->next)
+    {
+        if((strcmp(pos->data.username,pack_t->data.send_name)==0)&&(strcmp(pos->data.friend_name,pack_t->data.message)==0))
+        {
+            printf("pos:%s\n%s\n",pos->data.username,pos->data.friend_name);
+            flag_t=1;
+        }
+    }
+
+    if(flag_t==1)
+    {
+
+        //从链表中删除并释放结点node
+        List_FreeNode(pos);
+
+        memset(buf,0,sizeof(buf));
+        sprintf(buf,"delete from friend where username='%s' and friend_name='%s'",pack_t->data.send_name,pack_t->data.message);
+        mysql_real_query(&mysql,buf,strlen(buf));
+        flag_del[0]='1';
+        Send_pack_type_name(pack_t->data.send_fd,flag,pack_t,flag_del);
+    }
+    else
+    {
+        flag_del[0]='0';
+        Send_pack_type_name(pack_t->data.send_fd,flag,pack_t,flag_del);
+    }
+    
+
+
+    /*server_list_t pos;
     server_list_t pos_friend;
 
     pos=Find_server_user(pack_t->data.send_name);
@@ -195,7 +329,7 @@ void Del_friend(PACK* pack_t)
     pos_friend=Find_server_user(pack_t->data.message);
     Find_del_server_user(pos_friend,pack_t->data.send_name);
 
-    free(pack_t);
+    free(pack_t);*/
 }
 /*void Query_friend(PACK* pack_t)
 {
@@ -225,8 +359,8 @@ void Shield_friend(PACK* pack_t)
         }
     }
 
-    if(flag==0)
-        shield_flag[0]='1';
+    if(flag_t==0)
+        shield_flag[0]='0';
     else
     {
         pos->data.statue=1;//屏蔽好友
@@ -274,7 +408,18 @@ void Unshield_friend(PACK* pack_t)
     Send_pack_type(pack_t->data.send_fd,flag,pack_t,shield_flag);
 }
 //一起实现
-/*void View_friend_list(PACK* pack_t);*/
+void View_friend_list(PACK* pack_t)
+{
+    int flag=VIEW_FRIEND_LIST;
+    MYSQL_RES* result;
+    MYSQL_ROW row;
+    char buf[MAX_CHAR];
+
+    int rows;
+    memset(buf,0,sizeof(buf));
+    sprintf(buf,"select *from friend where ")
+
+}
 void Show_friend_status(PACK* pack_t)
 {
     char status[MAX_CHAR*2];
