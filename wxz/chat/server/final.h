@@ -59,6 +59,8 @@
 #define QUERY_FRIEND_APPLY 28
 #define SHIELD_APPLY 29
 #define UNSHIELD_APPLY 30
+#define VIEW_FRIEND_LIST_APPLY 31
+#define SHOW_FRIEND_STATUS_APPLY 32
 
 
 #define DOWNLINE 0
@@ -209,7 +211,7 @@ void Shield_friend(PACK* pack_t);
 void Unshield_friend(PACK* pack_t);
 //一起实现
 void Show_friend_status(PACK* pack_t);
-//void View_friend_list(PACK* pack_t);
+void View_friend_list(PACK* pack_t);
 void View_chat_history(PACK* pack_t);
 
 void Create_group(PACK* pack_t);

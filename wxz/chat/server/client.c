@@ -81,8 +81,10 @@ void *Recv_pack(void *arg)
                 break;*/
             //一起实现
             case VIEW_FRIEND_LIST:
+                View_friend_list_apply(pack_t);
+                break;
             case SHOW_FRIEND_STATUS:
-                check_friend[++check_friend_num]=pack_t;
+                Show_friend_status_apply(pack_t);
                 break;
             case VIEW_CHAT_HISTORY:
                 flag[++]=pack_t;
@@ -425,18 +427,38 @@ void View_friend_list()
 
 void Show_friend_status()
 {
-    char name_buf[BUFSIZ];
-    message msg;
-    char username_buf[15];
-    memset(&msg,0,sizeof(message));
-    memset(name_buf,0,BUFSIZ);
-    memcpy(msg.from,username_buf,15);
-    memcpy(name_buf,&msg,sizeof(message));
-    if(send(cfd,name_buf,BUFSIZ,0)!=BUFSIZ)
+    int flag=SHOW_FRIEND_STATUS;
+    char name_buf[MAX];
+    pthread_mutex_lock(&mutex);
+    printf("请输入要查看好友状态的名称:");
+    Get_string(name_buf,MAX);
+
+    Send_pack_message(flag,user.username,"server",name_buf);
+    pthread_cond_wait(&cond,&mutex);
+    pthread_mutex_unlock(&mutex);
+}
+void Show_friend_status_apply(PACK recv_pack)
+{
+    int flag_status;
+    char message[50];
+    flag_status=recv_pack.data.message[0];
+    if(flag_status==0)
     {
-        my_err("send error!",__LINE__);
+        strcpy(message,recv_pack.data.message[1]);
+        if(strcmp(message,"D")==0)
+        {
+            printf("[%s] 状态:[%d]",recv_pack.data.send_name,DOWNLINE);
+        }
     }
-    return;
+    else if(flag_status==1)
+    {
+        strcpy(message,recv_pack.data.message[1]);
+        if(strcmp(message,"O")==0)
+        {
+            printf("[%s] 状态:[%d]",recv_pack.data.send_name,ONLINE);
+        }
+    }
+    pthread_cond_signal(&cond);
 }
 void Private_chat()
 {
@@ -463,12 +485,6 @@ void Private_chat()
         return ;
     }
 }
-
-
-/*void Show_friend()
-{
-    
-}*/
 void Friend_menu()
 {
     int choice=1;

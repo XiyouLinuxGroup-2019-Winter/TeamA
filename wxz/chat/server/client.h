@@ -51,6 +51,14 @@
 #define QUERY_FRIEND_APPLY 28
 #define SHIELD_APPLY 29
 #define UNSHIELD_APPLY 30
+#define VIEW_FRIEND_LIST_APPLY 31
+#define SHOW_FRIEND_STATUS_APPLY 32
+
+
+
+
+#define DOWNLINE 0
+#define ONLINE 1
 
 pthread_mutex_t mutex;
 pthread_cond_t cond;
@@ -160,7 +168,9 @@ void Shield_friend_apply(PACK recv_pack);
 void Unshield_friend();
 void Unshield_friend_apply(PACK recv_pack);
 void Show_friend_status();
+void Show_friend_status_apply(PACK recv_pack);
 void View_friend_list();
+void View_friend_list_apply(PACK recv_pack);
 void View_chat_history();
 
 void Create_group();

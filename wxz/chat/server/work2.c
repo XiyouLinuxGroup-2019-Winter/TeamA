@@ -26,8 +26,9 @@ void *work(void* arg)
             break;
         //写在一起比较好
         case SHOW_FRIEND_STATUS:
-        case VIEW_FRIEND_LIST:
             Show_friend_status(pack_t);
+        case VIEW_FRIEND_LIST:
+            VIEW_FRIEND_LIST(pack_t);
             break;
         case VIEW_CHAT_HISTORY:
             //View_chat_history(pack_t);
@@ -452,7 +453,7 @@ void Unshield_friend(PACK* pack_t)
 //一起实现
 void View_friend_list(PACK* pack_t)
 {
-    int flag=VIEW_FRIEND_LIST;
+    int flag=VIEW_FRIEND_LIST_APPLY;
     MYSQL_RES* result;
     MYSQL_ROW row;
     char buf[MAX_CHAR];
@@ -464,7 +465,38 @@ void View_friend_list(PACK* pack_t)
 }
 void Show_friend_status(PACK* pack_t)
 {
-    char status[MAX_CHAR*2];
+    int flag=SHOW_FRIEND_STATUS_APPLY;
+    char flag_status[50];
+    server_list_t pos;
+    int flag_t;
+
+    char message[50];
+    for(pos=list_ser->next;pos!=list_ser;pos=pos->next)
+    {
+        if((strcmp(pos->data.username,pack_t->data.send_name)==0)) 
+        {
+            flag_t=1;
+            break;
+        }
+    }
+
+    if(pos->data.online==DOWNLINE)
+    {
+        flag_status[0]='0';
+        strcpy(message,"DOWNLINE");
+        strcat(flag_status,message);
+        flag_status[strlen(flag_status)+1]='\0';
+        Send_pack_type_name(pack_t->data.send_fd,flag,pack_t,flag_status);
+    }
+    else if(pos->data.online==ONLINE)
+    {
+        flag_status[0]='1';
+        strcpy(message,"ONLINE");
+        strcat(flag_status,message);
+        flag_status[strlen(flag_status)+1]='\0';
+        Send_pack_type_name(pack_t->data.send_fd,flag,pack_t,flag_status);
+    }
+    /*char status[MAX_CHAR*2];
     char buf[MAX_CHAR];
     char name_t[MAX_CHAR];
     int cnt;
@@ -505,9 +537,12 @@ void Show_friend_status(PACK* pack_t)
     pack_t->data.send_fd=lfd;
 
     Send_pack(pack_t);
-    free(pack_t);
+    free(pack_t);*/
 }
-//void View_chat_history(PACK* pack_t);
+void View_chat_history(PACK* pack_t)
+{
+
+}
 void Create_group(PACK* pack_t)
 {
 
@@ -780,7 +815,7 @@ void Connect_mysql()
     }
     printf("连接MYSQL数据库成功!\n");
 }
-void Mysql_save_message(PACK* pack_t)
+void  Mysql_save_message(PACK* pack_t)
 {
     char buf[MAX];
     memset(buf,0,MAX);
