@@ -28,7 +28,7 @@ void *work(void* arg)
         case SHOW_FRIEND_STATUS:
             Show_friend_status(pack_t);
         case VIEW_FRIEND_LIST:
-            VIEW_FRIEND_LIST(pack_t);
+            View_friend_list(pack_t);
             break;
         case VIEW_CHAT_HISTORY:
             //View_chat_history(pack_t);
@@ -238,6 +238,9 @@ void Add_friend(PACK* pack_t)
                 strcpy(new->data.username,pack_t->data.recv_name);
                 strcpy(new->data.friend_name,pack_t->data.send_name);
                 new->data.status=1;//朋友
+
+                pos_friend->data.friend_num++;
+
                 List_AddTail(friend_ser,new);
 
                 memset(buf,0,sizeof(buf));
@@ -301,19 +304,32 @@ void Del_friend(PACK* pack_t)
         }
     }
 
-    if(flag_t==1)
+    server_list_t pos_user;
+    pos_user=Find_server_user(pack_t->data.send_name);
+    if(pos_user)
     {
+        if(flag_t==1)
+        {
+        
+                //从链表中删除并释放结点node    //从链表中删除并释放结点node
+                List_FreeNode(pos);
 
-        //从链表中删除并释放结点node
-        List_FreeNode(pos);
-
-        memset(buf,0,sizeof(buf));
-        sprintf(buf,"delete from friend where username='%s' and friend_name='%s'",pack_t->data.send_name,pack_t->data.message);
-        mysql_real_query(&mysql,buf,strlen(buf));
-        flag_del[0]='1';
-        Send_pack_type_name(pack_t->data.send_fd,flag,pack_t,flag_del);
+                memset(buf,0,sizeof(buf));
+                sprintf(buf,"delete from friend where username='%s' and friend_name='%s'",pack_t->data.send_name,pack_t->data.message);
+                mysql_real_query(&mysql,buf,strlen(buf));
+                flag_del[0]='1';
+                Send_pack_type_name(pack_t->data.send_fd,flag,pack_t,flag_del);
+                pos_user->data.friend_num--; 
+                memset(buf,0,sizeof(buf));
+                sprintf(buf,"delete from friend where username='%s' and friend_name='%s'",pack_t->data.send_name,pack_t->data.message);
+                mysql_real_query(&mysql,buf,strlen(buf));
+                flag_del[0]='1';
+                Send_pack_type_name(pack_t->data.send_fd,flag,pack_t,flag_del);
+            
+            
+        }
     }
-    else
+    else if(pos_user==NULL || flag_t==0)
     {
         flag_del[0]='0';
         Send_pack_type_name(pack_t->data.send_fd,flag,pack_t,flag_del);
@@ -403,7 +419,7 @@ void Shield_friend(PACK* pack_t)
     }
     else
     {
-        pos->data.status=0;//屏蔽好友
+        pos->data.relation=BLACK;//屏蔽好友
         memset(buf,0,sizeof(buf));
         sprintf(buf,"update friend set status=%d where username='%s' and friend_name='%s'",pos->data.status,pack_t->data.send_name,pack_t->data.message);
         mysql_real_query(&mysql,buf,strlen(buf));
@@ -439,7 +455,7 @@ void Unshield_friend(PACK* pack_t)
     }
     else
     {
-        pos->data.status=1;//解除屏蔽
+        pos->data.relation=UNBLACK;//解除屏蔽
         memset(buf,0,sizeof(buf));
         sprintf(buf,"update friend set status=%d where username='%s' and friend_name='%s'",pos->data.status,pack_t->data.send_name,pack_t->data.message);
         mysql_real_query(&mysql,buf,strlen(buf));
@@ -460,42 +476,38 @@ void View_friend_list(PACK* pack_t)
 
     int rows;
     memset(buf,0,sizeof(buf));
-    sprintf(buf,"select *from friend where ");
+    sprintf(buf,"select *from friend where username='%s' or friend_name='%s'",pack_t->data.send_name,pack_t->data.send_name);
+    mysql_real_query(&mysql,buf,strlen(buf));
 
-}
-void Show_friend_status(PACK* pack_t)
-{
-    int flag=SHOW_FRIEND_STATUS_APPLY;
-    char flag_status[50];
+    result=mysql_store_result(&mysql);
+    rows=mysql_num_rows(result);
+    
+    int i;
     server_list_t pos;
-    int flag_t;
-
-    char message[50];
-    for(pos=list_ser->next;pos!=list_ser;pos=pos->next)
+    pos=Find_server_user(pack_t->data.send_name);
+    if(rows==0)
+        pack_t->relation.friend_num=0;
+    else
     {
-        if((strcmp(pos->data.username,pack_t->data.send_name)==0)) 
+        while((row=mysql_fetch_row(result)))
         {
-            flag_t=1;
-            break;
+            i=0;
+            if(strcmp(row[0],pack_t->data.send_name)==0)
+            {
+                strcpy(pack_t->relation.friend_message[i],row[1]);
+                pack_t->relation.friend_relation[i]=row[2][0];
+                i++;
+            }
+            else if(strcmp(row[1],pack_t->data.send_name)==0)
+            {
+                strcpy(pack_t->relation.friend_message[i],row[0]);
+                pack_t->relation.friend_relation[i]=row[2][0];
+                i++;
+            }
         }
     }
+    Send_pack_type(pack_t->data.send_fd,flag,pack_t,"");
 
-    if(pos->data.online==DOWNLINE)
-    {
-        flag_status[0]='0';
-        strcpy(message,"DOWNLINE");
-        strcat(flag_status,message);
-        flag_status[strlen(flag_status)+1]='\0';
-        Send_pack_type_name(pack_t->data.send_fd,flag,pack_t,flag_status);
-    }
-    else if(pos->data.online==ONLINE)
-    {
-        flag_status[0]='1';
-        strcpy(message,"ONLINE");
-        strcat(flag_status,message);
-        flag_status[strlen(flag_status)+1]='\0';
-        Send_pack_type_name(pack_t->data.send_fd,flag,pack_t,flag_status);
-    }
     /*char status[MAX_CHAR*2];
     char buf[MAX_CHAR];
     char name_t[MAX_CHAR];
@@ -538,6 +550,41 @@ void Show_friend_status(PACK* pack_t)
 
     Send_pack(pack_t);
     free(pack_t);*/
+
+}
+void Show_friend_status(PACK* pack_t)
+{
+    int flag=SHOW_FRIEND_STATUS_APPLY;
+    char flag_status[50];
+    server_list_t pos;
+    int flag_t;
+
+    char message[50];
+    for(pos=list_ser->next;pos!=list_ser;pos=pos->next)
+    {
+        if((strcmp(pos->data.username,pack_t->data.send_name)==0)) 
+        {
+            flag_t=1;
+            break;
+        }
+    }
+
+    if(pos->data.online==DOWNLINE)
+    {
+        flag_status[0]='0';
+        strcpy(message,"DOWNLINE");
+        strcat(flag_status,message);
+        flag_status[strlen(flag_status)+1]='\0';
+        Send_pack_type_name(pack_t->data.send_fd,flag,pack_t,flag_status);
+    }
+    else if(pos->data.online==ONLINE)
+    {
+        flag_status[0]='1';
+        strcpy(message,"ONLINE");
+        strcat(flag_status,message);
+        flag_status[strlen(flag_status)+1]='\0';
+        Send_pack_type_name(pack_t->data.send_fd,flag,pack_t,flag_status);
+    }
 }
 void View_chat_history(PACK* pack_t)
 {
@@ -547,21 +594,54 @@ void Create_group(PACK* pack_t)
 {
 
     
-    int flag;
+    int flag=CREAT_GROUP_APPLY;
+    char buf[MAX_CHAR];
+    char flag_create[10];
+    int flag_t;
+
     group_list_t pos;
 
-    pos=Find_server_group(pack_t->data.message);
-
-    if(pos!=NULL)
+    for(pos=group_ser->next;pos!=group_ser;pos=pos->next)
     {
-        strcpy(pack_t->data.recv_name,pack_t->data.send_name);
-        strcpy(pack_t->data.send_name,"server");
-        pack_t->data.message[0]=1;
-        Send_pack(pack_t);
-        free(pack_t);
-        return ;
+        if((strcmp(pos->data.group_name,pack_t->data.message)==0))
+        {
+            printf("group_name:%s\n",pos->data.group_name);
+            flag_t=1;
+        }
     }
 
+    if(flag_t==0)
+    {
+        flag_create[0]='1';
+        group_node_t* new;
+        new=(group_node_t*)malloc(sizeof(group_node_t));
+        
+        strcpy(new->data.group_name,pack_t->data.message);
+        strcpy(new->data.group_owner,pack_t->data.send_name);
+        group_num++;
+        new->data.member_num=1;
+        new->data.type=ONLINE;
+        List_AddTail(group_ser,new);
+   
+        memset(buf,0,sizeof(buf));
+        sprintf(buf,"insert into account_group values('%s','%s')",pack_t->data.send_name,pack_t->data.message);
+        mysql_real_query(&mysql,buf,strlen(buf));
+        Send_pack_type_name(pack_t->data.send_fd,flag,pack_t,flag_create);
+    }
+    else
+    {
+        flag_create[0]='0';
+        Send_pack_type_name(pack_t->data.send_fd,flag,pack_t,flag_create);
+    }
+    
+
+
+    /*strcpy(pack_t->data.recv_name,pack_t->data.send_name);
+    strcpy(pack_t->data.send_name,"server");
+    pack_t->data.message[0]=1;
+    Send_pack(pack_t);
+    free(pack_t);
+    return ;
     //新建群信息
     group_node_t* new;
     new=(group_node_t*)malloc(sizeof(group_node_t));
@@ -588,15 +668,45 @@ void Create_group(PACK* pack_t)
 
     pack_t->data.message[0]=2;
     Send_pack(pack_t);
-    free(pack_t);
+    free(pack_t);*/
 }
 void Add_group(PACK* pack_t)
 {
+    int flag=ADD_GROUP_APPLY;
+    char flag_add[10];
+    int flag_t;
+
     group_list_t pos;
-    pos=Find_server_group(pack_t->data.message);
-    if(pos!=NULL)
+
+    for(pos=group_ser->next;pos!=group_ser;pos=pos->next)
     {
-        strcpy(pos->data.member_name[pos->data.member_num],pack_t->data.send_name);
+        if((strcmp(pos->data.group_name,pack_t->data.message)==0)&&(pos->data.type==ONLINE))
+        {
+            printf("group_name:%s\n",pos->data.group_name);
+            strcpy(pack_t->data.recv_name,pos->data.group_name);
+            flag_t=1;
+        }
+    }
+    if(flag_t==1)
+    {
+        server_list_t temp;
+        for(temp=list_ser->next;temp!=list_ser;temp=temp->next)
+        {
+            if((strcmp(temp->data.username,pack_t->data.send_name)==0))
+            {
+                flag_add[0]='1';
+                Send_pack_type_name(temp->data.connfd,flag,pack_t,flag_add);
+                return ;
+            }
+        }
+    }
+    else if(flag_t==0)
+    {
+        flag_add[0]='0';
+        Send_pack_type_name()
+    }
+
+        /*strcpy(pos->data.member_name[pos->data.member_num],pack_t->data.send_name);
         pos->data.type[pos->data.member_num]=3;
         pos->data.status[pos->data.member_num]=1;
         pos->data.member_num++;
@@ -618,7 +728,7 @@ void Add_group(PACK* pack_t)
 
     pack_t->data.message[0]=1;
     Send_pack(pack_t);
-    free(pack_t);
+    free(pack_t);*/
 }
 void Withdraw_group(PACK* pack_t)
 {

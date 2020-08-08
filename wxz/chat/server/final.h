@@ -62,21 +62,41 @@
 #define VIEW_FRIEND_LIST_APPLY 31
 #define SHOW_FRIEND_STATUS_APPLY 32
 
+#define CREAT_GROUP_APPLY 33
+#define ADD_GROUP_APPLY 34
+#define DEL_GROUP_APPLY 35
+#define WITHDRAW_GROUP_APPLY 36
+
 
 #define DOWNLINE 0
 #define ONLINE 1
+#define UNBLACK 1
+#define BLACK 0
+
 
 #define SAVE 10
 #define MAX_THREAD_NUM 10
 
-typedef struct  friend_info
+
+typedef struct relation_info
 {
-    int status;
+    int friend_relation[MAX];
     //好友的信息数
     //int message_num;
     int friend_num;
-    char username[MAX];
+    char friend_message[MAX][MAX];
 
+}RELATION_INFO;
+
+typedef struct  friend_info
+{
+    int status;
+    int relation;
+    //好友的信息数
+    //int message_num;
+    int friend_num;
+
+    char username[MAX];
     char friend_name[MAX];
 }FRIEND_INFO;
 
@@ -96,8 +116,9 @@ typedef struct group_info
     int member_num;
 
     char group_name[MAX];
- 
-    int type[MAX_CHAR];
+    
+    char group_owner[MAX];
+    int type;
     int status[MAX_CHAR];
 }GROUP_INFO;
 
@@ -116,31 +137,10 @@ typedef struct file
     char file_name[100];
     char send_name[MAX];
     char recv_name[MAX];
+    char message[MAX_CHAR];
 }FILE_INFO;
 
-typedef struct data
-{
-    char send_name[MAX];
-    char recv_name[MAX];
-    int send_fd;
-    int recv_fd;
 
-   char message[MAX_CHAR*2];
-}DATA;
-
-typedef struct package
-{
-    int flag;
-    DATA data;
-}PACK;
-
-
-typedef struct syslog
-{
-    char name[20];
-    char time[100];
-    char work[20];
-}syslog_t;
 
 //服务器保存用户信息结构体
 typedef struct server_user
@@ -158,6 +158,7 @@ typedef struct server_user
 
     int friend_num;
     char friend_message[MAX][MAX];
+    int friend_status[MAX];
 
     int group_num;
     char group_message[MAX][MAX];
@@ -171,6 +172,36 @@ typedef struct server_user_node
     struct server_user_node *next;
     struct server_user_node *prev;
 }server_user_node_t,*server_list_t;
+
+
+
+typedef struct data
+{
+    char send_name[MAX];
+    char recv_name[MAX];
+    int send_fd;
+    int recv_fd;
+
+   char message[MAX_CHAR*2];
+}DATA;
+
+typedef struct package
+{
+    int flag;
+    DATA data;
+
+    RELATION_INFO relation; 
+
+
+}PACK;
+
+
+typedef struct syslog
+{
+    char name[20];
+    char time[100];
+    char work[20];
+}syslog_t;
 
 
 pthread_mutex_t mutex;

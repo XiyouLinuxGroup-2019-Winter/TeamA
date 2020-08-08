@@ -153,9 +153,9 @@ void Send_pack(PACK* send_pack_t)
 }
 server_list_t Find_server_user(char *username)
 {
-    if(user_num==0)
+    /*if(user_num==0)
         return NULL;
-    
+    */
     server_list_t pos=list_ser;
     if(pos==NULL)
         return NULL;

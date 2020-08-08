@@ -55,6 +55,10 @@
 #define SHOW_FRIEND_STATUS_APPLY 32
 
 
+#define CREAT_GROUP_APPLY 33
+#define ADD_GROUP_APPLY 34
+#define DEL_GROUP_APPLY 35
+#define WITHDRAW_GROUP_APPLY 36
 
 
 #define DOWNLINE 0
@@ -71,9 +75,23 @@ typedef struct message
     char messsge[256];
 }message;
 
+
+
+typedef struct relation_info
+{
+    int friend_relation[MAX];
+    //好友的信息数
+    //int message_num;
+    int friend_num;
+    char friend_message[MAX][MAX];
+
+}RELATION_INFO;
+RELATION_INFO relation;
+
 typedef struct friend_info
 {
-    int statue;
+    int status;
+    int relation;
     //好友的信息数
     int message_num;
     int friend_num;
@@ -115,6 +133,8 @@ typedef struct package
 {
     int flag;
     DATA data;
+
+    RELATION_INFO relation;
 }PACK;
 
 
@@ -125,13 +145,20 @@ typedef struct account_info
     int flag;
     char username[30];
     char password[30];
-    
+
     char phone[30];
     char e_mail[50];
+
+    int friend_num;
+    char friend_message[MAX][MAX];
+    int friend_relation[MAX];
+
+    int group_num;
+    char group_message[MAX][MAX];
+
     FRIEND_INFO friends[MAX_CHAR];
     GROUP_INFO group[MAX_CHAR];
-    int friend_num;
-    int group_num;
+
 
 }ACCOUNT_INFO;
 
@@ -174,18 +201,28 @@ void View_friend_list_apply(PACK recv_pack);
 void View_chat_history();
 
 void Create_group();
+void Create_group_apply(PACK recv_pack);
 void Add_group();
+void Add_group_apply(PACK recv_pack);
 void Withdraw_group();
+void Withdraw_group_apply(PACK recv_pack);
 void Group_chat();
+void Group_chat_apply(PACK recv_pack);
 void View_add_group();
+void View_add_group_apply(PACK recv_pack);
 void View_group_member();
+void View_group_member_apply(PACK recv_pack);
 void View_group_record();
+void View_group_record_apply(PACK recv_pack);
 void Group_menu();
 
 
 void Del_group();
+void Del_group_apply(PACK recv_pack);
 void Set_group_admin();
+void Set_group_admin_apply(PACK recv_pack);
 void Kick();
+void Kick_apply(PACK recv_pack);
 void Group_leader_menu();
 
 

@@ -81,7 +81,8 @@ void *Recv_pack(void *arg)
                 break;*/
             //一起实现
             case VIEW_FRIEND_LIST:
-                View_friend_list_apply(pack_t);
+                memcpy(&relation,&pack_t.relation,sizeof(RELATION_INFO));
+                pthread_cond_signal(&cond);
                 break;
             case SHOW_FRIEND_STATUS:
                 Show_friend_status_apply(pack_t);
@@ -251,7 +252,10 @@ void Add_friend_apply(PACK recv_pack)
         }
     }
     else if(flag_add==1)
+    {
         printf("%s同意了%s的请求,添加成功!\n",recv_pack.data.send_name,recv_pack.data.recv_name);
+        user.friend_num++;
+    }
     else if(flag_add==2)
         printf("%s拒绝了%s的请求!\n",recv_pack.data.send_name,recv_pack.data.recv_name);
     else if(flag_add==3)
@@ -304,6 +308,7 @@ void Del_friend_apply(PACK recv_pack)
     if(flag_del==1)
     {
         printf("删除好友%s成功!",recv_pack.data.send_name);
+        user.friend_num--;
     }
     else if(flag_del==0)
     {
@@ -389,17 +394,32 @@ void View_friend_list()
     int flag=VIEW_FRIEND_LIST;
     char buf[MAX_CHAR];
     memset(buf,0,sizeof(buf));
+    memset(&relation,0,sizeof(RELATION_INFO));
 
     pthread_mutex_lock(&mutex);
-    Send_pack_message(flag,user.username,"server","1");
     printf("\n\t\t\033[0;34m**********好友列表*********\033[0m\n");
-    if(user.friend_num==0)
-        printf("\t\t暂无好友!,请先添加\n");
+    if(relation.friend_num==0)
+        printf("\t暂无好友!,请先添加\n");
     else
     {
-        for(int i=1;i<=user.friend_num;i++)
+        for(int i=0;i<relation.friend_num;i++)
         {
-            if(user.friends[i].statue==1)
+            switch (relation.friend_relation[i])
+            {
+                case BLACK:
+                    printf("[%s]----[%d]\n",relation.friend_message[i],relation.friend_relation[i]);
+                    break;
+                
+                case UNBLACK:
+                    printf("[%s]----[%d]\n",relation.friend_message[i],relation.friend_relation[i]);
+            }
+        }
+    }
+    pthread_mutex_unlock(&mutex);
+
+    /*for(int i=0;i<=user.friend_num;i++)
+        {
+            if(user.friend_status[i]==1)
             {
                printf("\t\t\033[1;32m联系人:%s  (在线)\033[0m\n",user.friends[i].name);
                if(user.friends[i].message_num)
@@ -420,11 +440,8 @@ void View_friend_list()
                 }
             }
             
-        }
-    }
-    pthread_mutex_unlock(&mutex);
+        }*/
 }
-
 void Show_friend_status()
 {
     int flag=SHOW_FRIEND_STATUS;
@@ -548,12 +565,24 @@ void Create_group()
 {
     int flag=CREAT_GROUP;
     char name_buf[MAX];
+    pthread_mutex_lock(&mutex);
     printf("请输入要创建的群名称:");
     Get_string(name_buf,MAX);
 
     Send_pack_message(flag,user.username,"server",name_buf);
+    pthread_cond_wait(&cond, &mutex);
+    pthread_mutex_unlock(&mutex);
 }
-
+void Create_group_apply(PACK recv_pack)
+{
+    int flag_create;
+    flag_create=recv_pack.data.message[0];
+    if(flag_create==0)
+        printf("%s\n",recv_pack.data.message);
+    else if(flag_create==1)
+        printf("%s\n",recv_pack.data.message);
+    pthread_cond_signal(&cond);
+}
 void Add_group()
 {
     int flag=ADD_GROUP;
@@ -563,8 +592,41 @@ void Add_group()
     Get_string(name_buf,MAX);
 
     Send_pack_message(flag,user.username,"server",name_buf);
-
-
+}
+void Add_group_apply(PACK recv_pack)
+{
+    int flag_add;
+    flag_add=recv_pack.data.message[0];
+    if(flag_add==0)
+    {
+        printf("%s",recv_pack.data.send_name);
+    }
+    if(flag_add==0)
+    {
+        printf("---[%s]想要添加你为好友!\n",recv_pack.data.send_name);
+        
+        printf("[1]:同意\t\t[2]:不同意\n");
+        scanf("%c",&choice);
+        switch (choice)
+        {
+            case 'y':
+                Send_pack_message(ADD_FRIEND,recv_pack.data.recv_name,"server","y");
+            case 2:
+                Send_pack_message(ADD_FRIEND,recv_pack.data.recv_name,"server","n");
+        }
+    }
+    else if(flag_add==1)
+    {
+        printf("%s同意了%s的请求,添加成功!\n",recv_pack.data.send_name,recv_pack.data.recv_name);
+        user.friend_num++;
+    }
+    else if(flag_add==2)
+        printf("%s拒绝了%s的请求!\n",recv_pack.data.send_name,recv_pack.data.recv_name);
+    else if(flag_add==3)
+        printf("%s不存在!\n",recv_pack.data.send_name);
+    else if(flag_add==4)
+        printf("%s已经是你的好友!\n",recv_pack.data.send_name);
+}
 }
 
 void Withdraw_group()
