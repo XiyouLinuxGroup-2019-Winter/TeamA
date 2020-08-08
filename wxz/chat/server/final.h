@@ -128,7 +128,8 @@ typedef struct group_node
     struct group_node *next;
     struct group_node *prev;
 }group_node_t,*group_list_t;
-
+group_list_t group_ser;
+int group_num;
 
 typedef struct file
 {
@@ -161,6 +162,7 @@ typedef struct server_user
     int friend_status[MAX];
 
     int group_num;
+    int member_num;
     char group_message[MAX][MAX];
 
     GROUP_INFO group[MAX];//群组信息
@@ -191,7 +193,7 @@ typedef struct package
     DATA data;
 
     RELATION_INFO relation; 
-
+    char message[MAX_CHAR*2];
 
 }PACK;
 
@@ -214,8 +216,7 @@ PACK pack_send[MAX_CHAR*2];
 int send_num;
 
 
-struct group_node* group_ser;
-int group_num;
+
 
 FILE_INFO file[MAX_CHAR];
 int file_num;

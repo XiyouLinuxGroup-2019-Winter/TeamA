@@ -675,6 +675,7 @@ void Add_group(PACK* pack_t)
     int flag=ADD_GROUP_APPLY;
     char flag_add[10];
     int flag_t;
+    char buf[MAX_CHAR];
 
     group_list_t pos;
 
@@ -683,7 +684,7 @@ void Add_group(PACK* pack_t)
         if((strcmp(pos->data.group_name,pack_t->data.message)==0)&&(pos->data.type==ONLINE))
         {
             printf("group_name:%s\n",pos->data.group_name);
-            strcpy(pack_t->data.recv_name,pos->data.group_name);
+            strcpy(pack_t->data.recv_name,pos->data.group_owner);
             flag_t=1;
         }
     }
@@ -692,10 +693,11 @@ void Add_group(PACK* pack_t)
         server_list_t temp;
         for(temp=list_ser->next;temp!=list_ser;temp=temp->next)
         {
-            if((strcmp(temp->data.username,pack_t->data.send_name)==0))
+            if((strcmp(temp->data.username,pack_t->data.recv_name)==0))
             {
                 flag_add[0]='1';
-                Send_pack_type_name(temp->data.connfd,flag,pack_t,flag_add);
+                strcpy(pack_t->message,pack_t->data.message);
+                Send_pack_type(temp->data.connfd,flag,pack_t,flag_add);
                 return ;
             }
         }
@@ -703,9 +705,54 @@ void Add_group(PACK* pack_t)
     else if(flag_t==0)
     {
         flag_add[0]='0';
-        Send_pack_type_name()
+        Send_pack_type(pack_t->data.send_fd,flag,pack_t,flag_add);
     }
 
+
+    if(strcmp(pack_t->data.message,"y")==0)
+    {
+        server_list_t pos_user;
+        for(pos_user=list_ser->next;pos_user!=list_ser;pos_user=pos_user->next)
+        {
+            if((strcmp(pos_user->data.username,pack_t->data.recv_name)==0))
+            {
+               break;
+            }
+        }
+        flag_add[0]='2';
+        printf("群名%s\n",pack_t->message);
+        group_node_t* new;
+        new=(group_node_t*)malloc(sizeof(group_node_t));
+        
+        strcpy(new->data.group_name,pack_t->message);
+        strcpy(new->data.group_owner,pack_t->data.send_name);
+        strcpy(new->data.member_name[++(new->data.member_num)],pack_t->data.recv_name);
+        printf("群人数:%d\n",new->data.member_num);
+        new->data.type=ONLINE;
+
+        pos_user->data.member_num=new->data.member_num;
+
+        List_AddTail(group_ser,new);
+
+        memset(buf,0,sizeof(buf));
+        sprintf(buf,"insert into group_member values('%s','%s','%d','%d')",pack_t->message,pack_t->data.recv_name,pos->data.member_num,3);
+        mysql_real_query(&mysql,buf,sizeof(buf));
+        Send_pack_type(pos_user->data.connfd,flag,pack_t,flag_add);
+    }
+    else if(strcmp(pack_t->data.message,"n")==0)
+    {
+        server_list_t pos_user;
+        for(pos_user=list_ser->next;pos_user!=list_ser;pos_user=pos_user->next)
+        {
+            if((strcmp(pos_user->data.username,pack_t->data.recv_name)==0))
+            {
+               break;
+            }
+        }
+        flag_add[0]='3';
+        Send_pack_type(pos_user->data.connfd,flag,pack_t,flag_add);
+        return ;
+    }
         /*strcpy(pos->data.member_name[pos->data.member_num],pack_t->data.send_name);
         pos->data.type[pos->data.member_num]=3;
         pos->data.status[pos->data.member_num]=1;
@@ -732,7 +779,41 @@ void Add_group(PACK* pack_t)
 }
 void Withdraw_group(PACK* pack_t)
 {
-    int i,j,k;
+
+    int flag=WITHDRAW_GROUP_APPLY;
+    char flag_withdraw[10];
+    int flag_t;
+    char buf[MAX_CHAR];
+
+    group_list_t pos;
+
+    for(pos=group_ser->next;pos!=group_ser;pos=pos->next)
+    {
+        if((strcmp(pos->data.group_name,pack_t->data.message)==0))
+        {
+            printf("group_name:%s\n",pos->data.group_name);
+            flag_t=1;
+        }
+    }
+    if(flag_t==1)
+    {
+        strcpy(pack_t->message,pack_t->data.message);
+        flag_withdraw[0]='1';
+        List_FreeNode(pos);
+
+        memset(buf,0,sizeof(buf));
+        sprintf(buf,"delete from group_member where group_name='%s' and member_name='%s'",pack_t->data.message,pack_t->data.send_name);
+        mysql_real_query(&mysql,buf,strlen(buf));
+        Send_pack_type(pack_t->data.send_fd,flag,pack_t,flag_withdraw);
+        return ;
+    }
+    else
+    {
+        flag_withdraw[0]='0';
+        Send_pack_type(pack_t->data.send_fd,flag,pack_t,flag_withdraw);
+        return ;
+    }
+    /*int i,j,k;
     group_list_t pos;
     pos=Find_server_group(pack_t->data.message);
     
@@ -754,7 +835,7 @@ void Withdraw_group(PACK* pack_t)
                 }
             }
         }
-    }
+    }*/
 }
 void View_add_group(PACK* pack_t)
 {
@@ -871,7 +952,8 @@ void Group_chat(PACK* pack_t)
 
 void Del_group(PACK* pack_t)
 {
-    int i;
+    
+    /*int i;
     int j;
     group_list_t pos=Find_server_group(pack_t->data.message);
     for(i=1;i<=group_num;i++)
@@ -897,10 +979,16 @@ void Del_group(PACK* pack_t)
 
  
     Send_pack(pack_t);
-    free(pack_t);
+    free(pack_t);*/
 }
-/*void Set_group_admin(PACK* pack_t);
-void Kick(PACK* pack_t);*/
+void Set_group_admin(PACK* pack_t)
+{
+
+}
+void Kick(PACK* pack_t)
+{
+
+}
 
 
 void sys_err(const char* s,int line)

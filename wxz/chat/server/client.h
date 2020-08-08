@@ -135,6 +135,7 @@ typedef struct package
     DATA data;
 
     RELATION_INFO relation;
+    char message[MAX_CHAR*2];
 }PACK;
 
 
@@ -154,6 +155,7 @@ typedef struct account_info
     int friend_relation[MAX];
 
     int group_num;
+    int member_num;
     char group_message[MAX][MAX];
 
     FRIEND_INFO friends[MAX_CHAR];

@@ -88,7 +88,7 @@ void *Recv_pack(void *arg)
                 Show_friend_status_apply(pack_t);
                 break;
             case VIEW_CHAT_HISTORY:
-                flag[++]=pack_t;
+                
                 break;
             case SHIELD_APPLY:
                 Shield_friend_apply(pack_t);
@@ -98,22 +98,29 @@ void *Recv_pack(void *arg)
             case GROUP_CHAT:
                 flag=pack_t.data.message[0];
             case CREAT_GROUP:
-                flag=pack_t.data.message[0];
+                Create_group_apply(pack_t);
+                break;
             case ADD_GROUP:
-                flag=pack_t.data.message[0];
+                Add_group_apply(pack_t);
+                break;
             case DEL_GROUP:
-                flag=pack_t.data.message[0];
+                Del_group_apply(pack_t);
                 break;
             case WITHDRAW_GROUP:
+                Withdraw_group_apply(pack_t);
                 break;
             case KICK:
-                flag=pack_t.data.message[0];
+                Kick_apply(pack_t);
+                break;
             case SET_GROUP_ADMIN:
-                flag=pack_t.data.message[0];
+                Set_group_admin_apply(pack_t);
+                break;
             case VIEW_ADD_GROUP:
-                flag=pack_t.data.message[0];
+                View_add_group_apply(pack_t);
+                break;
             case VIEW_GROUP_MEMBER:
-                flag=pack_t.data.message[0];
+               View_group_member_apply(pack_t);
+               break;
             case VIEW_GROUP_RECORD:
                 flag=pack_t.data.message[0];
             case SEND_FILE:
@@ -247,7 +254,7 @@ void Add_friend_apply(PACK recv_pack)
         {
             case 'y':
                 Send_pack_message(ADD_FRIEND,recv_pack.data.recv_name,"server","y");
-            case 2:
+            case 'n':
                 Send_pack_message(ADD_FRIEND,recv_pack.data.recv_name,"server","n");
         }
     }
@@ -578,9 +585,9 @@ void Create_group_apply(PACK recv_pack)
     int flag_create;
     flag_create=recv_pack.data.message[0];
     if(flag_create==0)
-        printf("%s\n",recv_pack.data.message);
+        printf("群%s已存在\n",recv_pack.data.send_name);
     else if(flag_create==1)
-        printf("%s\n",recv_pack.data.message);
+        printf("群%s成功建立\n",recv_pack.data.send_name);
     pthread_cond_signal(&cond);
 }
 void Add_group()
@@ -596,49 +603,61 @@ void Add_group()
 void Add_group_apply(PACK recv_pack)
 {
     int flag_add;
+    char choice;
     flag_add=recv_pack.data.message[0];
     if(flag_add==0)
     {
-        printf("%s",recv_pack.data.send_name);
+        printf("群%s不存在\n",recv_pack.message);
     }
-    if(flag_add==0)
+    else if(flag_add==1)
     {
-        printf("---[%s]想要添加你为好友!\n",recv_pack.data.send_name);
+        printf("---[%s]想要加入群聊%s!\n",recv_pack.data.send_name,recv_pack.message);
         
         printf("[1]:同意\t\t[2]:不同意\n");
         scanf("%c",&choice);
         switch (choice)
         {
             case 'y':
-                Send_pack_message(ADD_FRIEND,recv_pack.data.recv_name,"server","y");
-            case 2:
-                Send_pack_message(ADD_FRIEND,recv_pack.data.recv_name,"server","n");
+                Send_pack_message(ADD_FRIEND,recv_pack.data.recv_name,recv_pack.data.send_name,choice);
+            case 'n':
+                Send_pack_message(ADD_FRIEND,recv_pack.data.recv_name,recv_pack.data.send_name,choice);
         }
     }
-    else if(flag_add==1)
-    {
-        printf("%s同意了%s的请求,添加成功!\n",recv_pack.data.send_name,recv_pack.data.recv_name);
-        user.friend_num++;
-    }
     else if(flag_add==2)
-        printf("%s拒绝了%s的请求!\n",recv_pack.data.send_name,recv_pack.data.recv_name);
+    {
+        printf("%s同意了%s的请求,添加成功!\n",recv_pack.data.recv_name,recv_pack.data.send_name);
+        user.member_num++;
+    }
     else if(flag_add==3)
-        printf("%s不存在!\n",recv_pack.data.send_name);
-    else if(flag_add==4)
-        printf("%s已经是你的好友!\n",recv_pack.data.send_name);
-}
+        printf("%s拒绝了%s的请求!\n",recv_pack.data.recv_name,recv_pack.data.send_name);
 }
 
 void Withdraw_group()
 {
     int flag=WITHDRAW_GROUP;
     char name_buf[MAX];
+    pthread_mutex_lock(&mutex);
     printf("请输入想要退出的群名称:");
     Get_string(name_buf,MAX);
 
     Send_pack_message(flag,user.username,"server",name_buf);
+    pthread_cond_wait(&cond, &mutex);
+    pthread_mutex_unlock(&mutex);
 }
-
+void Withdraw_group_apply(PACK recv_pack)
+{
+    int flag_withdraw;
+    flag_withdraw=recv_pack.data.message[0];
+    if(flag_withdraw==0)
+    {
+        printf("群%s不存在\n",recv_pack.message);
+    }
+    else if(flag_withdraw==1)
+    {
+        printf("%s退群%s成功\n",recv_pack.data.recv_name,recv_pack.message);
+    }
+    pthread_cond_signal(&cond);
+}
 void View_add_group()
 {
    pthread_mutex_lock(&mutex);
@@ -721,10 +740,18 @@ void Del_group()
 {
     int flag=DEL_GROUP;
     char name_buf[MAX];
+    pthread_mutex_lock(&mutex);
+
     printf("请输入想要解散的群名称:");
     Get_string(name_buf,MAX);
 
     Send_pack_message(flag,user.username,"server",name_buf);
+    pthread_cond_wait(&cond, &mutex);
+    pthread_mutex_unlock(&mutex);
+}
+void Del_group_apply(PACK recv_pack)
+{
+    
 }
 void Set_group_admin()
 {
