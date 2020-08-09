@@ -620,7 +620,9 @@ void Create_group(PACK* pack_t)
         strcpy(new->data.group_owner,pack_t->data.send_name);
         group_num++;
         new->data.member_num=1;
-        new->data.type=ONLINE;
+        new->data.type=OWNER;
+        new->data.status[group_ser->data.member_num]=ONLINE;
+        strcpy(new->data.member_name[group_ser->data.member_num],pack_t->data.send_name);
         List_AddTail(group_ser,new);
    
         memset(buf,0,sizeof(buf));
@@ -654,10 +656,8 @@ void Create_group(PACK* pack_t)
     new->data.member_num=1;
 
     server_user_node_t* new_user;
-    new_user=Find_server_user(pack_t->data.send_name);
-    strcpy(new_user->data.group[new_user->data.group_num++].group_name,pack_t->data.message);
-
-    //链表尾插法，list为头指针，new为新节点
+    new_user=Find_server_user(pack_t->data.send_name);(pos->data.member_name[i],pack_t->data.message)==0) )
+        {
     List_AddTail(group_ser,new);
     group_num++;
 
@@ -681,7 +681,7 @@ void Add_group(PACK* pack_t)
 
     for(pos=group_ser->next;pos!=group_ser;pos=pos->next)
     {
-        if((strcmp(pos->data.group_name,pack_t->data.message)==0)&&(pos->data.type==ONLINE))
+        if((strcmp(pos->data.group_name,pack_t->data.message)==0)&&(pos->data.type==OWNER))
         {
             printf("group_name:%s\n",pos->data.group_name);
             strcpy(pack_t->data.recv_name,pos->data.group_owner);
@@ -728,14 +728,14 @@ void Add_group(PACK* pack_t)
         strcpy(new->data.group_owner,pack_t->data.send_name);
         strcpy(new->data.member_name[++(new->data.member_num)],pack_t->data.recv_name);
         printf("群人数:%d\n",new->data.member_num);
-        new->data.type=ONLINE;
-
+        new->data.type=COMMON;
+        new->data.status[new->data.member_num]=ONLINE;
         pos_user->data.member_num=new->data.member_num;
 
         List_AddTail(group_ser,new);
 
         memset(buf,0,sizeof(buf));
-        sprintf(buf,"insert into group_member values('%s','%s','%d','%d')",pack_t->message,pack_t->data.recv_name,pos->data.member_num,3);
+        sprintf(buf,"insert into group_member values('%s','%s','%d','%d')",pack_t->message,pack_t->data.recv_name,pos->data.member_num,COMMON);
         mysql_real_query(&mysql,buf,sizeof(buf));
         Send_pack_type(pos_user->data.connfd,flag,pack_t,flag_add);
     }
@@ -800,7 +800,7 @@ void Withdraw_group(PACK* pack_t)
         strcpy(pack_t->message,pack_t->data.message);
         flag_withdraw[0]='1';
         List_FreeNode(pos);
-
+        pos->data.member_num--;
         memset(buf,0,sizeof(buf));
         sprintf(buf,"delete from group_member where group_name='%s' and member_name='%s'",pack_t->data.message,pack_t->data.send_name);
         mysql_real_query(&mysql,buf,strlen(buf));
@@ -952,6 +952,58 @@ void Group_chat(PACK* pack_t)
 
 void Del_group(PACK* pack_t)
 {
+    char buf[MAX_CHAR];
+    char flag_del[10];
+    int flag=DEL_GROUP_APPLY;
+    int flag_t;
+    int flag_tt;
+    group_list_t pos;
+    for(pos=group_ser->next;pos!=group_ser;pos=pos->next)
+    {
+        if((strcmp(pos->data.group_name,pack_t->data.message)==0))
+        {
+            printf("pos:%s\n",pos->data.group_name);
+            flag_t=1;
+            break;
+        }
+    }
+    for(pos=group_ser->next;pos!=group_ser;pos=pos->next)
+    {
+        if((strcmp(pos->data.member_name[1],pack_t->data.send_name)==0) && (strcmp(pos->data.group_name,pack_t->data.message)==0) &&(pos->data.type==OWNER))
+        {
+            printf("群名:%s,群主:%s\n",pos->data.group_name,pos->data.member_name[1]);
+            flag_tt=1;
+            break;
+        }
+    }
+    if(flag_t==1 && flag_tt==1)
+    {
+        flag_del[0]='1';
+        for(pos=group_ser->next;pos!=group_ser;pos=pos->next)
+        {
+            if((strcmp(pos->data.group_name,pack_t->data.message)==0))
+            {
+                printf("pos:%s\n",pos->data.group_name);
+                List_FreeNode(pos);
+            }
+        }
+        group_num--;
+        memset(buf,0,sizeof(buf));
+        sprintf(buf,"delete from account_group where group_name='%s'",pack_t->data.message);
+        mysql_real_query(&mysql,buf,strlen(buf));
+        Send_pack_type_name(pack_t->data.send_fd,flag,pack_t,flag_del);
+    }
+    else if(flag_t==1 && flag_tt==0)
+    {
+        flag_del[0]='2';
+        Send_pack_type_name(pack_t->data.send_fd,flag,pack_t,flag_del);
+    }
+    else if(flag_t==0)
+    {
+        
+        flag_del[0]='0';
+        Send_pack_type_name(pack_t->data.send_fd,flag,pack_t,flag_del);
+    }
     
     /*int i;
     int j;
@@ -983,11 +1035,90 @@ void Del_group(PACK* pack_t)
 }
 void Set_group_admin(PACK* pack_t)
 {
+    char buf[MAX_CHAR];
+    int flag_t;
+    int flag_tt;
+    int flag_ttt;
+    char flag_set[10];
+    int flag=SET_GROUP_ADMIN_APPLY;
+    int i;
+    group_list_t pos;
+    for(pos=group_ser->next;pos!=group_ser;pos=pos->next)
+    {
+        if((strcmp(pos->data.group_name,pack_t->data.recv_name)==0))
+        {
+            printf("pos:%s\n",pos->data.group_name);
+            flag_t=1;
+            break;
+        }
+    }
+    for(pos=group_ser->next,i=1;pos!=group_ser;pos=pos->next,i++)
+    {
+        if((strcmp(pos->data.group_name,pack_t->data.recv_name)==0) && (strcmp(pos->data.member_name[i],pack_t->data.message)==0) )
+        {
+            flag_tt=1;
+            break;
+        }
+    }
+    for(pos=group_ser->next;pos!=group_ser;pos=pos->next)
+    {
+        if((strcmp(pos->data.group_name,pack_t->data.recv_name)==0) && (strcmp(pos->data.member_name[1],pack_t->data.send_name)==0) && (pos->data.type==OWNER))
+        {
+            flag_ttt=1;
+            break;
+        }
+    }
+    server_list_t pos_user;
+    
+    if(flag_ttt==1 && flag_t==1 && flag_tt==1)
+    {
+        for(pos=group_ser->next,i=1;pos!=group_ser;pos=pos->next,i++)
+        {
+            if((strcmp(pos->data.group_name,pack_t->data.recv_name)==0) && (strcmp(pos->data.member_name[i],pack_t->data.message)==0) )
+            {
+                pos->data.type=ADMIN;
+                break;
+            }
+        }
+
+        for(pos_user=list_ser->next;pos_user!=list_ser;pos_user=pos_user->next)
+        {
+            if((strcmp(pos_user->data.username,pack_t->data.message)==0) )
+            {
+               flag_set[0]='4';
+               strcpy(pack_t->message,pack_t->data.message);
+               Send_pack_type(pos_user->data.connfd,flag,pack_t,flag_set);
+            }
+        }
+        flag_set[0]='1';
+        memset(buf,0,sizeof(buf));
+        sprintf(buf,"update group_member set authority=%d where group_name='%s' and member_name='%s'",ADMIN,pack_t->data.recv_name,pack_t->data.message);
+        mysql_real_query(&mysql,buf,strlen(buf));
+        strcpy(pack_t->message,pack_t->data.message);
+        Send_pack_type(pack_t->data.send_fd,flag,pack_t,flag_set);
+    }
+    else if(flag_ttt==0 &&flag_t==1 &&flag_tt==1)
+    {
+        flag_set[0]='2';
+        Send_pack_type(pack_t->data.send_fd,flag,pack_t,flag_set);
+    }
+    else if(flag_tt==0)
+    {
+        flag_set[0]='3';
+        strcpy(pack_t->message,pack_t->data.message);
+        Send_pack_type(pack_t->data.send_fd,flag,pack_t,flag_set);
+    }
+    else if(flag_t==0)
+    {
+        flag_set[0]='0';
+        Send_pack_type(pack_t->data.send_fd,flag,pack_t,flag_set);
+    }
+    
 
 }
 void Kick(PACK* pack_t)
 {
-
+    
 }
 
 

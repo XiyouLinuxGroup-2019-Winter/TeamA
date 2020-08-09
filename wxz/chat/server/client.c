@@ -751,28 +751,69 @@ void Del_group()
 }
 void Del_group_apply(PACK recv_pack)
 {
-    
+    int flag_del;
+    flag_del=recv_pack.data.message[0];
+    if(flag_del==0)
+    {
+        printf("群%s不存在\n",recv_pack.data.send_name);
+    }
+    else if(flag_del==1)
+    {
+        printf("群主%s解散了群%s成功!\n",recv_pack.data.recv_name,recv_pack.data.send_name);
+    }
+    else if(flag_del==2)
+    {
+        printf("只有群主%s才能解散群\n",recv_pack.data.recv_name);
+    }
+    pthread_cond_signal(&cond);
 }
 void Set_group_admin()
 {
     int flag=SET_GROUP_ADMIN;
-    char leader_buf[MAX];
+    char group_name_buf[MAX];
     char admin_buf[MAX];
-
+    pthread_mutex_lock(&mutex);
     printf("请输入设置某个群里的管理员:");
-    Get_string(leader_buf,MAX);
+    Get_string(group_name_buf,MAX);
 
     Get_string(admin_buf,MAX);
    
 
-    Send_pack_message(flag,user.username,leader_buf,admin_buf);
+    Send_pack_message(flag,user.username,group_name_buf,admin_buf);
+    pthread_cond_wait(&cond, &mutex);
+    pthread_mutex_unlock(&mutex);
+}
+void Set_group_admin_apply(PACK recv_pack)
+{
+    int flag_set;
+    flag_set=recv_pack.data.message[0];
+    if(flag_set==0)
+    {
+        printf("群%s不存在\n",recv_pack.data.send_name);
+    }
+    else if(flag_set==1)
+    {
+        printf("设置群成员%s为群%s管理员成功\n",recv_pack.message,recv_pack.data.send_name);
+    }
+    else if(flag_set==2)
+    {
+        printf("只有群主%s可以设置群%s管理员\n",recv_pack.data.recv_name,recv_pack.data.send_name);
+    }
+    else if(flag_set==3)
+    {
+        printf("群成员%s不在群%s中\n",recv_pack.message,recv_pack.data.send_name);
+    }
+    else if(flag_set==4)
+    {
+        printf("您%s已经被设置为群%s的管理员\n",recv_pack.message,recv_pack.data.send_name);
+    }
 }
 void Kick()
 {
     int flag=KICK;
     char admin_buf[MAX];
     char staff_buf[MAX];
-
+    pthread_mutex_lock(&mutex);
     printf("请输入踢出某个群里的人员:");
     Get_string(admin_buf,MAX);
 
@@ -780,7 +821,13 @@ void Kick()
    
 
     Send_pack_message(flag,user.username,admin_buf,staff_buf);
+    pthread_cond_wait(&cond, &mutex);
+    pthread_mutex_unlock(&mutex);
 
+}
+void Kick_apply(PACK recv_pack)
+{
+    
 }
 void Group_leader_menu()
 {

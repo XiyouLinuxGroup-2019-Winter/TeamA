@@ -59,10 +59,17 @@
 #define ADD_GROUP_APPLY 34
 #define DEL_GROUP_APPLY 35
 #define WITHDRAW_GROUP_APPLY 36
+#define SET_GROUP_ADMIN_APPLY 37
+#define KICK_APPLY 38
 
+#define OWNER 1
+#define ADMIN 2
+#define COMMON 3
 
 #define DOWNLINE 0
 #define ONLINE 1
+#define UNBLACK 1
+#define BLACK 0
 
 pthread_mutex_t mutex;
 pthread_cond_t cond;
