@@ -893,11 +893,14 @@ void View_group_member(PACK* pack_t)
     group_list_t pos;
     for(pos=group_ser->next,i=0;pos!=group_ser;pos=pos->next,i++)
     {
-        if((strcmp(pos->data.member_name[i],pack_t->data.send_name)==0) && (strcmp(pos->data.member_name[i],pack_t->data.send_name)==0) && (pos->data.type==OWNER || pos->data.type==ADMIN || pos->data.type==COMMON))
+        if((strcmp(pos->data.group_name,pack_t->data.message)==0) && (strcmp(pos->data.member_name[i],pack_t->data.send_name)==0) && (pos->data.type==OWNER || pos->data.type==ADMIN || pos->data.type==COMMON))
         {
-            strcpy(pack_t->group.group_message[i],pos->data.group_name);
+            strcpy(pack_t->relation.friend_message[i],pos->data.member_name[i]);
         }
     }
+    pack_t->relation.friend_num=pos->data.member_num;
+    Send_pack_type(pack_t->data.send_fd,flag,pack_t,"");
+
     /*char status[MAX_CHAR*2];
     int type_t;
     int status_t;

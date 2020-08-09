@@ -705,11 +705,51 @@ void View_add_group_apply(PACK recv_pack)
 }
 void View_group_member()
 {
+    int flag=VIEW_GROUP_MEMBER;
+    char buf[MAX];
+    int i;
+    int flag_t;
+
+    pthread_mutex_lock(&mutex);
+    printf("请输入想要查看哪个群成员信息");
+    Get_string(buf,MAX);
+    for(i=0;i<group.group_num;i++)
+    {
+        if(strcmp(group.group_message[i],buf)==0)
+        {
+            flag_t=1;
+            break;
+        }
+    }
     
+    if(flag_t==0)
+        printf("\t\t没有加入此群\n");
+    else
+    {
+        memset(&relation,0,sizeof(relation));
+        Send_pack_message(flag,user.username,"server",buf);
+        pthread_cond_wait(&cond,&mutex);
+
+        printf("\n\t\t\033[0;34m**********群成员信息列表*********\033[0m\n");
+        if(relation.friend_num==0)
+            printf("\t\t暂无成员!,请先添加\n");
+        else
+        {
+            for(i=0;i<relation.friend_num;i++)
+            {       
+                printf("\t\t\033[1;32m群成员名称:%s  \033[0m\n",relation.friend_message[i]);
+            }
+        }
+        pthread_mutex_unlock(&mutex);
+
+    }
+    
+
 }
 void View_group_member_apply(PACK recv_pack)
 {
-
+    memcpy(&relation,&recv_pack.relation,sizeof(RELATION_INFO));
+    pthread_cond_signal(&cond);
 }
 void View_group_record()
 {
@@ -717,7 +757,7 @@ void View_group_record()
 }
 void Group_chat()
 {
-
+    
 }
 void Group_menu()
 {
