@@ -80,11 +80,10 @@ void *Recv_pack(void *arg)
                 Query_friend_apply(pack_t);
                 break;*/
             //一起实现
-            case VIEW_FRIEND_LIST:
-                memcpy(&relation,&pack_t.relation,sizeof(RELATION_INFO));
-                pthread_cond_signal(&cond);
+            case VIEW_FRIEND_LIST_APPLY:
+                View_friend_list_apply(pack_t);
                 break;
-            case SHOW_FRIEND_STATUS:
+            case SHOW_FRIEND_STATUS_APPLY:
                 Show_friend_status_apply(pack_t);
                 break;
             case VIEW_CHAT_HISTORY:
@@ -97,28 +96,28 @@ void *Recv_pack(void *arg)
                 Unshield_friend_apply(pack_t);
             case GROUP_CHAT:
                 flag=pack_t.data.message[0];
-            case CREAT_GROUP:
+            case CREAT_GROUP_APPLY:
                 Create_group_apply(pack_t);
                 break;
-            case ADD_GROUP:
+            case ADD_GROUP_APPLY:
                 Add_group_apply(pack_t);
                 break;
-            case DEL_GROUP:
+            case DEL_GROUP_APPLY:
                 Del_group_apply(pack_t);
                 break;
-            case WITHDRAW_GROUP:
+            case WITHDRAW_GROUP_APPLY:
                 Withdraw_group_apply(pack_t);
                 break;
-            case KICK:
+            case KICK_APPLY:
                 Kick_apply(pack_t);
                 break;
-            case SET_GROUP_ADMIN:
+            case SET_GROUP_ADMIN_APPLY:
                 Set_group_admin_apply(pack_t);
                 break;
-            case VIEW_ADD_GROUP:
+            case VIEW_ADD_GROUP_APPLY:
                 View_add_group_apply(pack_t);
                 break;
-            case VIEW_GROUP_MEMBER:
+            case VIEW_GROUP_MEMBER_APPLY:
                View_group_member_apply(pack_t);
                break;
             case VIEW_GROUP_RECORD:
@@ -404,6 +403,9 @@ void View_friend_list()
     memset(&relation,0,sizeof(RELATION_INFO));
 
     pthread_mutex_lock(&mutex);
+    Send_pack_message(flag,user.username,"server","");
+    pthread_cond_wait(&cond, &mutex);
+
     printf("\n\t\t\033[0;34m**********好友列表*********\033[0m\n");
     if(relation.friend_num==0)
         printf("\t暂无好友!,请先添加\n");
@@ -448,6 +450,11 @@ void View_friend_list()
             }
             
         }*/
+}
+void View_friend_list_apply(PACK recv_pack)
+{
+    memcpy(&relation,&recv_pack.relation,sizeof(RELATION_INFO));
+    pthread_cond_signal(&cond);
 }
 void Show_friend_status()
 {
@@ -660,22 +667,49 @@ void Withdraw_group_apply(PACK recv_pack)
 }
 void View_add_group()
 {
-   pthread_mutex_lock(&mutex);
+    int flag=VIEW_ADD_GROUP;
+    char buf[MAX_CHAR];
+    memset(&group,0,sizeof(GROUP_INFO));
+
+    pthread_mutex_lock(&mutex);
+    Send_pack_message(flag,user.username,"server","");
+    pthread_cond_wait(&cond, &mutex);
 
     printf("\n\t\t\033[0;34m**********群组列表*********\033[0m\n");
-    if(user.group_num==0)
+    if(group.group_num==0)
         printf("\t\t暂无群组!,请先添加\n");
     else
     {
-        for(int i=1;i<=user.group_num;i++)
+        for(int i=0;i<group.group_num;i++)
+        {       
+            printf("\t\t\033[1;32m群组名称:%s  \033[0m\n",group.group_message[i]);
+        }
+    }
+    pthread_mutex_unlock(&mutex);
+
+
+
+    /*else
+    {
+        for(int i=0;i<user.group_num;i++)
         {       
             printf("\t\t\033[1;32m群组名称:%s  \033[0m\n",user.group[i].name);
         }
     }
+    pthread_mutex_unlock(&mutex);*/
+}
+void View_add_group_apply(PACK recv_pack)
+{
+    memcpy(&group,&recv_pack.group,sizeof(GROUP_INFO));
+    pthread_cond_signal(&cond);
 }
 void View_group_member()
 {
     
+}
+void View_group_member_apply(PACK recv_pack)
+{
+
 }
 void View_group_record()
 {
@@ -811,23 +845,49 @@ void Set_group_admin_apply(PACK recv_pack)
 void Kick()
 {
     int flag=KICK;
-    char admin_buf[MAX];
+    char group_name_buf[MAX];
     char staff_buf[MAX];
     pthread_mutex_lock(&mutex);
     printf("请输入踢出某个群里的人员:");
-    Get_string(admin_buf,MAX);
+    Get_string(group_name_buf,MAX);
 
     Get_string(staff_buf,MAX);
    
 
-    Send_pack_message(flag,user.username,admin_buf,staff_buf);
+    Send_pack_message(flag,user.username,group_name_buf,staff_buf);
     pthread_cond_wait(&cond, &mutex);
     pthread_mutex_unlock(&mutex);
 
 }
 void Kick_apply(PACK recv_pack)
 {
-    
+    int flag_kick;
+    flag_kick=recv_pack.data.message[0];
+    if(flag_kick==0)
+    {
+        printf("群%s不存在\n",recv_pack.data.send_name);
+    }
+    else if(flag_kick==1)
+    {
+        printf("群%s踢出%s成功\n",recv_pack.data.send_name,recv_pack.message);
+    }
+    else if(flag_kick==2)
+    {
+        printf("只有群主%s或者管理员才能踢人\n",recv_pack.data.recv_name);
+    }
+    else if(flag_kick==3)
+    {
+        printf("该成员%s不在群中\n",recv_pack.message);
+    }
+    else if(flag_kick==4)
+    {
+        printf("你不是该群%s成员，无法踢人\n",recv_pack.data.send_name);
+    }
+    else if(flag_kick==5)
+    {
+        printf("你%s被踢出了群聊%s",recv_pack.message,recv_pack.data.send_name);
+    }
+    pthread_cond_signal(&cond);
 }
 void Group_leader_menu()
 {

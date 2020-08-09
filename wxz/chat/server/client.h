@@ -61,6 +61,9 @@
 #define WITHDRAW_GROUP_APPLY 36
 #define SET_GROUP_ADMIN_APPLY 37
 #define KICK_APPLY 38
+#define VIEW_ADD_GROUP_APPLY 39
+#define VIEW_GROUP_MEMBER_APPLY 40
+
 
 #define OWNER 1
 #define ADMIN 2
@@ -102,28 +105,36 @@ typedef struct friend_info
     //好友的信息数
     int message_num;
     int friend_num;
-    char name[MAX_CHAR];
+    
+    char username[MAX];
+    char friend_name[MAX];
 }FRIEND_INFO;
 
 
 typedef struct group_info
 {
-    int group_num;
-    char group_name[MAX][MAX];
-    int type[10];
-    int status[10];
+
+    char member_name[MAX_CHAR][MAX_CHAR];
     int member_num;
-    char member_name[MAX][MAX];
+
+    char group_name[MAX];
+    char group_message[MAX_CHAR][MAX_CHAR];
+    int group_num;
+    
+    char group_owner[MAX];
+    int type;
+    int status[MAX_CHAR];
 }GROUP_INFO;
+GROUP_INFO group;
 
 typedef struct file
 {
     int flag;
-    int send;
-    int receiver;
-    int size;
-    char name[100];
-    char data[1000];
+    int file_size;
+    char file_name[100];
+    char send_name[MAX];
+    char recv_name[MAX];
+    char message[MAX_CHAR];
 }file;
 
 typedef struct data
@@ -142,6 +153,7 @@ typedef struct package
     DATA data;
 
     RELATION_INFO relation;
+    GROUP_INFO group;
     char message[MAX_CHAR*2];
 }PACK;
 

@@ -469,7 +469,7 @@ void Unshield_friend(PACK* pack_t)
 //一起实现
 void View_friend_list(PACK* pack_t)
 {
-    int flag=VIEW_FRIEND_LIST_APPLY;
+    int flag=VIEW_FRIEND_LIST;
     MYSQL_RES* result;
     MYSQL_ROW row;
     char buf[MAX_CHAR];
@@ -489,9 +489,9 @@ void View_friend_list(PACK* pack_t)
         pack_t->relation.friend_num=0;
     else
     {
+        i=0;
         while((row=mysql_fetch_row(result)))
         {
-            i=0;
             if(strcmp(row[0],pack_t->data.send_name)==0)
             {
                 strcpy(pack_t->relation.friend_message[i],row[1]);
@@ -505,6 +505,7 @@ void View_friend_list(PACK* pack_t)
                 i++;
             }
         }
+        pack_t->relation.friend_num=i;
     }
     Send_pack_type(pack_t->data.send_fd,flag,pack_t,"");
 
@@ -839,7 +840,20 @@ void Withdraw_group(PACK* pack_t)
 }
 void View_add_group(PACK* pack_t)
 {
-    char status[MAX_CHAR*2];
+    int flag=VIEW_ADD_GROUP_APPLY;
+
+    int i;
+    group_list_t pos;
+    for(pos=group_ser->next,i=0;pos!=group_ser;pos=pos->next,i++)
+    {
+        if((strcmp(pos->data.member_name[i],pack_t->data.send_name)==0) && (strcmp(pos->data.member_name[i],pack_t->data.send_name)==0) && (pos->data.type==OWNER || pos->data.type==ADMIN || pos->data.type==COMMON))
+        {
+            strcpy(pack_t->group.group_message[i],pos->data.group_name);
+        }
+    }
+    pack_t->group.group_num=group_num;
+    Send_pack_type(pack_t->data.send_fd,flag,pack_t,"");
+    /*char status[MAX_CHAR*2];
     char buf[MAX_CHAR];
     char name_t[MAX_CHAR];
     int cnt;
@@ -870,11 +884,21 @@ void View_add_group(PACK* pack_t)
     pack_t->data.send_fd=lfd;
 
     Send_pack(pack_t);
-    free(pack_t);
+    free(pack_t);*/
 }
 void View_group_member(PACK* pack_t)
 {
-    char status[MAX_CHAR*2];
+    int flag=VIEW_GROUP_MEMBER_APPLY;
+    int i;
+    group_list_t pos;
+    for(pos=group_ser->next,i=0;pos!=group_ser;pos=pos->next,i++)
+    {
+        if((strcmp(pos->data.member_name[i],pack_t->data.send_name)==0) && (strcmp(pos->data.member_name[i],pack_t->data.send_name)==0) && (pos->data.type==OWNER || pos->data.type==ADMIN || pos->data.type==COMMON))
+        {
+            strcpy(pack_t->group.group_message[i],pos->data.group_name);
+        }
+    }
+    /*char status[MAX_CHAR*2];
     int type_t;
     int status_t;
     char buf[MAX_CHAR];
@@ -910,10 +934,13 @@ void View_group_member(PACK* pack_t)
     pack_t->data.send_fd=lfd;
 
     Send_pack(pack_t);
-    free(pack_t);
+    free(pack_t);*/
 
 }
-/*void View_group_record(PACK* pack_t);*/
+void View_group_record(PACK* pack_t)
+{
+
+}
 void Group_chat(PACK* pack_t)
 {
     group_list_t pos;
@@ -1118,7 +1145,98 @@ void Set_group_admin(PACK* pack_t)
 }
 void Kick(PACK* pack_t)
 {
-    
+    char buf[MAX_CHAR];
+    int flag=KICK_APPLY;
+    int flag_t;
+    int flag_tt;
+    int flag_ttt;
+    int flag_tttt;
+    char flag_kick[10];
+    int i;
+    group_list_t pos;
+    //群信息
+    for(pos=group_ser->next;pos!=group_ser;pos=pos->next)
+    {
+        if((strcmp(pos->data.group_name,pack_t->data.recv_name)==0))
+        {
+            printf("pos:%s\n",pos->data.group_name);
+            flag_t=1;
+            break;
+        }
+    }
+    //删除人员信息
+    for(pos=group_ser->next,i=1;pos!=group_ser;pos=pos->next,i++)
+    {
+        if((strcmp(pos->data.group_name,pack_t->data.recv_name)==0) && (strcmp(pos->data.member_name[i],pack_t->data.message)==0) )
+        {
+            flag_tt=1;
+            break;
+        }
+    }
+    //群主或管理员信息
+    for(pos=group_ser->next;pos!=group_ser;pos=pos->next)
+    {
+        if((strcmp(pos->data.group_name,pack_t->data.recv_name)==0) && (strcmp(pos->data.member_name[i],pack_t->data.send_name)==0) && (pos->data.type==OWNER || pos->data.type==ADMIN))
+        {
+            flag_ttt=1;
+            break;
+        }
+    }
+    //普通成员
+    for(pos=group_ser->next,i=1;pos!=group_ser;pos=pos->next,i++)
+    {
+        if((pos->data.type==COMMON) && (strcmp(pos->data.member_name[i],pack_t->data.message)==0) )
+        {
+            flag_tttt=1;
+            break;
+        }
+    }
+    server_list_t pos_user;
+
+
+    if(flag_t==1 &&flag_tt==1&& flag_ttt==1 && flag_tttt==1)
+    {
+        flag_kick[0]='1';
+        List_FreeNode(pos);
+        pos->data.member_num--;
+
+        for(pos_user=list_ser->next;pos_user!=list_ser;pos_user=pos_user->next)
+        {
+            if((strcmp(pos_user->data.username,pack_t->data.message)==0) )
+            {
+               flag_kick[0]='5';
+               strcpy(pack_t->message,pack_t->data.message);
+               Send_pack_type(pos_user->data.connfd,flag,pack_t,flag_kick);
+            }
+        }
+        memset(buf,0,sizeof(buf));
+        sprintf(buf,"delete from group_member where group_name='%s' and member_name='%s'",pack_t->data.recv_name,pack_t->data.message);
+        mysql_real_query(&mysql,buf,strlen(buf));
+        strcpy(pack_t->message,pack_t->data.message);
+        Send_pack_type(pack_t->data.send_fd,flag,pack_t,flag_kick);
+    }
+    else if(flag_ttt==0 && flag_t==1 && flag_tt==1 && flag_tttt==1)
+    {
+        flag_kick[0]='2';
+        Send_pack_type(pack_t->data.send_fd,flag,pack_t,flag_kick);
+    }
+    else if(flag_tt==0)
+    {
+        flag_kick[0]='3';
+        strcpy(pack_t->message,pack_t->data.message);
+        Send_pack_type(pack_t->data.send_fd,flag,pack_t,flag_kick);
+    }
+    else if(flag_tttt==0)
+    {
+        flag_kick[0]='4';
+        Send_pack_type(pack_t->data.send_fd,flag,pack_t,flag_kick);
+    }
+    else if(flag_t==0)
+    {
+        flag_kick[0]='0';
+        Send_pack_type(pack_t->data.send_fd,flag,pack_t,flag_kick);
+    }
+
 }
 
 

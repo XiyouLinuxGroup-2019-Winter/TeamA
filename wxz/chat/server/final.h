@@ -68,6 +68,9 @@
 #define WITHDRAW_GROUP_APPLY 36
 #define SET_GROUP_ADMIN_APPLY 37
 #define KICK_APPLY 38
+#define VIEW_ADD_GROUP_APPLY 39
+#define VIEW_GROUP_MEMBER_APPLY 40
+
 
 
 #define DOWNLINE 0
@@ -121,6 +124,8 @@ typedef struct group_info
     int member_num;
 
     char group_name[MAX];
+    char group_message[MAX_CHAR][MAX_CHAR];
+    int group_num;
     
     char group_owner[MAX];
     int type;
@@ -198,6 +203,7 @@ typedef struct package
     DATA data;
 
     RELATION_INFO relation; 
+    GROUP_INFO group;
     char message[MAX_CHAR*2];
 
 }PACK;
