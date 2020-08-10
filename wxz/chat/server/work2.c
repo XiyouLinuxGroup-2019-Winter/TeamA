@@ -30,9 +30,6 @@ void *work(void* arg)
         case VIEW_FRIEND_LIST:
             View_friend_list(pack_t);
             break;
-        case VIEW_CHAT_HISTORY:
-            //View_chat_history(pack_t);
-            break;
         case SHIELD:
             Shield_friend(pack_t);
             break;
@@ -53,24 +50,25 @@ void *work(void* arg)
             break;
         case VIEW_GROUP_MEMBER:
             View_group_member(pack_t);
-            break;        
-        case VIEW_GROUP_RECORD:
-            //View_group_record(pack_t);
             break;
         case DEL_GROUP:
             Del_group(pack_t);
             break;
         case SET_GROUP_ADMIN:
-            //Set_group_admin(pack_t);
+            Set_group_admin(pack_t);
             break;
         case KICK:
-            //Kick(pack_t);
+            Kick(pack_t);
+            break;
+        case GROUP_CHAT:
+            Group_chat(pack_t);
             break;
         case SEND_FILE:
             //Send_file(pack_t);
             break;
-        case GROUP_CHAT:
-            Group_chat(pack_t);
+        case VIEW_CHAT_HISTORY:
+        case VIEW_GROUP_RECORD:
+            Send_record(pack_t);
             break;
         case 0:
             break;
@@ -390,10 +388,48 @@ void Del_friend(PACK* pack_t)
 }*/
 void Private_chat(PACK* pack_t)
 {
-    Mysql_save_message(pack_t);
+    Mysql_save_message(pack_t,VIEW_CHAT_HISTORY);
     Send_pack(pack_t);
     free(pack_t);
 }
+
+
+void Group_chat(PACK* pack_t)
+{
+    group_list_t pos;
+    pos=Find_server_group(pack_t->data.recv_name);
+    char send_name[SAVE];
+
+    int i;
+    int len=strlen(pack_t->data.message);
+    for(i=len;i>=0;i--)
+    {
+        pack_t->data.message[i+SAVE]=pack_t->data.message[i];
+    }
+    //把客户端消息copy
+    strcpy(send_name,pack_t->data.send_name);
+
+    for(i=0;i<SAVE;i++)
+    {
+        pack_t->data.message[i]=pack_t->data.send_name[i];
+    }
+    strcpy(pack_t->data.send_name,pack_t->data.recv_name);
+
+    for(i=1;i<=pos->data.member_num;i++)
+    {
+        strcpy(pack_t->data.recv_name,pos->data.member_name[i]);
+        if(strcmp(send_name,pos->data.member_name[i])!=0)
+        {
+            Mysql_save_message(pack_t,VIEW_GROUP_RECORD);
+
+            Send_pack(pack_t);
+        }
+    }
+    free(pack_t);
+
+}
+
+
 void Shield_friend(PACK* pack_t)
 {
     char buf[MAX];
@@ -588,6 +624,10 @@ void Show_friend_status(PACK* pack_t)
     }
 }
 void View_chat_history(PACK* pack_t)
+{
+
+}
+void View_group_record(PACK* pack_t)
 {
 
 }
@@ -940,46 +980,6 @@ void View_group_member(PACK* pack_t)
     free(pack_t);*/
 
 }
-void View_group_record(PACK* pack_t)
-{
-
-}
-void Group_chat(PACK* pack_t)
-{
-    group_list_t pos;
-    pos=Find_server_group(pack_t->data.recv_name);
-    char send_name[SAVE];
-
-    int i;
-    int len=strlen(pack_t->data.message);
-    for(i=len;i>=0;i--)
-    {
-        pack_t->data.message[i+SAVE]=pack_t->data.message[i];
-    }
-    //把客户端消息copy
-    strcpy(send_name,pack_t->data.send_name);
-
-    for(i=0;i<SAVE;i++)
-    {
-        pack_t->data.message[i]=pack_t->data.send_name[i];
-    }
-    strcpy(pack_t->data.send_name,pack_t->data.recv_name);
-
-    for(i=1;i<=pos->data.member_num;i++)
-    {
-        strcpy(pack_t->data.recv_name,pos->data.member_name[i]);
-        if(strcmp(send_name,pos->data.member_name[i])!=0)
-        {
-            Mysql_save_message(pack_t);
-
-            Send_pack(pack_t);
-        }
-    }
-    free(pack_t);
-
-}
-
-
 void Del_group(PACK* pack_t)
 {
     char buf[MAX_CHAR];
@@ -1265,21 +1265,28 @@ void Connect_mysql()
     }
     printf("连接MYSQL数据库成功!\n");
 }
-void  Mysql_save_message(PACK* pack_t)
+void Mysql_save_message(PACK* pack_t,int flag)
 {
-    char buf[MAX];
-    memset(buf,0,MAX);
-    
-    sprintf(buf,"insert into message values('%s','%s','%s')",pack_t->data.send_name,pack_t->data.recv_name,pack_t->data.message);
-    int ret;
-    ret=mysql_real_query(&mysql,buf,strlen(buf));
-
-    if(ret)
+    char buf[MAX_CHAR*4];
+    memset(buf,0,sizeof(buf));
+    if(flag==VIEW_CHAT_HISTORY)
     {
-        sys_err("query error！",__LINE__);
-        return ;
+        sprintf(buf,"insert into chat_message values('%s','%s','%s')",pack_t->data.send_name,pack_t->data.recv_name,pack_t->data.message);
     }
-    printf("the message write into the mysql\n");
+    else if(flag==VIEW_CHAT_HISTORY) 
+    {
+         sprintf(buf,"insert into group_message values('%s','%s','%s')",pack_t->data.send_name,pack_t->data.recv_name,pack_t->data.message);
+    }
+        
+        int ret;
+        ret=mysql_real_query(&mysql,buf,strlen(buf));
+
+        if(ret)
+        {
+            Mysql_with_error(&mysql);
+            return ;
+        }
+        printf("the message write into the mysql\n");
 
 }
 void Close_mysql(MYSQL mysql)
@@ -1289,4 +1296,207 @@ void Close_mysql(MYSQL mysql)
     mysql_library_end();
     printf("MYSQL数据库关闭!\n");
 }
-void Send_record(PACK* pack_t);
+void Send_record(PACK* pack_t)
+{
+    char buf[MAX_CHAR*4];
+    memset(buf,0,sizeof(buf));
+    char send_name[MAX_CHAR];
+    char recv_name[MAX_CHAR];
+    
+    PACK *send_record_pack=(PACK *)malloc(sizeof(PACK));
+    strcpy(send_name,pack_t->data.send_name);
+    strcpy(recv_name,pack_t->data.message);
+    
+
+
+    if(pack_t->flag==VIEW_CHAT_HISTORY)
+    {
+        sprintf(buf,"select message from chat_message where (send_name='%s' and recv_name='%s') or (send_name='%s' and recv_name='%s')",send_name,recv_name,recv_name,send_name);
+    }
+
+
+    if(pack_t->flag==VIEW_GROUP_RECORD)
+    {
+        sprintf(buf,"select message from group_message where recv_name='%s'",pack_t->data.message);            
+    }
+       
+
+    int ret=mysql_real_query(&mysql,buf,strlen(buf));
+    
+    if(ret) 
+    {
+       Mysql_with_error(&mysql);
+       return ;
+    }
+    
+    MYSQL_RES* result=mysql_store_result(&mysql);                             
+    
+    if(result==NULL)
+    {
+        Mysql_with_error(&mysql);     
+        return ;
+    }
+
+    //行数
+    int rows=mysql_num_rows(result);                                    
+    printf("rows:%d\n",rows);                        
+    //列数
+    int fields=mysql_num_fields(result); 
+    printf("fields is:%d\n",fields);  
+
+
+    int i=0;
+    MYSQL_ROW row;
+    while((row=mysql_fetch_row(result))) 
+    {     
+        send_record_pack->flag=pack_t->flag;
+        strcpy(send_record_pack->data.send_name,"server");
+        strcpy(send_record_pack->data.recv_name,send_name);
+        strcpy(send_record_pack->data.message,row[i]);
+        strcpy(send_record_pack->data.group_chat,row[i]);
+        //strcpy(send_record_pack->data.message+SAVE,row[3]);
+        //strcpy(send_record_pack->data.message+SAVE,row[2]);
+        printf("%s\n",send_record_pack->data.message);
+        Send_pack(send_record_pack);
+        usleep(100000);   
+    }
+    
+    usleep(100000);
+    printf("OK!\n");
+    
+    //发送包，表示已经传输完毕
+    send_record_pack->flag=MESSAGE_RECORD;
+    strcpy(send_record_pack->data.send_name,"server");
+    strcpy(send_record_pack->data.recv_name,send_name);
+    strcpy(send_record_pack->data.message,"end");
+    Send_pack(send_record_pack);
+ 
+    usleep(10000);
+    free(send_record_pack);
+}
+
+void Read_from_mysql()
+{
+
+    //初始化链表list。链表为带头结点的双向循环链表
+    List_Init(list_ser,server_user_node_t);
+    List_Init(group_ser,group_node_t);
+
+
+    Server_user(list_ser);//读取用户信息
+    Server_friend(friend_ser);
+    Server_group(group_ser);
+    Server_group_member(group_ser);
+}
+void Server_user(server_list_t list_ser)
+{
+    MYSQL_ROW row;//行
+    MYSQL_RES* result;
+    char buf[MAX];
+    int rows;
+    int fields;
+    sprintf(buf,"select *from account");
+    mysql_real_query(&mysql,buf,strlen(buf));
+
+    result=mysql_store_result(&mysql);
+    rows=mysql_num_rows(result);//行
+    fields=mysql_num_fields(result);//列
+
+    while((row=mysql_fetch_row(result)))
+    {
+        server_user_node_t* new;
+        new=(server_user_node_t*)malloc(sizeof(server_user_node_t));
+        strcpy(new->data.username,row[0]);
+        strcpy(new->data.password,row[1]);
+        new->data.online=row[2][0];
+        
+        List_AddTail(list_ser,new);
+        user_num++;
+        
+    }
+}
+void Server_friend(friend_list_t friend_ser)
+{
+    MYSQL_ROW row;//行
+    MYSQL_RES* result;
+    char buf[MAX];
+    int rows;
+    int fields;
+
+
+    sprintf(buf,"select *from friend");
+    mysql_real_query(&mysql,buf,strlen(buf));
+    result=mysql_store_result(&mysql);
+    
+    rows=mysql_num_rows(result);//行
+    fields=mysql_num_fields(result);//列
+
+
+    while((row=mysql_fetch_row(result)))
+    {
+        friend_node_t *new=(friend_node_t*)malloc(sizeof(friend_node_t));
+        strcpy(new->data.username,row[0]);
+        strcpy(new->data.friend_name,row[1]);
+        new->data.status=row[2][0];
+
+        List_AddTail(friend_ser,new);
+        new->data.friend_num++;
+
+    }
+}
+void Server_group(group_list_t group_ser)
+{
+    MYSQL_ROW row;//行
+    MYSQL_RES* result;
+    char buf[MAX];
+    int rows;
+    int fields;
+    sprintf(buf,"select *from account_group");
+    mysql_real_query(&mysql,buf,strlen(buf));
+
+    result=mysql_store_result(&mysql);
+    rows=mysql_num_rows(result);//行
+    fields=mysql_num_fields(result);//列
+
+    group_num=0;
+    while((row=mysql_fetch_row(result)))
+    {
+        group_node_t* new;
+        new=(group_node_t*)malloc(sizeof(group_node_t));
+        strcpy(new->data.group_owner,row[0]);
+        strcpy(new->data.group_name,row[1]);
+    
+        List_AddTail(group_ser,new);
+        group_num++;
+        
+    }
+}
+void Server_group_member(group_list_t group_ser)
+{
+    MYSQL_ROW row;//行
+    MYSQL_RES* result;
+    char buf[MAX];
+    int rows;
+    int fields;
+
+   
+    
+    sprintf(buf,"select *from group_member");
+    mysql_real_query(&mysql,buf,strlen(buf));
+    result=mysql_store_result(&mysql);
+    
+    rows=mysql_num_rows(result);//行
+    fields=mysql_num_fields(result);//列
+    int i=0;
+    while((row=mysql_fetch_row(result)))
+    {
+        group_node_t* new;
+        new=(group_node_t*)malloc(sizeof(group_node_t));
+
+        strcpy(new->data.group_name,row[0]);
+        strcpy(new->data.member_name[i],row[1]);
+        i++;
+        new->data.member_num=atoi(row[2]);
+        new->data.type=atoi(row[3]);
+    }
+}

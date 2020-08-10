@@ -1,4 +1,4 @@
-#include "final.h"
+#include "wrang.h"
 void sys_err(const char* s,int line)
 {
     fprintf(stderr,"line:%d",line);

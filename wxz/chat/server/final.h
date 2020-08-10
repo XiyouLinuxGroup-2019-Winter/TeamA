@@ -20,6 +20,7 @@
 
 
 
+
 #define SERV_ADDRESS "127.0.0.1"
 #define SERV_PORT 8000
 
@@ -71,7 +72,7 @@
 #define KICK_APPLY 38
 #define VIEW_ADD_GROUP_APPLY 39
 #define VIEW_GROUP_MEMBER_APPLY 40
-
+#define MESSAGE_RECORD 41
 
 
 #define DOWNLINE 0
@@ -195,6 +196,7 @@ typedef struct data
     int recv_fd;
 
    char message[MAX_CHAR*2];
+   char group_chat[MAX];
 }DATA;
 
 typedef struct package
@@ -275,12 +277,11 @@ void Send_file();
 void Send_record(PACK* pack_t);
 
 
-MYSQL mysql;
 void sys_err(const char* s,int line);
 void Connect_mysql();
 void Use_mysql(const char *string, MYSQL mysql);
 void Close_mysql(MYSQL mysql);
-void Mysql_save_message(PACK* pack_t);
+void Mysql_save_message(PACK* pack_t,int flag);
 
 
 void Recv_pack_message(PACK recv_t);//收到包的信息
@@ -292,6 +293,7 @@ void Send_pack_type_name(int fd,int type,PACK* recv_pack,char* flag);
 server_list_t Find_server_user(char *username);
 void Find_del_server_user(server_list_t pos,char* friend_name);
 group_list_t Find_server_group(char* group_name);
+
 void Read_from_mysql();
 void Server_user(server_list_t list_ser);
 void Server_friend(friend_list_t friend_ser);
@@ -299,7 +301,7 @@ void Server_group(group_list_t group_ser);
 void Server_group_member(group_list_t group_ser);
 
 void Mysql_with_error(MYSQL* mysql);
-
+void Signal_close(int i);
 
 int threadpool_add(void *(*process)(void *arg),void *arg);  
 int threadpool_destroy();

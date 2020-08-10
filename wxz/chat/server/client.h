@@ -10,7 +10,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include "wrang.h"
-#include "tool.h"
+
 
 #define SERV_ADDRESS "127.0.0.1"
 #define SERV_PORT 8000
@@ -145,7 +145,8 @@ typedef struct data
     int send_fd;
     int recv_fd;
 
-   char message[MAX_CHAR*2];
+    char message[MAX_CHAR*2];
+    char group_chat[MAX];
 }DATA;
 
 typedef struct package
@@ -204,16 +205,15 @@ ACCOUNT_INFO user;
 PACK pack_send[MAX_CHAR];
 int send_num;
 
-PACK check_friend[MAX_CHAR];
-int check_num;
+
 
 
 
 void Menu();
 
-void Login_menu();
+int Login_menu();
 void Register();
-void Login();
+int Login();
 void Modify_password();
 
 void Friend_menu();
@@ -225,6 +225,7 @@ void Del_friend();
 void Query_friend();
 void Query_friend_apply(PACK recv_pack);
 
+void Group_chat();
 void Private_chat();
 void Send_message(int flag,char* buf);
 void Show_message_print(char* name,char* message);
@@ -239,7 +240,11 @@ void Show_friend_status();
 void Show_friend_status_apply(PACK recv_pack);
 void View_friend_list();
 void View_friend_list_apply(PACK recv_pack);
+
+
 void View_chat_history();
+void View_group_record();
+void Print_message_record(PACK recv_pack);
 
 void Create_group();
 void Create_group_apply(PACK recv_pack);
@@ -247,14 +252,14 @@ void Add_group();
 void Add_group_apply(PACK recv_pack);
 void Withdraw_group();
 void Withdraw_group_apply(PACK recv_pack);
-void Group_chat();
+
 
 void View_add_group();
 void View_add_group_apply(PACK recv_pack);
 void View_group_member();
 void View_group_member_apply(PACK recv_pack);
-void View_group_record();
-void View_group_record_apply(PACK recv_pack);
+
+
 void Group_menu();
 
 
@@ -271,7 +276,7 @@ void Send_file();
 
 int Send_cmessage(int flag,int receiver,char* buf);
 int Send_smessage(int flag,int receiver,int sender,char *buf);
-int Send_message(int flag,char* buf);
+void Send_message(int flag,char* buf);
 void Send_pack_message(int flag,char *send_name,char* recv_name,char* message);
 
 

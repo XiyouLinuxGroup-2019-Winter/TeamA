@@ -5,10 +5,14 @@ int main()
 
     Turn_worker_thread();
 
+    pthread_mutex_init(&mutex, NULL);
+    pthread_cond_init(&cond, NULL);
 
-    Login_menu();
+    if(Login_menu()==0)
+        return 0;
 
     Menu();
+    close(cfd);
 }
 void Init_socket()
 {
@@ -29,22 +33,9 @@ void Init_socket()
 
 }
 
-void *Update_status(void* arg)
-{
-    int i;
-    while(1)
-    {
-        pthread_mutex_lock(&mutex);
-        for(i=1;i<=friend_;i++)
-        {
-            
-        }
-        pthread_mutex_unlock(&mutex);
-        usleep(1);
-    }
-}
 void *Recv_pack(void *arg)
 {
+    
     PACK pack_t;
     pthread_t pid;
     int flag;
@@ -59,15 +50,7 @@ void *Recv_pack(void *arg)
 
         pthread_mutex_lock(&mutex);
 
-        for(int i=1;i<=check_friend_num;i++)
-        {
-            if(strcmp(user.friends[i].name,pack_t.data.send_name)==0)
-            {
-                user.friends[i].message_num++;
-                break;
-            }
-        }
-
+        
         switch (pack_t.flag)
         {
             case ADD_FRIEND_APPLY:
@@ -93,10 +76,10 @@ void *Recv_pack(void *arg)
                 Unshield_friend_apply(pack_t);
                 break;
             case PRIVATE_CHAT:
-                recv_chat_pack[++chat_num]==pack_t;
+                recv_chat_pack[++chat_num]=pack_t;
                 break;
             case GROUP_CHAT:
-                
+                recv_chat_pack[++chat_num]=pack_t;
                 break;
             case CREAT_GROUP_APPLY:
                 Create_group_apply(pack_t);
@@ -122,10 +105,12 @@ void *Recv_pack(void *arg)
             case VIEW_GROUP_MEMBER_APPLY:
                View_group_member_apply(pack_t);
                break;
+            case VIEW_CHAT_HISTORY:
             case VIEW_GROUP_RECORD:
-                flag=pack_t.data.message[0];
+                Print_message_record(pack_t);
+                break;
             case SEND_FILE:
-                flag=pack_t.data.message[0];  
+                break; 
         }
         pthread_mutex_unlock(&mutex);
     }
@@ -166,7 +151,7 @@ void Register()
         printf("该账号已存在!\n");
     }
 }
-void Login()
+int Login()
 {
     int flag=LOGIN;
     char name[MAX];
@@ -192,6 +177,7 @@ void Login()
     {
         printf("登录成功!\n");
         strcpy(user.username,name);
+        return 1;
     }
     if(login_flag==2)
     {
@@ -205,9 +191,10 @@ void Login()
     {
         printf("密码不正确!\n");
     }
+    return 0;
 }
 
-void Login_menu()
+int Login_menu()
 {
     int choice=1;
     while(choice)
@@ -228,7 +215,8 @@ void Login_menu()
                 break;
             case 2:
                 puts("登录");
-                Login();
+                if(Login()==1)
+                    return 1;
                 break;
             /*case 3:
                 puts("找回密码");
@@ -238,7 +226,7 @@ void Login_menu()
                 break;
         }
     }
-    return ;
+    return 0;
 }
 void Add_friend_apply(PACK recv_pack)
 {
@@ -477,18 +465,18 @@ void Show_friend_status_apply(PACK recv_pack)
     flag_status=recv_pack.data.message[0];
     if(flag_status==0)
     {
-        strcpy(message,recv_pack.data.message[1]);
-        if(strcmp(message,"D")==0)
+        strcpy(message,recv_pack.message);
+        if(strcmp(message,"DOWNLINE")==0)
         {
-            printf("[%s] 状态:[%d]",recv_pack.data.send_name,DOWNLINE);
+            printf("[%s] 状态:[%s]",recv_pack.data.send_name,message);
         }
     }
     else if(flag_status==1)
     {
-        strcpy(message,recv_pack.data.message[1]);
-        if(strcmp(message,"O")==0)
+        strcpy(message,recv_pack.message);
+        if(strcmp(message,"ONLINE")==0)
         {
-            printf("[%s] 状态:[%d]",recv_pack.data.send_name,ONLINE);
+            printf("[%s] 状态:[%s]",recv_pack.data.send_name,message);
         }
     }
     pthread_cond_signal(&cond);
@@ -509,7 +497,7 @@ void Private_chat()
     {
         if(strcmp(relation.friend_message[i],name_buf)!=0)
         {
-            printf("没有此好友\n",name_buf);
+            printf("没有此好友%s\n",name_buf);
             return ;
         }
     }
@@ -559,11 +547,11 @@ void Group_chat()
 void Send_message(int flag,char* buf)
 {
     char message[MAX_CHAR];
-    time_t time;
+    time_t timep;
     printf("\033[;34m\033[1m******************请输入***************\033[0m\n");
     while(1)
     {
-        time(&time);
+        time(&timep);
         memset(message,0,sizeof(message));
         //保存光标位置
         printf("\033[s");
@@ -606,13 +594,13 @@ void Send_message(int flag,char* buf)
 }
 void Show_message_print(char* name,char* message)
 {
-    time_t time;
+    time_t time_t;
     int number=10;
     char timep[100];
     int len; 
     //时间
-    time(&time);
-    strcpy(timep,ctime(&time));
+    time(&time_t);
+    strcpy(timep,ctime(&time_t));
     len=strlen(timep);
     timep[len-5]='\0'; 
 
@@ -677,6 +665,7 @@ void *Show_message(void* arg)
         pthread_mutex_unlock(&mutex); 
         usleep(1);    
     }
+    return NULL;
 }
 void print_message(int id)
 {
@@ -700,6 +689,104 @@ void print_message(int id)
         //strcpy(group_print_name,recv_chat_pack[id].data.group_chat);
         Show_message_print(group_print_name,recv_chat_pack[id].data.message+SAVE);
     }
+}
+void View_chat_history()
+{
+    char name_buf[MAX];
+    int flag=VIEW_CHAT_HISTORY;
+    do
+    {
+        View_friend_list();
+        printf("请输入要查看的名称[退出:q]:\n");
+
+        fflush(stdin);
+        Get_string(name_buf,MAX);
+
+        
+        if(strcmp(name_buf,"q\0")==0)
+        {
+            return;
+        }
+
+        int i;
+        for(i=1;i<=relation.friend_num;i++)
+        {
+            if(strcmp(relation.friend_message[i],name_buf)!=0)
+            {
+                printf("你没有这位好友%s\n",name_buf);
+                printf("请重新输入\n");
+                continue;
+            }
+            else
+            {
+                printf("找到好友\n");
+                break;
+            }
+        }
+     
+ 
+    }while(strcmp(name_buf,"q\0")!=0);
+
+    Send_pack_message(flag,user.username,"server",name_buf);
+
+    sleep(1);
+    printf("加载中--------------------------------\n");
+    return;
+}
+void View_group_record()
+{
+    char group_name[MAX];
+    
+   int flag=VIEW_GROUP_RECORD;
+    
+    do
+    {
+        View_add_group();
+       
+        printf("请输入要查看的群[退出:q]:\n");
+
+        fflush(stdin);
+        Get_string(group_name,MAX);
+        
+        
+        if(strcmp(group_name,"q\0")==0)
+        {
+            return;
+        }
+        
+
+        int i;
+        for(i=1;i<=group.group_num;i++)
+        {
+            if(strcmp(group.group_message[i],group_name)!=0)
+            {
+                printf("你没有加入这个群%s\n",group_name);
+                printf("请重新输入\n");
+                continue;
+            }
+            else
+            {
+                printf("找到群\n");
+                break;
+            }
+            
+        }    
+    }while(strcmp(group_name,"q\0")!=0);
+        
+    Send_pack_message(flag,user.username,"server",group_name);
+
+    printf("加载中-----------------------------\n");
+    sleep(1);    
+    return ;
+}
+void Print_message_record(PACK recv_pack)
+{
+    PACK *pack_t;
+    pack_t=(PACK*)malloc(sizeof(PACK));
+    memcpy(pack_t,&recv_pack,sizeof(PACK));
+    printf("--------------------聊天记录-------------------------\n");
+    printf("%s:\n",pack_t->data.group_chat);
+    printf("%s:\n",pack_t->data.message);
 }
 void Friend_menu()
 {
@@ -810,9 +897,9 @@ void Add_group_apply(PACK recv_pack)
         switch (choice)
         {
             case 'y':
-                Send_pack_message(ADD_FRIEND,recv_pack.data.recv_name,recv_pack.data.send_name,choice);
+                Send_pack_message(ADD_FRIEND,recv_pack.data.recv_name,recv_pack.data.send_name,"y");
             case 'n':
-                Send_pack_message(ADD_FRIEND,recv_pack.data.recv_name,recv_pack.data.send_name,choice);
+                Send_pack_message(ADD_FRIEND,recv_pack.data.recv_name,recv_pack.data.send_name,"n");
         }
     }
     else if(flag_add==2)
@@ -936,17 +1023,9 @@ void View_group_member_apply(PACK recv_pack)
     memcpy(&relation,&recv_pack.relation,sizeof(RELATION_INFO));
     pthread_cond_signal(&cond);
 }
-void View_group_record()
-{
-
-}
-void Group_chat()
-{
-    pthread_t pod;
-    char chat_message[]
-}
 void Group_menu()
 {
+    system("clear");
     int choice=1;
     while(choice)
     {
@@ -1146,15 +1225,9 @@ void Group_leader_menu()
         }
     }
 }
-
-void Send_file()
-{
-    int flag=SEND_FILE;
-    
-
-}
 void Menu()
 {
+    system("clear");
     int choice=1;
     while(choice)
     {
@@ -1178,14 +1251,87 @@ void Menu()
                 Group_menu();
                 break;
             case 3:
-                Send_file();
+                //Send_file();
                 break;
             case 4:
-                Offline_transmission();
+                //Offline_transmission();
                 break;
             case 0:
                 break;
         }
     }
+ 
+}
+void my_err(const char* err_string,int line)
+{
+    fprintf(stderr,"line:%d",line);
+    perror(err_string);
+    exit(1);
+}
+void Clear_buffer()
+{
+    char ch;
+    while(getchar()!='\n')
+		continue;
+    /*while((ch=getchar())!='\n' && ch!=EOF)
+            continue;*/
+}
+void display(char* str)
+{
+    int i;
+    system("clear");
+    for(i=0;i<50;i++)
+        putchar('-');
+    putchar('\n');
+    printf("       %s\n",str);
+    for(i=0;i<50;i++)
+        putchar('-');
+    putchar('\n');
+    return;
+}
+char getch()
+{
+	char ch;
 
+    system("stty -echo");//不回显
+    system("stty -icanon");//设置一次性读完操作，如使用getchar()读操作,不需要按回车
+    ch = getchar();
+    system("stty icanon");//取消上面的设置
+    system("stty echo");//回显
+
+    return ch;
+}
+char* Get_string(char* buf,int len)
+{
+    char* str;
+    int i=0;
+    str=fgets(buf,len,stdin);
+	if(str!=NULL)
+	{
+		while(str[i]!='\0' && str[i]!='\n')
+			i++;
+		if(str[i]=='\n')
+			str[i]='\0';
+		else
+			while(getchar()!='\n')
+				continue;
+	}
+	return str;
+}
+
+
+
+void Send_pack_message(int flag,char *send_name,char* recv_name,char* message)
+{
+    PACK pack_send_msg;
+    memset(&pack_send_msg, 0, sizeof(PACK));
+    pack_send_msg.flag=flag;
+    pack_send_msg.data.recv_fd=cfd;
+    strcpy(pack_send_msg.data.send_name,send_name);
+    strcpy(pack_send_msg.data.recv_name,recv_name);
+    strcpy(pack_send_msg.data.message, message);
+    if(send(cfd, &pack_send_msg,sizeof(PACK),0)==-1)
+    {
+        my_err("send error!",__LINE__);
+    }
 }
