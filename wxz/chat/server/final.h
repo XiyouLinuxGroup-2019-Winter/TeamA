@@ -25,6 +25,7 @@
 
 #define MAX 50
 #define MAX_CHAR 300
+#define SAVE 10
 
 #define REGISTER 1
 #define LOGIN 2
@@ -82,7 +83,6 @@
 #define ADMIN 2
 #define COMMON 3
 
-#define SAVE 10
 #define MAX_THREAD_NUM 10
 
 

@@ -86,16 +86,18 @@ void *Recv_pack(void *arg)
             case SHOW_FRIEND_STATUS_APPLY:
                 Show_friend_status_apply(pack_t);
                 break;
-            case VIEW_CHAT_HISTORY:
-                
-                break;
             case SHIELD_APPLY:
                 Shield_friend_apply(pack_t);
                 break;
             case UNSHIELD_APPLY:
                 Unshield_friend_apply(pack_t);
+                break;
+            case PRIVATE_CHAT:
+                recv_chat_pack[++chat_num]==pack_t;
+                break;
             case GROUP_CHAT:
-                flag=pack_t.data.message[0];
+                
+                break;
             case CREAT_GROUP_APPLY:
                 Create_group_apply(pack_t);
                 break;
@@ -493,27 +495,210 @@ void Show_friend_status_apply(PACK recv_pack)
 }
 void Private_chat()
 {
-    char name_buf[BUFSIZ];
-    message msg;
-    FILE* fp;
-    char username_buf[15];
-    memset(&msg,0,sizeof(message));
-    memset(name_buf,0,BUFSIZ);
-    memcpy(msg.from,username_buf,15);
-    printf("请输入想私聊的好友账号:");
-    Get_string(username_buf,15);
-    printf("[---------------]正在加载");
-    sleep(1);
-    system("clear");
-    printf("[---------------]正在与%s聊天(quit退出)\n",username_buf);
+    pthread_t pid;
+    int id;
+    char name_buf[MAX];
+    int flag=PRIVATE_CHAT;
+    View_friend_list();
+ 
+    printf("请输入私聊的名称\n");
+    Get_string(name_buf,MAX);
+
+    int i;
+    for(i=1;i<=relation.friend_num;i++)
+    {
+        if(strcmp(relation.friend_message[i],name_buf)!=0)
+        {
+            printf("没有此好友\n",name_buf);
+            return ;
+        }
+    }
+    
+    
+    printf("\033[;34m\033[1m********************message*******************\033[0m\n");
+
+    flag_print_mes=1;
+    user.relation[id].message_num=0;
+    //开启线程显示信息
+    pthread_create(&pid,NULL,Show_message,(void *)name_buf);
+   
+    Send_message(flag,name_buf);
+  
+}
+void Group_chat()
+{
+    pthread_t pid;
+    char group_name_buf[MAX];
+    int flag=GROUP_CHAT;
+    View_add_group();
+
+    printf("请输入群名称\n");
+    Get_string(group_name_buf,MAX);
+
+    int i;
+    for(i=1;i<=group.group_num;i++)
+    {
+        if(strcmp(group.group_message[i],group_name_buf)!=0)
+        {
+            printf("没有此群%s\n",group_name_buf);
+            return ;
+        }
+    }
+   
+ 
+
+    printf("\033[;34m\033[1m********************message*******************\033[0m\n");
+    
+
+    flag_print_mes=1;
+
+    pthread_create(&pid,NULL,Show_message,(void *)group_name_buf);
+    
+    Send_message(flag,group_name_buf);   
+}
+void Send_message(int flag,char* buf)
+{
+    char message[MAX_CHAR];
+    time_t time;
+    printf("\033[;34m\033[1m******************请输入***************\033[0m\n");
     while(1)
     {
-        memcpy(name_buf,&msg,sizeof(message));
-        if(send(cfd,name_buf,BUFSIZ,0)!=BUFSIZ)
+        time(&time);
+        memset(message,0,sizeof(message));
+        //保存光标位置
+        printf("\033[s");
+        fflush(stdout);
+
+        fgets(message,MAX_CHAR,stdin);
+        while(message[0]==10)
         {
-            my_err("send error!",__LINE__);
+            //光标上移一行
+            printf("\033[1A");
+            fflush(stdout);
+
+            fgets(message,MAX_CHAR,stdin);
         }
-        return ;
+        if(strcmp(message,"quit\n")==0)
+            break;
+
+        //恢复光标位置
+        printf("\033[u");
+        fflush(stdout);
+        //保存光标位置
+        printf("\033[s");
+        fflush(stdout);
+        // 清除从光标到行尾的内容 
+        printf("\033[K\n");
+        printf("\033[K\n");
+        printf("\033[K\n");
+        fflush(stdout);
+        //恢复光标位置
+        printf("\033[u");
+        fflush(stdout);
+
+        //输入的的同时，输出信息
+        Show_message_print(user.username,message);
+
+        Send_pack_message(flag,user.username,buf,message);
+
+    }
+    flag_print_mes=EXIT;
+}
+void Show_message_print(char* name,char* message)
+{
+    time_t time;
+    int number=10;
+    char timep[100];
+    int len; 
+    //时间
+    time(&time);
+    strcpy(timep,ctime(&time));
+    len=strlen(timep);
+    timep[len-5]='\0'; 
+
+    //确认要打印的聊天信息发送方
+    if(print_message_num==number)
+    {
+        for(int i=1;i<=5;i++)
+            print_mes[i]=print_mes[i+1];
+        strcpy(print_mes[number].name,name);
+        strcpy(print_mes[number].time,timep);
+        strcpy(print_mes[number].message,message);
+    }
+    else
+    {
+        strcpy(print_mes[++print_message_num].name,name);
+        strcpy(print_mes[number].time,timep);
+        strcpy(print_mes[print_message_num].message,message);
+    }
+ 
+    //打印聊天信息
+    for(int i=1;i<=print_message_num;i++)
+    {
+        if(strcmp(print_mes[i].name,user.username)==0)
+        {
+            printf("%s\t%s\n",print_mes[i].name,timep);
+            printf("%s\n",print_mes[i].message);
+        }
+        else
+        {
+            printf("%s\t%s\n",print_mes[i].name,timep);
+            printf("%s\n",print_mes[i].message);
+        }
+    }
+    fflush(stdout);
+}
+void *Show_message(void* arg)
+{
+    int id;
+    int i;
+    char* username=(char*)arg;
+    while(1)
+    {
+        if(flag_print_mes==EXIT)
+            break;
+        pthread_mutex_lock(&mutex);
+        id=0;
+
+        for(i=1;i<=chat_num;i++)
+        {
+            if(strcmp(recv_chat_pack[i].data.send_name,username)==0)
+            {
+                id=i;
+                print_message(id);
+                chat_num--;
+                for(int j=id;j<=chat_num && chat_num;j++)
+                {
+                    recv_chat_pack[j]=recv_chat_pack[j+1];
+                }
+                break;
+            }
+        }
+        pthread_mutex_unlock(&mutex); 
+        usleep(1);    
+    }
+}
+void print_message(int id)
+{
+    char group_print_name[MAX_CHAR];
+
+
+    memset(group_print_name,0,sizeof(group_print_name));
+    
+
+    if(recv_chat_pack[id].flag==PRIVATE_CHAT)
+    {
+        Show_message_print(recv_chat_pack[id].data.send_name,recv_chat_pack[id].data.message);
+    }
+    else if(recv_chat_pack[id].flag==GROUP_CHAT)
+    {    
+        //群聊下依次存入发消息的人的名称
+        for(int i=0;i<SAVE;i++)
+        {
+            group_print_name[i]=recv_chat_pack[id].data.message[i];
+        } 
+        //strcpy(group_print_name,recv_chat_pack[id].data.group_chat);
+        Show_message_print(group_print_name,recv_chat_pack[id].data.message+SAVE);
     }
 }
 void Friend_menu()
@@ -757,7 +942,8 @@ void View_group_record()
 }
 void Group_chat()
 {
-    
+    pthread_t pod;
+    char chat_message[]
 }
 void Group_menu()
 {

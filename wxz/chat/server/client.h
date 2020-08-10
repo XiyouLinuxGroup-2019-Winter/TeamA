@@ -17,6 +17,7 @@
 
 #define MAX 50
 #define MAX_CHAR 300
+#define SAVE 10
 
 #define REGISTER 1
 #define LOGIN 2
@@ -74,6 +75,8 @@
 #define UNBLACK 1
 #define BLACK 0
 
+#define EXIT -1
+
 pthread_mutex_t mutex;
 pthread_cond_t cond;
 int cfd;
@@ -91,7 +94,7 @@ typedef struct relation_info
 {
     int friend_relation[MAX];
     //好友的信息数
-    //int message_num;
+    int message_num;
     int friend_num;
     char friend_message[MAX][MAX];
 
@@ -102,8 +105,6 @@ typedef struct friend_info
 {
     int status;
     int relation;
-    //好友的信息数
-    int message_num;
     int friend_num;
     
     char username[MAX];
@@ -158,6 +159,18 @@ typedef struct package
 }PACK;
 
 
+typedef struct chat_message
+{
+    char name[MAX_CHAR];
+    char time[MAX_CHAR];
+    char message[MAX_CHAR];
+}CHAT_MESSAGE;
+
+CHAT_MESSAGE print_mes[10];
+int flag_print_mes;
+PACK recv_chat_pack[MAX_CHAR];
+int chat_num;
+int print_message_num;
 
 
 typedef struct account_info
@@ -179,6 +192,7 @@ typedef struct account_info
 
     FRIEND_INFO friends[MAX_CHAR];
     GROUP_INFO group[MAX_CHAR];
+    RELATION_INFO relation[MAX_CHAR];
 
 
 }ACCOUNT_INFO;
@@ -187,13 +201,13 @@ typedef struct account_info
 ACCOUNT_INFO user;
 
 
-PACK pack_send [MAX_CHAR];
+PACK pack_send[MAX_CHAR];
 int send_num;
 
 PACK check_friend[MAX_CHAR];
-int check_friend_num;
-//PACK pack_recv
-PACK friend_apply;
+int check_num;
+
+
 
 void Menu();
 
@@ -210,7 +224,13 @@ void Del_friend_apply(PACK recv_pack);
 void Del_friend();
 void Query_friend();
 void Query_friend_apply(PACK recv_pack);
+
 void Private_chat();
+void Send_message(int flag,char* buf);
+void Show_message_print(char* name,char* message);
+void *Show_message(void *arg);
+void print_message(int id);
+
 void Shield_friend();
 void Shield_friend_apply(PACK recv_pack);
 void Unshield_friend();
@@ -228,7 +248,7 @@ void Add_group_apply(PACK recv_pack);
 void Withdraw_group();
 void Withdraw_group_apply(PACK recv_pack);
 void Group_chat();
-void Group_chat_apply(PACK recv_pack);
+
 void View_add_group();
 void View_add_group_apply(PACK recv_pack);
 void View_group_member();
