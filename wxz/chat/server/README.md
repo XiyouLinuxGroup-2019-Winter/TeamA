@@ -1,0 +1,1 @@
+- make 得到server再运行./server
