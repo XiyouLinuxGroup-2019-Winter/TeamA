@@ -209,8 +209,10 @@ void display_R(int flag_param,char* path)
     
     if((dir=opendir(path))==NULL)
     {
-        my_err("opendir",__LINE__);
-        exit(1);
+    	if(errno!=13)
+        	my_err("opendir",__LINE__);
+        else
+        	return ;
     }
     while((ptr=readdir(dir))!=NULL)
     {
@@ -219,8 +221,12 @@ void display_R(int flag_param,char* path)
         count++;
     }
 
-        if(count>256)
+        /*if(count>=256)
+        {
             my_err("too mant files under this dir",__LINE__);
+        	exit(0);
+        
+        }*/
     char ** filenames=(char**)malloc(sizeof(char*)*count);
     for(int i=0;i<count;i++)
         filenames[i]=(char*)malloc(sizeof(char)*PATH_MAX+1);
