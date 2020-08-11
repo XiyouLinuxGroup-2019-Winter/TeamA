@@ -101,7 +101,7 @@ int threadpool_destroy()
   
 void *thread_routine(void *arg)  
 {  
-    printf("starting thread 0x%ld\n",pthread_self());  
+    //printf("starting thread 0x%ld\n",pthread_self());  
     while (1)  
     {  
         pthread_mutex_lock(&(pool->lock));  
@@ -109,7 +109,7 @@ void *thread_routine(void *arg)
         pthread_cond_wait是一个原子操作，等待前会解锁，唤醒后会加锁*/  
         while (pool->queue_size==0&&!pool->shutdown)  
         {  
-            printf("thread 0x%ld is waiting\n",pthread_self());  
+            //printf("thread 0x%ld is waiting\n",pthread_self());  
             pthread_cond_wait(&(pool->cond), &(pool->lock));  
         }  
   
@@ -118,11 +118,11 @@ void *thread_routine(void *arg)
         {  
             //遇到break,continue,return等跳转语句，不要忘记先解锁  
             pthread_mutex_unlock(&(pool->lock));  
-            printf ("thread 0x%ld will exit\n",pthread_self());  
+            //printf ("thread 0x%ld will exit\n",pthread_self());  
             pthread_exit(NULL);  
         }  
   
-        printf("thread 0x%ld is starting to work\n",pthread_self());  
+       // printf("thread 0x%ld is starting to work\n",pthread_self());  
   
   
         assert(pool->queue_size!= 0);  

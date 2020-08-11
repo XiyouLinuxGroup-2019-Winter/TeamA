@@ -289,6 +289,8 @@ void Send_recv_pack(int fd,PACK* recv_pack,char* flag);
 void Send_pack(PACK* send_pack_t);
 void Send_pack_type(int fd,int type,PACK* recv_pack,char* flag);
 void Send_pack_type_name(int fd,int type,PACK* recv_pack,char* flag);
+void Send_pack_message(int flag,char *send_name,char* recv_name,char* message);
+
 
 server_list_t Find_server_user(char *username);
 void Find_del_server_user(server_list_t pos,char* friend_name);

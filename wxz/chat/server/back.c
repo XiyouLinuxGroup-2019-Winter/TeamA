@@ -23,7 +23,6 @@ int main()
     pthread_mutex_init(&mutex,NULL);
     pthread_cond_init(&cond,NULL);
 
-    Connect_mysql();
     printf("线程池启动\n");
     pool_init(MAX_THREAD_NUM);
     printf("线程池启动成功!\n");
@@ -31,6 +30,8 @@ int main()
 
     //Read_from_mysql();
     Init_socket();
+
+    Connect_mysql();
 
 
     threadpool_destroy();
@@ -99,7 +100,7 @@ void Init_socket()
             }
             else if(ep[i].events & EPOLLIN)
             {
-                int n=recv(ep[i].data.fd,&recv_t,sizeof(PACK),0);
+                int n=recv(ep[i].data.fd,&recv_t,sizeof(PACK),MSG_WAITALL);
                 recv_t.data.send_fd=ep[i].data.fd;
 
                 
@@ -1870,18 +1871,4 @@ group_list_t Find_server_group(char* group_name)
         }
     }
     return NULL;
-}
-void Send_pack_message(int flag,char *send_name,char* recv_name,char* message)
-{
-    PACK pack_send_msg;
-    memset(&pack_send_msg, 0, sizeof(PACK));
-    pack_send_msg.flag=flag;
-    //pack_send_msg.data.recv_fd=cfd;
-    strcpy(pack_send_msg.data.send_name,send_name);
-    strcpy(pack_send_msg.data.recv_name,recv_name);
-    strcpy(pack_send_msg.data.message, message);
-    if(send(cfd, &pack_send_msg,sizeof(PACK),0)==-1)
-    {
-        my_err("send error!",__LINE__);
-    }
 }

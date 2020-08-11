@@ -3,15 +3,14 @@ int main()
 {
     Init_socket();
 
-    Turn_worker_thread();
-
     pthread_mutex_init(&mutex, NULL);
     pthread_cond_init(&cond, NULL);
 
     if(Login_menu()==0)
         return 0;
-
+    Turn_worker_thread();
     Menu();
+    
     close(cfd);
 }
 void Init_socket()
@@ -36,11 +35,12 @@ void Init_socket()
 void *Recv_pack(void *arg)
 {
     
-    PACK pack_t;
-    pthread_t pid;
-    int flag;
+    
     while(1)
     {
+
+
+        PACK pack_t;
         if(recv(cfd,&pack_t,sizeof(PACK),0)<0)
         {
             my_err("recv error",__LINE__);
@@ -127,29 +127,41 @@ void Register()
     char password[MAX];
     char name[MAX];
 
-    PACK recv_register;
+
     int recv_register_flag;
 
     printf("账号:");
-    scanf("%s",name);
+    scanf(name,MAX);
+    Clear_buffer();
     printf("密码:");
-    scanf("%s",password);
+    scanf(password,MAX);
+    Clear_buffer();
 
     Send_pack_message(flag,name,"server",password);
 
-
-    if(recv(cfd,&recv_register,sizeof(PACK),0)==-1)
+    PACK *recv_register;
+    recv_register=(PACK*)malloc(sizeof(recv_register));
+    if(recv(cfd,recv_register,sizeof(PACK),0)<0)
     {
         my_err("recv error",__LINE__);
     }
-    recv_register_flag=recv_register.data.message[0];
 
-    if(recv_register_flag)
-        printf("注册成功!\n");
-    else
+    if(recv_register->flag==REGISTER)
     {
-        printf("该账号已存在!\n");
+        recv_register_flag=recv_register->data.message[0]-'0';
+
+        if(recv_register_flag==1)
+        {
+            printf("注册成功!\n");
+            return ;
+        }
+        else if(recv_register_flag==0)
+        {
+            printf("该账号已存在!\n");
+            return ;
+        }
     }
+    free(recv_register);
 }
 int Login()
 {
@@ -158,47 +170,57 @@ int Login()
     char password[MAX];
 
     printf("请输入账号:\n");
-    scanf("%s",name);
+    scanf(name,MAX);
+    Clear_buffer();
     printf("请输入密码:\n");
-    scanf("%s",password);
+    scanf(password,MAX);
+    Clear_buffer();
 
-    PACK recv_login;
     int login_flag;
 
     Send_pack_message(flag,name,"server",password);
 
-    if(recv(cfd,&recv_login,sizeof(PACK),0)<0)
+    PACK *recv_login;
+    recv_login=(PACK*)malloc(sizeof(recv_login));
+    if(recv(cfd,recv_login,sizeof(PACK),MSG_WAITALL)<0)
     {
         my_err("recv error",__LINE__);
     }
-    login_flag=recv_login.data.message[0];
+    if(recv_login->flag==LOGIN)
+    {
+        login_flag=recv_login->data.message[0]-'0';
 
-    if(login_flag==1)
-    {
-        printf("登录成功!\n");
-        strcpy(user.username,name);
-        return 1;
+        if(login_flag==1)
+        {
+            printf("登录成功!\n");
+            strcpy(user.username,name);
+            return 1;
+        }
+        else if(login_flag==2)
+        {
+            printf("账号不存在!\n");
+            return 0;
+        }
+        else if(login_flag==3)
+        {
+            printf("账号已经登录!\n");
+            return 0;
+        }
+        /*
+        if(login_flag==0)
+        {
+            printf("密码不正确!\n");
+        }*/
     }
-    if(login_flag==2)
-    {
-        printf("账号不存在!\n");
-    }
-    if(login_flag==3)
-    {
-        printf("账号已经登录!\n");
-    }
-    if(login_flag==0)
-    {
-        printf("密码不正确!\n");
-    }
-    return 0;
+    free(recv_login);
 }
 
 int Login_menu()
 {
     int choice=1;
-    while(choice)
+    do
     {
+        system("clear");
         printf("\t\t\033[44;34m\033[44;37m**************************\033[0m\n");
         printf("\t\t\033[1;34m*        1.注册          \033[1;34m*\033[0m \n");
         printf("\t\t\033[1;34m*        2.登录          \033[1;34m*\033[0m \n");
@@ -225,7 +247,7 @@ int Login_menu()
             case 0:
                 break;
         }
-    }
+    }while(1);
     return 0;
 }
 void Add_friend_apply(PACK recv_pack)
@@ -1326,7 +1348,7 @@ void Send_pack_message(int flag,char *send_name,char* recv_name,char* message)
     PACK pack_send_msg;
     memset(&pack_send_msg, 0, sizeof(PACK));
     pack_send_msg.flag=flag;
-    pack_send_msg.data.recv_fd=cfd;
+    //pack_send_msg.data.recv_fd=cfd;
     strcpy(pack_send_msg.data.send_name,send_name);
     strcpy(pack_send_msg.data.recv_name,recv_name);
     strcpy(pack_send_msg.data.message, message);

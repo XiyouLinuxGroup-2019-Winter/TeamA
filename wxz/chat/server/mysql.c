@@ -1,4 +1,11 @@
 #include "final.h"
+MYSQL mysql;
+int main()
+{
+    Connect_mysql();
+    Use_mysql("insert into account username='wxz'",mysql);
+    Close_mysql(mysql);
+}
 void sys_err(const char* s,int line)
 {
     fprintf(stderr,"line:%d",line);
@@ -21,7 +28,7 @@ void Connect_mysql()
     }
     printf("连接MYSQL数据库成功!\n");
 }
-void Mysql_save_message(PACK* pack_t)
+/*void Mysql_save_message(PACK* pack_t)
 {
     char buf[MAX];
     memset(buf,0,MAX);
@@ -37,7 +44,7 @@ void Mysql_save_message(PACK* pack_t)
     }
     printf("the message write into the mysql\n");
 
-}
+}*/
 void Close_mysql(MYSQL mysql)
 {
     mysql_close(&mysql);
@@ -45,10 +52,8 @@ void Close_mysql(MYSQL mysql)
     mysql_library_end();
     printf("MYSQL数据库关闭!\n");
 }
-void Send_record(PACK* pack_t);
 
-
-/*void Use_mysql(const char *string, MYSQL mysql)
+void Use_mysql(const char *string, MYSQL mysql)
 {
 	int i;
 	MYSQL_RES   *result;
@@ -60,7 +65,7 @@ void Send_record(PACK* pack_t);
         sys_err("query error！",__LINE__);
     }
 
-	
+	int fields;
 	result=mysql_store_result(&mysql);
     if(result==NULL)
     {
@@ -68,19 +73,19 @@ void Send_record(PACK* pack_t);
     }
     else
     {
-       while((field=mysql_num_fields(result)))
+       while((fields=mysql_num_fields(result)))
             printf("%-20s",field->name);
         printf("\n");
 
-        while(row=mysql_fetch_row(result))
+        while((row=mysql_fetch_row(result)))
         {
 	        for(i=0;i<mysql_num_fields(result);i++)
             {
                 if(row[i])
-		            printf("%-20s\n",cols[i]);
+		            printf("%-20s\n",row[i]);
             }
             printf("\n");
         }
         mysql_free_result(result);
     }
-}*/
+}
