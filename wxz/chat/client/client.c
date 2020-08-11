@@ -32,6 +32,140 @@ void Init_socket()
 
 }
 
+void Register()
+{
+    int flag=REGISTER;
+    char password[MAX];
+    char name[MAX];
+
+
+    int recv_register_flag;
+
+    printf("账号:");
+    scanf(name,MAX);
+    Clear_buffer();
+    printf("密码:");
+    scanf(password,MAX);
+    Clear_buffer();
+
+    Send_pack_message(flag,name,"server",password);
+
+    PACK recv_register;
+    //recv_register=(PACK*)malloc(sizeof(recv_register));
+    if(recv(cfd,&recv_register,sizeof(PACK),0)<0)
+    {
+        my_err("recv error",__LINE__);
+    }
+
+    if(recv_register.flag==REGISTER)
+    {
+        recv_register_flag=recv_register.data.message[0]-'0';
+
+        if(recv_register_flag==1)
+        {
+            printf("注册成功!\n");
+            printf("按任意键返回\n");
+            getchar();
+        }
+        else if(recv_register_flag==0)
+        {
+            printf("该账号已存在!\n");
+            printf("按任意键返回\n");
+            getchar();
+        }
+    }
+    //free(recv_register);
+}
+int Login()
+{
+    int flag=LOGIN;
+    char name[MAX];
+    char password[MAX];
+
+    printf("请输入账号:\n");
+    scanf(name,MAX);
+    Clear_buffer();
+    printf("请输入密码:\n");
+    scanf(password,MAX);
+    Clear_buffer();
+
+    int login_flag;
+
+    Send_pack_message(flag,name,"server",password);
+
+    PACK recv_login;
+    //recv_login=(PACK*)malloc(sizeof(recv_login));
+    if(recv(cfd,&recv_login,sizeof(PACK),0)<0)
+    {
+        my_err("recv error",__LINE__);
+    }
+    if(recv_login.flag==LOGIN)
+    {
+        login_flag=recv_login.data.message[0]-'0';
+
+        if(login_flag==1)
+        {
+            printf("登录成功!\n");
+            strcpy(user.username,name);
+            return 1;
+        }
+        else if(login_flag==2)
+        {
+            printf("账号不存在!\n");
+            return -1;
+        }
+        else if(login_flag==3)
+        {
+            printf("账号已经登录!\n");
+            return -1;
+        }
+        /*
+        if(login_flag==0)
+        {
+            printf("密码不正确!\n");
+        }*/
+    }
+    //free(recv_login);
+}
+
+int Login_menu()
+{
+    int choice;
+    while(1)
+    {
+        system("clear");
+        printf("\t\t\033[44;34m\033[44;37m**************************\033[0m\n");
+        printf("\t\t\033[1;34m*        1.注册          \033[1;34m*\033[0m \n");
+        printf("\t\t\033[1;34m*        2.登录          \033[1;34m*\033[0m \n");
+        printf("\t\t\033[1;34m*        0.退出          \033[1;34m*\033[0m \n");
+        printf("\t\t\033[44;34m\033[44;37m**************************\033[0m\n");
+        printf("\t\tchoice：");
+        scanf("%d",&choice);
+        Clear_buffer();
+    
+        switch(choice)
+        {
+            case 1:
+                puts("注册");
+                Register();
+                break;
+            case 2:
+                puts("登录");
+                if(Login()==1)
+                    return 1;
+                break;
+            /*case 3:
+                puts("找回密码");
+                Modify_password();
+                break;*/
+            case 0:
+                break;
+        }
+    
+    }
+    return 0;
+}
+
 void *Recv_pack(void *arg)
 {
     
@@ -121,135 +255,6 @@ void Turn_worker_thread()
     pthread_create(&pid_recv,NULL,Recv_pack,NULL);
 }
 
-void Register()
-{
-    int flag=REGISTER;
-    char password[MAX];
-    char name[MAX];
-
-
-    int recv_register_flag;
-
-    printf("账号:");
-    scanf(name,MAX);
-    Clear_buffer();
-    printf("密码:");
-    scanf(password,MAX);
-    Clear_buffer();
-
-    Send_pack_message(flag,name,"server",password);
-
-    PACK *recv_register;
-    recv_register=(PACK*)malloc(sizeof(recv_register));
-    if(recv(cfd,recv_register,sizeof(PACK),0)<0)
-    {
-        my_err("recv error",__LINE__);
-    }
-
-    if(recv_register->flag==REGISTER)
-    {
-        recv_register_flag=recv_register->data.message[0]-'0';
-
-        if(recv_register_flag==1)
-        {
-            printf("注册成功!\n");
-            return ;
-        }
-        else if(recv_register_flag==0)
-        {
-            printf("该账号已存在!\n");
-            return ;
-        }
-    }
-    free(recv_register);
-}
-int Login()
-{
-    int flag=LOGIN;
-    char name[MAX];
-    char password[MAX];
-
-    printf("请输入账号:\n");
-    scanf(name,MAX);
-    Clear_buffer();
-    printf("请输入密码:\n");
-    scanf(password,MAX);
-    Clear_buffer();
-
-    int login_flag;
-
-    Send_pack_message(flag,name,"server",password);
-
-    PACK *recv_login;
-    recv_login=(PACK*)malloc(sizeof(recv_login));
-    if(recv(cfd,recv_login,sizeof(PACK),MSG_WAITALL)<0)
-    {
-        my_err("recv error",__LINE__);
-    }
-    if(recv_login->flag==LOGIN)
-    {
-        login_flag=recv_login->data.message[0]-'0';
-
-        if(login_flag==1)
-        {
-            printf("登录成功!\n");
-            strcpy(user.username,name);
-            return 1;
-        }
-        else if(login_flag==2)
-        {
-            printf("账号不存在!\n");
-            return 0;
-        }
-        else if(login_flag==3)
-        {
-            printf("账号已经登录!\n");
-            return 0;
-        }
-        /*
-        if(login_flag==0)
-        {
-            printf("密码不正确!\n");
-        }*/
-    }
-    free(recv_login);
-}
-
-int Login_menu()
-{
-    int choice=1;
-    do
-    {
-        system("clear");
-        printf("\t\t\033[44;34m\033[44;37m**************************\033[0m\n");
-        printf("\t\t\033[1;34m*        1.注册          \033[1;34m*\033[0m \n");
-        printf("\t\t\033[1;34m*        2.登录          \033[1;34m*\033[0m \n");
-        printf("\t\t\033[1;34m*        0.退出          \033[1;34m*\033[0m \n");
-        printf("\t\t\033[44;34m\033[44;37m**************************\033[0m\n");
-        printf("\t\tchoice：");
-        scanf("%d",&choice);
-        Clear_buffer();
-        switch(choice)
-        {
-            case 1:
-                puts("注册");
-                Register();
-                break;
-            case 2:
-                puts("登录");
-                if(Login()==1)
-                    return 1;
-                break;
-            /*case 3:
-                puts("找回密码");
-                Modify_password();
-                break;*/
-            case 0:
-                break;
-        }
-    }while(1);
-    return 0;
-}
 void Add_friend_apply(PACK recv_pack)
 {
     int flag_add;
