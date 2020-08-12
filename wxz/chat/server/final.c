@@ -10,12 +10,12 @@ int main()
     List_Init(group_ser,group_node_t);
 
 
-    if((sys_log=open("sys_log",O_WRONLY | O_CREAT | O_APPEND,S_IRUSR|S_IWUSR))<0)
+    /*if((sys_log=open("sys_log",O_WRONLY | O_CREAT | O_APPEND,S_IRUSR|S_IWUSR))<0)
     {
         sys_err("open error",__LINE__);
         return 0;
     }
-    dup2(sys_log,1);
+    dup2(sys_log,1);*/
 
     
     signal(SIGINT,Signal_close);
@@ -85,6 +85,7 @@ void Init_socket()
         {
 
             printf("the event is %x\n",ep[i].events);
+
             if (!(ep[i].events & EPOLLIN))      //如果不是"读"事件, 继续循环
                 continue;
 
@@ -106,18 +107,18 @@ void Init_socket()
                 /*if(ep[i].events & EPOLLRDHUP)
                 {
                     server_list_t pos;
-                    //使用指针pos依次遍历链表list_ser
+                    //使用指针pos依次遍历链表list_ser
+
                     List_ForEach(list_ser,pos)
                     {
-                    
                         if(pos->data.connfd==ep[i].data.fd)
                         {
-                            List_FreeNode(pos);
-                            printf("%s downline\n",pos->data.username);
+                            List_DelNode(pos);
+                            printf("下线删除成功\n");
                             break;
                         }
                     }
-                    tep.data.fd=ep[i].data.fd;
+                   // tep.data.fd=ep[i].data.fd;
                     printf("客户端:%d连接断开\n",tep.data.fd);
                    
                     epoll_ctl(epfd,EPOLL_CTL_DEL,ep[i].data.fd,NULL);
@@ -158,11 +159,11 @@ void Init_socket()
                             break;
                         }
                     }
-                    tep.data.fd=ep[i].data.fd;
+                    //tep.data.fd=ep[i].data.fd;
                     printf("客户端:%d连接断开\n",tep.data.fd);
                    
-                    epoll_ctl(epfd,EPOLL_CTL_DEL,ep[i].data.fd,&tep);
-                    //close(ep[i].data.fd);
+                    epoll_ctl(epfd,EPOLL_CTL_DEL,ep[i].data.fd,NULL);
+                    close(ep[i].data.fd);
                     continue;
                 }
 
@@ -180,7 +181,6 @@ void Init_socket()
             
         }
     }
-
     close(epfd);
     close(lfd);
 }
@@ -262,99 +262,127 @@ void *work(void* arg)
 }
 void Register(PACK* pack_t)
 {
-    char register_flag[10];
-    int flag=REGISTER;
+    MYSQL_RES *result;
+    MYSQL_ROW row;
+    MYSQL_FIELD *field;
+    int ret, i, j;
+    char flag_register[10];
+
+    server_user_t *new;
+    new=(server_user_t *)malloc(sizeof(server_user_t));
+    strcpy(new->username,pack_t->data.send_name);
+    strcpy(new->password,pack_t->data.message);
+    new->online=DOWNLINE;
+
+    
+
     char buf[BUFSIZ];
-
-    server_list_t pos;
-    for(pos=list_ser->next;pos!=list_ser;pos=pos->next)
+    memset(buf, 0,sizeof(buf));
+    sprintf(buf,"select username from account where username='%s'",new->username);
+    ret=mysql_real_query(&mysql, buf,strlen(buf)); //查询语句
+    if(ret)
     {
-        if(strcmp(pos->data.username,pack_t->data.send_name)==0)
-        {
-            printf("pos:%s\n%s\n",pos->data.username,pos->data.password);
-            flag=1;
-            break;
-        }
-    }
-
-    server_user_node_t *new;
-    new=(server_user_node_t*)malloc(sizeof(server_user_node_t));
-
-    if(flag==0)
-    {
-        strcpy(new->data.username,pack_t->data.send_name);
-        strcpy(new->data.password,pack_t->data.message);
-        new->data.online=DOWNLINE;
-        new->data.friend_num=0;
-        new->data.group_num=0;
-        
-        //链表尾插法，list为头指针，new为新节点
-        List_AddTail(list_ser,new);
-        user_num++;
-
-
-        memset(buf,0,sizeof(buf));
-        sprintf(buf,"insert into account values('%s','%s','%d')",pack_t->data.send_name,pack_t->data.message,pos->data.online);
-        mysql_real_query(&mysql,buf,strlen(buf));
-        register_flag[0]='1';
+        printf("select error:%s\n",mysql_error(&mysql));
     }
     else
     {
-        register_flag[0]='0';
-    }
-    register_flag[1]='\0';
+        result=mysql_store_result(&mysql); 
 
-    Send_pack_type(pack_t->data.send_fd,flag,pack_t,register_flag);
-    free(pack_t);
-}
-//登录
+        //检索所有的行，
+        if(mysql_num_rows(result)==0)
+        {
+            memset(buf, 0, sizeof(buf));
+            printf("没有此人可以注册此账户\n");
+            sprintf(buf, "insert into account values('%s','%s','%d')", new->username, new->password,new->online);
+            printf("%s\n", buf);
+
+            ret=mysql_real_query(&mysql, buf,strlen(buf)); //查询语句
+
+            if(ret)
+            {
+                printf("select error:%s\n",mysql_error(&mysql));
+                flag_register[0]='0';
+                Send_pack_type(pack_t->data.send_fd,REGISTER,pack_t,flag_register);
+                return ;
+            }
+            flag_register[0]='1';
+            Send_pack_type(pack_t->data.send_fd,REGISTER,pack_t,flag_register);
+        }
+        else if(mysql_num_rows(result)>0)
+        {
+            printf("该账户已存在，请提示重新输入\n");
+            flag_register[0]='0';
+            Send_pack_type(pack_t->data.send_fd,REGISTER,pack_t,flag_register);
+        }
+        mysql_free_result(result);
+    }
+
+}               
 void Login(PACK* pack_t)
 {
-    char login_flag[10];
-    int ret;
-    int flag=LOGIN;
+    MYSQL_RES *result;
+    MYSQL_ROW row;
+    MYSQL_FIELD *field;
+    int ret, i, j;
+    char flag_login[10];
     
-    
-    server_list_t pos;
-    for(pos=list_ser->next;pos!=list_ser;pos=pos->next)
-    {
-        if((strcmp(pos->data.username,pack_t->data.send_name)==0)&&(strcmp(pos->data.password,pack_t->data.message)==0))
-        {
-            printf("pos:%s\n%s\n",pos->data.username,pos->data.password);
-            flag=1;
-            
-            break;
-        }
-    }
 
-    
-    //没有注册
-    if(flag==0)
-        login_flag[0]='2';
+    char buf[BUFSIZ];
+    memset(buf, 0,sizeof(buf));
+    sprintf(buf,"select username from account where username='%s' and password='%s'",pack_t->data.send_name,pack_t->data.message);
+    ret=mysql_real_query(&mysql, buf,strlen(buf)); //查询语句
+    if(ret)
+    {
+        printf("select error:%s\n",mysql_error(&mysql));
+    }
     else
     {
-        //账号已经登录
-        if(pos->data.online==ONLINE)
-            login_flag[0]='3';
-        else if(pos->data.online==DOWNLINE)
+        result=mysql_store_result(&mysql); 
+        row=mysql_fetch_row(result);
+        //检索所有的行，
+        if(row==NULL)
         {
-            //登录成功
-            login_flag[0]='1';
-            pos->data.online=ONLINE;
-            pos->data.connfd=pack_t->data.send_fd;
-        }
-        /*
-        else
-        {
-            //密码错误
-            login_flag[0]='0';
-        }*/
-    }
-    login_flag[1]='\0';
+            printf("没有找到要登录的账号\n");
 
-    Send_pack_type(pack_t->data.send_fd,flag,pack_t,login_flag);
+            
+                
+            flag_login[0]='0';
+            Send_pack_type(pack_t->data.send_fd,LOGIN,pack_t,flag_login);
+        }
+        else if(row>0)
+        {
+            printf("登录成功\n");
+            
+            server_list_t new=(server_list_t)malloc(sizeof(server_user_node_t));
+           
+
+            printf("%lu Rows\n", (unsigned long)mysql_num_rows(result)); //返回所有的行
+            j = mysql_num_fields(result);                                //获取 列数
+            while ((row= mysql_fetch_row(result)))
+            { //依次取出记录
+
+                strcpy(new->data.username,pack_t->data.send_name);
+
+                for (i = 0; i < j; i++)
+                {
+                    printf("%s\t", row[i]);
+                    new->data.socket_id= atoi(row[i]); //输出
+                }
+                List_AddHead(list_ser, new);
+                printf("\n");
+            }
+            if (mysql_errno(&mysql))
+            {
+                fprintf(stderr, "Retrive error:%s\n", mysql_error(&mysql));
+            }
+
     
-    free(pack_t);
+           
+
+            Send_pack_type(pack_t->data.send_fd,LOGIN,pack_t,flag_login);
+        }
+        mysql_free_result(result);
+    }
 }
 
 void Add_friend(PACK* pack_t)
@@ -1550,9 +1578,9 @@ void Read_from_mysql()
 {
 
     Server_user(list_ser);//读取用户信息
-    Server_friend(friend_ser);
-    Server_group(group_ser);
-    Server_group_member(group_ser);
+    //Server_friend(friend_ser);
+    //Server_group(group_ser);
+    //Server_group_member(group_ser);
 }
 void Server_user(server_list_t list_ser)
 {
@@ -1580,6 +1608,12 @@ void Server_user(server_list_t list_ser)
         user_num++;
         
     }
+    server_list_t pos;
+    pos=list_ser;
+    list_ser=list_ser->next;
+
+    List_DelNode(pos);
+    printf("read account success\n");
 }
 void Server_friend(friend_list_t friend_ser)
 {
@@ -1609,6 +1643,11 @@ void Server_friend(friend_list_t friend_ser)
         new->data.friend_num++;
 
     }
+    friend_list_t pos;
+    pos=friend_ser;
+    friend_ser=friend_ser->next;
+    List_DelNode(pos);
+    printf("read friend success\n");
 }
 void Server_group(group_list_t group_ser)
 {
@@ -1636,6 +1675,11 @@ void Server_group(group_list_t group_ser)
         group_num++;
         
     }
+    group_list_t pos;
+    pos=group_ser;
+    group_ser=group_ser->next;
+    List_DelNode(pos);
+    printf("read group success\n");
 }
 void Server_group_member(group_list_t group_ser)
 {
@@ -1665,6 +1709,7 @@ void Server_group_member(group_list_t group_ser)
         new->data.member_num=atoi(row[2]);
         new->data.type=atoi(row[3]);
     }
+
 }
 void my_err(const char* err_string,int line)
 {
@@ -1672,7 +1717,7 @@ void my_err(const char* err_string,int line)
     perror(err_string);
     exit(1);
 }
-void Clear_buffer()
+void Clear_buf()
 {
     char ch;
     while(getchar()!='\n')
@@ -1731,13 +1776,13 @@ void Mysql_with_error(MYSQL* mysql)
 void Recv_pack_message(PACK recv_t)
 {
     printf("\n----------PACK----------\n");
-    printf("类型  :\n");
-    printf("发送包的名字  :%s\n",recv_t.data.send_name);
-    printf("接受包的名字  :%s\n",recv_t.data.recv_name);
+    printf("类型  :%d\n",recv_t.flag);
+    printf("发送者的名字  :%s\n",recv_t.data.send_name);
+    printf("接受者的名字  :%s\n",recv_t.data.recv_name);
     printf("信息  :%s\n",recv_t.data.message);
     printf("发送者fd  :%d\n",recv_t.data.send_fd);
     printf("接收者fd  :%d\n",recv_t.data.recv_fd);
-    printf("发送包的数量:%d\n",send_num);
+    printf("发送的数量:%d\n",send_num);
 }
    
 void Send_recv_pack(int fd,PACK* recv_pack,char* flag)

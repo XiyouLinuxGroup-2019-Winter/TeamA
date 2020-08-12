@@ -7,15 +7,16 @@ int main()
 
     //初始化链表list。链表为带头结点的双向循环链表
     List_Init(list_ser,server_user_node_t);
+    List_Init(friend_ser,friend_node_t);
     List_Init(group_ser,group_node_t);
 
 
-    if((sys_log=open("sys_log",O_WRONLY | O_CREAT | O_APPEND,S_IRUSR|S_IWUSR))<0)
+    /*if((sys_log=open("sys_log",O_WRONLY | O_CREAT | O_APPEND,S_IRUSR|S_IWUSR))<0)
     {
         sys_err("open error",__LINE__);
         return 0;
     }
-    dup2(sys_log,1);
+    dup2(sys_log,1);*/
 
     
     signal(SIGINT,Signal_close);
@@ -28,9 +29,12 @@ int main()
     printf("线程池启动成功!\n");
     sleep(2);
 
-    //Read_from_mysql();
+    printf("aaa");
+    Connect_mysql();
+    Read_from_mysql();
+    printf("bbbb");
     Init_socket();
-
+    printf("cccc");
     Connect_mysql();
 
 
@@ -39,7 +43,7 @@ int main()
 }
 void Signal_close(int i)
 {
-    close(sys_log);
+    //close(sys_log);
     Close_mysql(mysql);
     printf("服务器关闭\n");
     exit(1);
@@ -168,7 +172,11 @@ void Init_socket()
                 }
 
 
-                Recv_pack_message(recv_t);
+                /*Recv_pack_message(recv_t);*/
+                printf("send_name  :%s\n",recv_t.data.send_name);
+                printf("recv_name  :%s\n",recv_t.data.recv_name);
+                printf("message  :%s\n",recv_t.data.message);
+                printf("send_fd  :%d\n",recv_t.data.send_fd);
 
                 PACK *recv_pack_t;
                 recv_pack_t=(PACK*)malloc(sizeof(PACK));
@@ -266,23 +274,28 @@ void Register(PACK* pack_t)
     char register_flag[10];
     int flag=REGISTER;
     char buf[BUFSIZ];
+    int flag_t;
 
+    
     server_list_t pos;
     for(pos=list_ser->next;pos!=list_ser;pos=pos->next)
     {
-        if(strcmp(pos->data.username,pack_t->data.send_name)==0)
+        if((strcmp(pos->data.username,pack_t->data.send_name)==0))
         {
             printf("pos:%s\n%s\n",pos->data.username,pos->data.password);
-            flag=1;
+            flag_t=1;
+            printf("1111");
             break;
         }
     }
-
+    
+    printf("11111");
     server_user_node_t *new;
     new=(server_user_node_t*)malloc(sizeof(server_user_node_t));
 
-    if(flag==0)
+    if(flag_t==0)
     {
+        printf("1111");
         strcpy(new->data.username,pack_t->data.send_name);
         strcpy(new->data.password,pack_t->data.message);
         new->data.online=DOWNLINE;
@@ -296,11 +309,18 @@ void Register(PACK* pack_t)
 
         memset(buf,0,sizeof(buf));
         sprintf(buf,"insert into account values('%s','%s','%d')",pack_t->data.send_name,pack_t->data.message,pos->data.online);
-        mysql_real_query(&mysql,buf,strlen(buf));
+        printf("buf:%s\n",buf);
+        int ret=mysql_real_query(&mysql,buf,strlen(buf));
+        if(ret)
+        {
+            printf("insert error:%s\n",mysql_error(&mysql));
+        }
         register_flag[0]='1';
+        
     }
-    else
+    else if(flag_t==1)
     {
+        printf("111");
         register_flag[0]='0';
     }
     register_flag[1]='\0';
@@ -1549,7 +1569,7 @@ void Send_record(PACK* pack_t)
 
 void Read_from_mysql()
 {
-
+    printf("11111");
     Server_user(list_ser);//读取用户信息
     Server_friend(friend_ser);
     Server_group(group_ser);
@@ -1557,6 +1577,7 @@ void Read_from_mysql()
 }
 void Server_user(server_list_t list_ser)
 {
+    printf("2222");
     MYSQL_ROW row;//行
     MYSQL_RES* result;
     char buf[MAX];
@@ -1568,19 +1589,20 @@ void Server_user(server_list_t list_ser)
     result=mysql_store_result(&mysql);
     rows=mysql_num_rows(result);//行
     fields=mysql_num_fields(result);//列
-
+    //server_list_t head=list_ser;
     while((row=mysql_fetch_row(result)))
     {
         server_user_node_t* new;
         new=(server_user_node_t*)malloc(sizeof(server_user_node_t));
-        strcpy(new->data.username,row[0]);
-        strcpy(new->data.password,row[1]);
-        new->data.online=row[2][0];
+        strcpy(new->data.username,row[1]);
+        strcpy(new->data.password,row[2]);
+        new->data.online=DOWNLINE;
         
         List_AddTail(list_ser,new);
         user_num++;
         
     }
+    printf("read account success\n");
 }
 void Server_friend(friend_list_t friend_ser)
 {
@@ -1602,9 +1624,9 @@ void Server_friend(friend_list_t friend_ser)
     while((row=mysql_fetch_row(result)))
     {
         friend_node_t *new=(friend_node_t*)malloc(sizeof(friend_node_t));
-        strcpy(new->data.username,row[0]);
-        strcpy(new->data.friend_name,row[1]);
-        new->data.status=row[2][0];
+        strcpy(new->data.username,row[1]);
+        strcpy(new->data.friend_name,row[2]);
+        new->data.status=atoi(row[3]);
 
         List_AddTail(friend_ser,new);
         new->data.friend_num++;
@@ -1630,8 +1652,8 @@ void Server_group(group_list_t group_ser)
     {
         group_node_t* new;
         new=(group_node_t*)malloc(sizeof(group_node_t));
-        strcpy(new->data.group_owner,row[0]);
-        strcpy(new->data.group_name,row[1]);
+        strcpy(new->data.group_owner,row[1]);
+        strcpy(new->data.group_name,row[2]);
     
         List_AddTail(group_ser,new);
         group_num++;
@@ -1660,11 +1682,11 @@ void Server_group_member(group_list_t group_ser)
         group_node_t* new;
         new=(group_node_t*)malloc(sizeof(group_node_t));
 
-        strcpy(new->data.group_name,row[0]);
-        strcpy(new->data.member_name[i],row[1]);
+        strcpy(new->data.group_name,row[1]);
+        strcpy(new->data.member_name[i],row[2]);
         i++;
-        new->data.member_num=atoi(row[2]);
-        new->data.type=atoi(row[3]);
+        new->data.member_num=atoi(row[3]);
+        new->data.type=atoi(row[4]);
     }
 }
 void my_err(const char* err_string,int line)

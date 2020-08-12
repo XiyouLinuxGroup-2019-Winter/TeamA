@@ -9,7 +9,7 @@ int main()
     if(Login_menu()==0)
         return 0;
     Turn_worker_thread();
-    //Menu();
+    Menu();
     
     close(cfd);
 }
@@ -34,6 +34,8 @@ void Init_socket()
 
 void Register()
 {
+    do
+   {
     int flag=REGISTER;
     char password[MAX];
     char name[MAX];
@@ -42,13 +44,15 @@ void Register()
     int recv_register_flag;
 
     printf("账号:");
-    scanf(name,MAX);
-    //Clear_buffer();
-     while(getchar()!='\n');
+    /*scanf(name,MAX);
+    Clear_buffer();
+     while(getchar()!='\n');*/
+    fgets(name,sizeof(name),stdin);
     printf("密码:");
-    scanf(password,MAX);
+    /*scanf(password,MAX);
     while(getchar()!='\n');
-    //Clear_buffer();
+    Clear_buffer();*/
+    fgets(password,sizeof(password),stdin);
 
     Send_pack_message(flag,name,"server",password);
 
@@ -65,32 +69,39 @@ void Register()
 
         if(recv_register_flag==1)
         {
+             printf("%s\n",recv_register.data.send_name);
+            printf("%s\n",recv_register.data.recv_name);
+            printf("%s\n",recv_register.data.message);
             printf("注册成功!\n");
             printf("按任意键返回\n");
             getchar();
         }
         else if(recv_register_flag==0)
         {
+            printf("%s\n",recv_register.data.send_name);
+            printf("%s\n",recv_register.data.recv_name);
+            printf("%s\n",recv_register.data.message);
             printf("该账号已存在!\n");
             printf("按任意键返回\n");
             getchar();
         }
     }
+   }while(1);
     //free(recv_register);
 }
 int Login()
 {
+    do
+    {
+    
     int flag=LOGIN;
     char name[MAX];
     char password[MAX];
 
     printf("请输入账号:\n");
-    scanf(name,MAX);
-    Clear_buffer();
+    fgets(name,sizeof(name),stdin);
     printf("请输入密码:\n");
-    scanf(password,MAX);
-    Clear_buffer();
-
+    fgets(password,sizeof(password),stdin);
     int login_flag;
 
     Send_pack_message(flag,name,"server",password);
@@ -101,32 +112,50 @@ int Login()
     {
         my_err("recv error",__LINE__);
     }
+
+    //printf("wait--------\n");
     if(recv_login.flag==LOGIN)
     {
         login_flag=recv_login.data.message[0]-'0';
 
         if(login_flag==1)
         {
-            printf("登录成功!\n");
+            printf("%s\n",recv_login.data.send_name);
+            printf("%s\n",recv_login.data.recv_name);
+            printf("%s\n",recv_login.data.message);
+            puts("登录成功!\n");
             strcpy(user.username,name);
+            printf("%s\n",user.username);
+            printf("按任意键返回\n");
+            getchar();
             return 1;
         }
+        else if(login_flag==0)
+        {
+            printf("密码不正确!\n");
+            printf("按任意键返回\n");
+            getchar();
+            return 0;
+        }
+        
         else if(login_flag==2)
         {
+             printf("%s\n",recv_login.data.send_name);
+            printf("%s\n",recv_login.data.recv_name);
+            printf("%s\n",recv_login.data.message);
             printf("账号不存在!\n");
-            return -1;
+            return 0;
         }
         else if(login_flag==3)
         {
-            printf("账号已经登录!\n");
-            return -1;
+            printf("%s\n",recv_login.data.send_name);
+            printf("%s\n",recv_login.data.recv_name);
+            printf("%s\n",recv_login.data.message);
+            puts("账号已经登录!\n");
+            return 0;
         }
-        /*
-        if(login_flag==0)
-        {
-            printf("密码不正确!\n");
-        }*/
     }
+    }while(1);
     //free(recv_login);
 }
 
@@ -143,7 +172,7 @@ int Login_menu()
         printf("\t\t\033[44;34m\033[44;37m**************************\033[0m\n");
         printf("\t\tchoice：");
         scanf("%d",&choice);
-        Clear_buffer();
+        getchar();
     
         switch(choice)
         {
@@ -153,16 +182,15 @@ int Login_menu()
                 break;
             case 2:
                 puts("登录");
-                if(Login()==1)
-                    Menu();
-                else 
-                    return -1;
+                if(Login())
+                    return 1;
                 break;
             /*case 3:
                 puts("找回密码");
                 Modify_password();
                 break;*/
             case 0:
+                exit(0);
                 break;
         }
     
@@ -300,7 +328,7 @@ void Add_friend()
 
     Send_pack_message(flag,user.username,name_buf,"");
 
-    Update_friend_message();
+    
     return;
 }
 void Update_friend_message()
@@ -521,7 +549,7 @@ void Private_chat()
     View_friend_list();
  
     printf("请输入私聊的名称\n");
-    Get_string(name_buf,MAX);
+    fgets(name_buf,sizeof(name_buf),stdin);
 
     int i;
     for(i=1;i<=relation.friend_num;i++)
@@ -1361,6 +1389,9 @@ void Send_pack_message(int flag,char *send_name,char* recv_name,char* message)
     strcpy(pack_send_msg.data.send_name,send_name);
     strcpy(pack_send_msg.data.recv_name,recv_name);
     strcpy(pack_send_msg.data.message, message);
+    printf("%s\n",pack_send_msg.data.send_name);
+    printf("%s\n",pack_send_msg.data.message);
+    printf("%s\n",pack_send_msg.data.recv_name);
     if(send(cfd, &pack_send_msg,sizeof(PACK),0)==-1)
     {
         my_err("send error!",__LINE__);

@@ -140,8 +140,8 @@ typedef struct file
 
 typedef struct data
 {
-    char send_name[20];
-    char recv_name[20];
+    char send_name[MAX];
+    char recv_name[MAX];
     int send_fd;
     int recv_fd;
 

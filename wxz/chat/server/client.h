@@ -13,7 +13,7 @@
 
 
 #define SERV_ADDRESS "127.0.0.1"
-#define SERV_PORT 8000
+#define SERV_PORT 8013
 
 #define MAX 50
 #define MAX_CHAR 300
@@ -140,8 +140,8 @@ typedef struct file
 
 typedef struct data
 {
-    char send_name[20];
-    char recv_name[20];
+    char send_name[MAX];
+    char recv_name[MAX];
     int send_fd;
     int recv_fd;
 

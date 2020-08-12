@@ -22,7 +22,7 @@
 
 
 #define SERV_ADDRESS "127.0.0.1"
-#define SERV_PORT 8000
+#define SERV_PORT 8013
 
 #define MAX 50
 #define MAX_CHAR 300
