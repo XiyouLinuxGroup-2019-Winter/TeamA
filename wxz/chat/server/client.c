@@ -7,7 +7,10 @@ int main()
     pthread_cond_init(&cond, NULL);
 
     if(Login_menu()==0)
+    {
+        close(cfd);
         return 0;
+    }
     Turn_worker_thread();
     Menu();
     
@@ -24,8 +27,8 @@ void Init_socket()
     bzero(&serv_addr,sizeof(serv_addr));
     serv_addr.sin_family=AF_INET;
     serv_addr.sin_port=htons(SERV_PORT);
-    inet_pton(AF_INET,SERV_ADDRESS,&serv_addr.sin_addr.s_addr);
-
+    //inet_pton(AF_INET,SERV_ADDRESS,&serv_addr.sin_addr.s_addr);
+    serv_addr.sin_addr.s_addr=htonl(INADDR_ANY);
     Connect(cfd,(struct sockaddr*)&serv_addr,sizeof(serv_addr));
 
     printf("客户端启动成功!\n");
@@ -34,8 +37,6 @@ void Init_socket()
 
 void Register()
 {
-    do
-   {
     int flag=REGISTER;
     char password[MAX];
     char name[MAX];
@@ -54,20 +55,20 @@ void Register()
     Clear_buffer();*/
     fgets(password,sizeof(password),stdin);
 
-    Send_pack_message(flag,name,"server",password);
+    Send_pack_message(REGISTER,name,"server",password);
 
     PACK recv_register;
-    //recv_register=(PACK*)malloc(sizeof(recv_register));
-    if(recv(cfd,&recv_register,sizeof(PACK),0)<0)
+    //recv_register=(PACK*)malloc(sizeof(PACK));
+    if(recv(cfd,&recv_register,sizeof(PACK),MSG_WAITALL)<0)
     {
         my_err("recv error",__LINE__);
     }
+    printf("wait--------------\n");
+    //sleep(2);
 
-    if(recv_register.flag==REGISTER)
-    {
-        recv_register_flag=recv_register.data.message[0]-'0';
+        recv_register_flag=recv_register.data.other_message;
 
-        if(recv_register_flag==1)
+        if(recv_register_flag)
         {
              printf("%s\n",recv_register.data.send_name);
             printf("%s\n",recv_register.data.recv_name);
@@ -85,26 +86,22 @@ void Register()
             printf("按任意键返回\n");
             getchar();
         }
-    }
-   }while(1);
     //free(recv_register);
 }
 int Login()
 {
-    do
-    {
     
     int flag=LOGIN;
     char name[MAX];
     char password[MAX];
 
     printf("请输入账号:\n");
-    fgets(name,sizeof(name),stdin);
+    scanf("%s",name);
     printf("请输入密码:\n");
-    fgets(password,sizeof(password),stdin);
+    scanf("%s",password);
     int login_flag;
 
-    Send_pack_message(flag,name,"server",password);
+    Send_pack_message(LOGIN,name,"server",password);
 
     PACK recv_login;
     //recv_login=(PACK*)malloc(sizeof(recv_login));
@@ -113,13 +110,37 @@ int Login()
         my_err("recv error",__LINE__);
     }
 
-    //printf("wait--------\n");
-    if(recv_login.flag==LOGIN)
-    {
-        login_flag=recv_login.data.message[0]-'0';
+    printf("wait--------\n");
+    sleep(2);
+   
+        login_flag=recv_login.data.other_message;
 
-        if(login_flag==1)
+    
+        if(login_flag==0)
         {
+            printf("密码不正确!\n");
+            printf("按任意键返回\n");
+            getchar();
+            return 0;
+        }
+        
+        if(login_flag==2)
+        {
+             printf("%s\n",recv_login.data.send_name);
+            printf("%s\n",recv_login.data.recv_name);
+            printf("%s\n",recv_login.data.message);
+            printf("账号不存在!\n");
+            return 0;
+        }
+        if(login_flag==3)
+        {
+            printf("%s\n",recv_login.data.send_name);
+            printf("%s\n",recv_login.data.recv_name);
+            printf("%s\n",recv_login.data.message);
+            puts("账号已经登录!\n");
+            return 0;
+        }
+     
             printf("%s\n",recv_login.data.send_name);
             printf("%s\n",recv_login.data.recv_name);
             printf("%s\n",recv_login.data.message);
@@ -129,40 +150,15 @@ int Login()
             printf("按任意键返回\n");
             getchar();
             return 1;
-        }
-        else if(login_flag==0)
-        {
-            printf("密码不正确!\n");
-            printf("按任意键返回\n");
-            getchar();
-            return 0;
-        }
         
-        else if(login_flag==2)
-        {
-             printf("%s\n",recv_login.data.send_name);
-            printf("%s\n",recv_login.data.recv_name);
-            printf("%s\n",recv_login.data.message);
-            printf("账号不存在!\n");
-            return 0;
-        }
-        else if(login_flag==3)
-        {
-            printf("%s\n",recv_login.data.send_name);
-            printf("%s\n",recv_login.data.recv_name);
-            printf("%s\n",recv_login.data.message);
-            puts("账号已经登录!\n");
-            return 0;
-        }
-    }
-    }while(1);
+    
     //free(recv_login);
 }
-
 int Login_menu()
 {
     int choice;
-    while(1)
+    char choice_t[100];
+    do
     {
         system("clear");
         printf("\t\t\033[44;34m\033[44;37m**************************\033[0m\n");
@@ -171,9 +167,8 @@ int Login_menu()
         printf("\t\t\033[1;34m*        0.退出          \033[1;34m*\033[0m \n");
         printf("\t\t\033[44;34m\033[44;37m**************************\033[0m\n");
         printf("\t\tchoice：");
-        scanf("%d",&choice);
-        getchar();
-    
+        scanf("%s",choice_t);
+        choice=Get_choice(choice_t);    
         switch(choice)
         {
             case 1:
@@ -182,19 +177,17 @@ int Login_menu()
                 break;
             case 2:
                 puts("登录");
-                if(Login())
+                if(Login()==1)
                     return 1;
                 break;
             /*case 3:
                 puts("找回密码");
                 Modify_password();
                 break;*/
-            case 0:
-                exit(0);
+            default:
                 break;
         }
-    
-    }
+    }while(choice!=0);
     return 0;
 }
 
@@ -1389,11 +1382,24 @@ void Send_pack_message(int flag,char *send_name,char* recv_name,char* message)
     strcpy(pack_send_msg.data.send_name,send_name);
     strcpy(pack_send_msg.data.recv_name,recv_name);
     strcpy(pack_send_msg.data.message, message);
-    printf("%s\n",pack_send_msg.data.send_name);
-    printf("%s\n",pack_send_msg.data.message);
-    printf("%s\n",pack_send_msg.data.recv_name);
+    printf("client send:%s\n",pack_send_msg.data.send_name);
+    printf("client message%s\n",pack_send_msg.data.message);
+    printf("client recv:%s\n",pack_send_msg.data.recv_name);
     if(send(cfd, &pack_send_msg,sizeof(PACK),0)==-1)
     {
         my_err("send error!",__LINE__);
     }
+}
+int Get_choice(char *choice_t)
+{
+    int i;
+    i = atoi(choice_t);
+    if(i<0||i>9)
+    {
+    	return 9;
+	}
+	else
+	{
+		return i;
+	}
 }

@@ -147,6 +147,7 @@ typedef struct data
 
     char message[MAX_CHAR*2];
     char group_chat[MAX];
+    int other_message;
 }DATA;
 
 typedef struct package
@@ -294,3 +295,4 @@ void *Recv_pack(void* arg);
 void Turn_worker_thread();
 
 void *Update_status(void* arg);
+int Get_choice(char *choice_t);

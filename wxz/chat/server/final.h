@@ -195,8 +195,9 @@ typedef struct data
     int send_fd;
     int recv_fd;
 
-   char message[MAX_CHAR*2];
-   char group_chat[MAX];
+    char message[MAX_CHAR*2];
+    char group_chat[MAX];
+    int other_message;
 }DATA;
 
 typedef struct package
@@ -293,8 +294,10 @@ void Send_pack_message(int flag,char *send_name,char* recv_name,char* message);
 
 
 server_list_t Find_server_user(char *username);
-void Find_del_server_user(server_list_t pos,char* friend_name);
+void Find_del_friend(server_list_t pos,char* friend_name);
 group_list_t Find_server_group(char* group_name);
+
+void Del_group_info(char* username,char* group_name);
 
 void Read_from_mysql();
 void Server_user(server_list_t list_ser);

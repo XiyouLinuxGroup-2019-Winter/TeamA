@@ -1,19 +1,6 @@
-#include "final.h"
+#include "mysql.h"
 MYSQL mysql;
 int main()
-{
-    Connect_mysql();
-    Use_mysql("insert into account username='wxz'",mysql);
-    Close_mysql(mysql);
-}
-void sys_err(const char* s,int line)
-{
-    fprintf(stderr,"line:%d",line);
-    perror(s);
-    mysql_close(&mysql);
-}
-
-void Connect_mysql()
 {
     mysql_init(&mysql);
     //初始化数据库
@@ -27,7 +14,58 @@ void Connect_mysql()
         sys_err("set error!",__LINE__);
     }
     printf("连接MYSQL数据库成功!\n");
+
+
+    int i;
+	MYSQL_RES   *result;
+	MYSQL_ROW   row;
+	MYSQL_FIELD *field;
+
+    mysql_query(&mysql,"select *from account");
+	int fields;
+	result=mysql_store_result(&mysql);
+
+    int rows=mysql_num_rows(result);
+    int j=mysql_num_fields(result);
+    printf("%d\n",j);
+    while((row=mysql_fetch_row(result)))
+    {
+        
+            printf("%s\n",row[0]);
+           
+            printf("%s\n",row[1]);
+            
+           // printf("%s\n",row[2]);
+            //if(i==3)
+            //printf("%s\n",row[3]);
+             //printf("%-20s\n",row[i]);
+        
+        printf("\n");
+    }
+    
 }
+void sys_err(const char* s,int line)
+{
+    fprintf(stderr,"line:%d",line);
+    perror(s);
+    //mysql_close(&mysql);
+}
+
+/*void Connect_mysql()
+{
+    mysql_init(&mysql);
+    //初始化数据库
+    mysql_library_init(0,NULL,NULL);
+    if(!mysql_real_connect(&mysql,"localhost","root","wxz","bokket",0,NULL,0))
+    {
+        sys_err("connect error!",__LINE__);
+    }
+    if(mysql_set_character_set(&mysql,"utf8"))
+    {
+        sys_err("set error!",__LINE__);
+    }
+    printf("连接MYSQL数据库成功!\n");
+}*/
 /*void Mysql_save_message(PACK* pack_t)
 {
     char buf[MAX];
@@ -52,15 +90,15 @@ void Close_mysql(MYSQL mysql)
     mysql_library_end();
     printf("MYSQL数据库关闭!\n");
 }
-
-void Use_mysql(const char *string, MYSQL mysql)
+/*
+void Use_mysql(MYSQL mysql)
 {
 	int i;
 	MYSQL_RES   *result;
 	MYSQL_ROW   row;
 	MYSQL_FIELD *field;
 
-	if(mysql_query(&mysql, string))
+	if(mysql_query(&mysql,"select *from account"))
     {
         sys_err("query error！",__LINE__);
     }
@@ -89,3 +127,4 @@ void Use_mysql(const char *string, MYSQL mysql)
         mysql_free_result(result);
     }
 }
+*/
