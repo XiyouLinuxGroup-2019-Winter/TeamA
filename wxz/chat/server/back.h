@@ -109,14 +109,14 @@ typedef struct  friend_info
     char friend_name[MAX];
 }FRIEND_INFO;
 
-typedef struct friend_node
+/*typedef struct friend_node
 {
     FRIEND_INFO data;
     struct friend_node *next;
     struct friend_node *prev;
 }friend_node_t,*friend_list_t;
 
-friend_list_t friend_ser;
+friend_list_t friend_ser;*/
 
 
 typedef struct group_info
@@ -133,12 +133,12 @@ typedef struct group_info
     int status[MAX_CHAR];
 }GROUP_INFO;
 
-typedef struct group_node
+/*typedef struct group_node
 {
     GROUP_INFO data;
     struct group_node *next;
     struct group_node *prev;
-}group_node_t,*group_list_t;
+}group_node_t,*group_list_t;*/
 group_list_t group_ser;
 int group_num;
 
@@ -157,8 +157,8 @@ typedef struct file
 //服务器保存用户信息结构体
 typedef struct server_user
 {
-    char username[MAX];
-    char password[MAX];
+    char username[20];
+    char password[20];
     struct sockaddr_in useraddr;
     int socket_id;
     //int previe;
@@ -179,14 +179,14 @@ typedef struct server_user
     GROUP_INFO group[MAX];//群组信息
 }server_user_t;          
 
-typedef struct server_user_node
+/*typedef struct server_user_node
 {
     server_user_t data;
     struct server_user_node *next;
     struct server_user_node *prev;
-}server_user_node_t,*server_list_t;
+}server_user_node_t,*server_list_t;*/
 
-server_list_t list_ser;
+
 
 typedef struct data
 {
@@ -212,7 +212,12 @@ typedef struct package
 }PACK;
 
 
-
+typedef struct syslog
+{
+    char name[20];
+    char time[100];
+    char work[20];
+}syslog_t;
 
 
 pthread_mutex_t mutex;
@@ -307,6 +312,3 @@ int threadpool_add(void *(*process)(void *arg),void *arg);
 int threadpool_destroy();
 void *thread_routine(void *arg); 
 void pool_init(int max_thread_num);  
-
-
-

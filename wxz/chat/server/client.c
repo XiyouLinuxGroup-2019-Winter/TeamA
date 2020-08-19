@@ -1,23 +1,33 @@
-#include "client.h"
+#include "epoll.h"
+#define SIZE 100
+void Print_menu();
+
+int Check_data(char *num);//检查输入是否为数字
+int Get_choice_int(char* str);
+char *Time();
+void Print_apply(char* buf);
 int main()
 {
     Init_socket();
 
-    pthread_mutex_init(&mutex, NULL);
-    pthread_cond_init(&cond, NULL);
+    List_Init(head,box_node_t);
+    List_Init(fhead,box_node_t);
+    pthread_mutex_init(&mutex_login,NULL);
+    pthread_cond_init(&cond_login,NULL);
+    pthread_mutex_init(&mutex,NULL);
+    pthread_cond_init(&cond,NULL);
 
-    if(Login_menu()==0)
-    {
-        close(cfd);
-        return 0;
-    }
+
+    Login_menu();
+    //printf("开始收包\n");
     Turn_worker_thread();
-    Menu();
-    
+    //Menu();
     close(cfd);
 }
 void Init_socket()
 {
+    
+    
     printf("客户端启动\n");
     struct sockaddr_in serv_addr;
 
@@ -27,9 +37,11 @@ void Init_socket()
     bzero(&serv_addr,sizeof(serv_addr));
     serv_addr.sin_family=AF_INET;
     serv_addr.sin_port=htons(SERV_PORT);
-    //inet_pton(AF_INET,SERV_ADDRESS,&serv_addr.sin_addr.s_addr);
-    serv_addr.sin_addr.s_addr=htonl(INADDR_ANY);
+    inet_pton(AF_INET,SERV_ADDRESS,&serv_addr.sin_addr.s_addr);
+    //serv_addr.sin_addr.s_addr=htonl(INADDR_ANY);
     Connect(cfd,(struct sockaddr*)&serv_addr,sizeof(serv_addr));
+
+    Turn_worker_thread();
 
     printf("客户端启动成功!\n");
 
@@ -37,138 +49,166 @@ void Init_socket()
 
 void Register()
 {
-    int flag=REGISTER;
-    char password[MAX];
-    char name[MAX];
-
-
-    int recv_register_flag;
-
-    printf("账号:");
-    /*scanf(name,MAX);
-    Clear_buffer();
-     while(getchar()!='\n');*/
-    fgets(name,sizeof(name),stdin);
+    Account_t register_t;
+    
+    char buf[BUFSIZ];
+    memset(buf,0,sizeof(buf));
+    printf("用户名:");
+    printf("[此用户名为您暂时的名字,并不是登录账号]\n");
+    scanf("%s",register_t.name);
+    //fgets(register_t.username,sizeof(register_t.username),stdin);
     printf("密码:");
-    /*scanf(password,MAX);
-    while(getchar()!='\n');
-    Clear_buffer();*/
-    fgets(password,sizeof(password),stdin);
+    scanf("%s",register_t.password);
+    //fgets(register_t.password,sizeof(register_t.password),stdin);
+    register_t.flag=REGISTER;
 
-    Send_pack_message(REGISTER,name,"server",password);
+    memcpy(buf,&register_t,sizeof(Account_t));
 
-    PACK recv_register;
-    //recv_register=(PACK*)malloc(sizeof(PACK));
-    if(recv(cfd,&recv_register,sizeof(PACK),MSG_WAITALL)<0)
+    printf("client flag:%d\n",register_t.flag);
+    printf("client message:%s\n",register_t.password);
+    printf("client send:%s\n",register_t.name);
+    if(send(cfd,buf,sizeof(buf),0)<0)
     {
-        my_err("recv error",__LINE__);
+        my_err("send error!",__LINE__);
     }
-    printf("wait--------------\n");
-    //sleep(2);
-
-        recv_register_flag=recv_register.data.other_message;
-
-        if(recv_register_flag)
-        {
-             printf("%s\n",recv_register.data.send_name);
-            printf("%s\n",recv_register.data.recv_name);
-            printf("%s\n",recv_register.data.message);
-            printf("注册成功!\n");
-            printf("按任意键返回\n");
-            getchar();
-        }
-        else if(recv_register_flag==0)
-        {
-            printf("%s\n",recv_register.data.send_name);
-            printf("%s\n",recv_register.data.recv_name);
-            printf("%s\n",recv_register.data.message);
-            printf("该账号已存在!\n");
-            printf("按任意键返回\n");
-            getchar();
-        }
-    //free(recv_register);
 }
-int Login()
+void Register_apply(char* buf)
 {
-    
-    int flag=LOGIN;
-    char name[MAX];
-    char password[MAX];
+    message mes;
+    memcpy(&mes,buf,sizeof(mes));
 
-    printf("请输入账号:\n");
-    scanf("%s",name);
-    printf("请输入密码:\n");
-    scanf("%s",password);
-    int login_flag;
-
-    Send_pack_message(LOGIN,name,"server",password);
-
-    PACK recv_login;
-    //recv_login=(PACK*)malloc(sizeof(recv_login));
-    if(recv(cfd,&recv_login,sizeof(PACK),0)<0)
+    printf("--------%s\n",mes.messsge);
+    int id=mes.id;
+    printf("----等会输入账号时请输入系统给您的账号\n");
+    printf("您的账号是:%d\n",mes.id);
+    printf(">...\n");
+    printf("正在返回登录界面\n");
+    //sleep(1);
+    //getchar();
+}
+int Check_data(char *num)
+{
+    int i;
+    for(i=0;num[i];i++) 
     {
-        my_err("recv error",__LINE__);
+        if(num[i]>'9' || num[i]<'0')//只要有非数字，就返回错误
+        {
+            printf("您的输入不为数字\n");
+            return 0;
+        }
     }
 
-    printf("wait--------\n");
-    sleep(2);
-   
-        login_flag=recv_login.data.other_message;
-
-    
-        if(login_flag==0)
-        {
-            printf("密码不正确!\n");
-            printf("按任意键返回\n");
-            getchar();
-            return 0;
-        }
-        
-        if(login_flag==2)
-        {
-             printf("%s\n",recv_login.data.send_name);
-            printf("%s\n",recv_login.data.recv_name);
-            printf("%s\n",recv_login.data.message);
-            printf("账号不存在!\n");
-            return 0;
-        }
-        if(login_flag==3)
-        {
-            printf("%s\n",recv_login.data.send_name);
-            printf("%s\n",recv_login.data.recv_name);
-            printf("%s\n",recv_login.data.message);
-            puts("账号已经登录!\n");
-            return 0;
-        }
-     
-            printf("%s\n",recv_login.data.send_name);
-            printf("%s\n",recv_login.data.recv_name);
-            printf("%s\n",recv_login.data.message);
-            puts("登录成功!\n");
-            strcpy(user.username,name);
-            printf("%s\n",user.username);
-            printf("按任意键返回\n");
-            getchar();
-            return 1;
-        
-    
-    //free(recv_login);
+    if(i>100)//长度超过100位，返回错误
+    {
+        printf("超出数字长度\n");
+        return 0;
+    }
+    return 1;
 }
-int Login_menu()
+int Get_choice_int(char* str)
 {
+    while (1)
+    {
+        scanf("%s",str);
+        if (Check_data(str)==0)
+        {
+            //printf("wraning------[[[不要输入之前注册的用户名]]]\n");
+            printf("输入错误,请重新输入整数\n");
+        }
+        else
+        {
+            printf("输入正确\n");
+            break;
+        }
+    }
     int choice;
-    char choice_t[100];
-    do
+    choice=atoi(str);
+    return choice;
+}
+void Login()
+{
+    char buf[BUFSIZ];
+    Account_t account;
+    account.flag=LOGIN;
+    //printf("wraning------[[[不要输入之前注册的用户名]]]\n");
+    printf("请输入账号:\n");
+    //scanf("%d",&account.id);
+    char str[SIZE];
+    while (1)
     {
-        system("clear");
+        scanf("%s",str);
+        if (Check_data(str)==0)
+        {
+            printf("wraning------[[[不要输入之前注册的用户名]]]\n");
+            printf("输入错误,请重新输入\n");
+        }
+        else
+        {
+            printf("账号输入正确\n");
+            break;
+        }
+    }
+
+    //printf("%d\n", atoi(str));
+    account.id=atoi(str);
+
+    printf("请输入密码:\n");
+    scanf("%s",account.password);
+    
+    username=account.id;
+    memcpy(buf,&account,sizeof(account));
+    if(send(cfd,buf,sizeof(buf),0)<0)
+    {
+        my_err("send error!",__LINE__);
+    }
+
+    pthread_mutex_lock(&mutex_login);
+    pthread_cond_wait(&cond_login,&mutex_login);
+    if(flag_login==1)
+        Menu();
+    flag_login=0;
+    pthread_mutex_unlock(&mutex_login);
+}
+void Login_apply(char* buf)
+{
+    message mes;
+    memcpy(&mes,buf,sizeof(mes));
+    pthread_mutex_lock(&mutex_login);
+    if(strcmp(mes.messsge,"y")==0)
+    {
+        printf("登录成功\n");
+        flag_login=1;
+    }
+    else if(strcmp(mes.messsge,"a")==0)
+        printf("账号已登录\n");
+    else if(strcmp(mes.messsge,"n")==0)
+        printf("密码错误或账户不存在\n");
+    
+    pthread_cond_signal(&cond_login);
+    pthread_mutex_unlock(&mutex_login);
+}
+void Login_menu()
+{
+
+    int choice=-1;
+   
+    //int choice=-1;
+    while(choice)
+    {
+        sleep(1);
+        //system("clear");
         printf("\t\t\033[44;34m\033[44;37m**************************\033[0m\n");
         printf("\t\t\033[1;34m*        1.注册          \033[1;34m*\033[0m \n");
         printf("\t\t\033[1;34m*        2.登录          \033[1;34m*\033[0m \n");
         printf("\t\t\033[1;34m*        0.退出          \033[1;34m*\033[0m \n");
         printf("\t\t\033[44;34m\033[44;37m**************************\033[0m\n");
         printf("\t\tchoice：");
-        scanf("%s",choice_t);
-        choice=Get_choice(choice_t);    
+        char choice_t[SIZE];
+        choice=Get_choice_int(choice_t);
+        //choice=Get_choice_int();
+        //scanf("%d",&choice);
+        //while(getchar()!='\n');
+        //choice=Get_choice(choice_t);    
         switch(choice)
         {
             case 1:
@@ -177,8 +217,7 @@ int Login_menu()
                 break;
             case 2:
                 puts("登录");
-                if(Login()==1)
-                    return 1;
+                    Login();
                 break;
             /*case 3:
                 puts("找回密码");
@@ -187,91 +226,109 @@ int Login_menu()
             default:
                 break;
         }
-    }while(choice!=0);
-    return 0;
+    }
 }
 
 void *Recv_pack(void *arg)
 {
-    
-    
+    pthread_t apply_id;
+    char buf[BUFSIZ];    
     while(1)
     {
-
-
-        PACK pack_t;
-        if(recv(cfd,&pack_t,sizeof(PACK),0)<0)
+        int n=recv(cfd,buf,sizeof(buf),0);
+        if(n<0)
         {
             my_err("recv error",__LINE__);
         }
-
-
-
-        pthread_mutex_lock(&mutex);
-
-        
-        switch (pack_t.flag)
+        //printf("client recv:%s\n",buf);
+        //pthread_mutex_lock(&mutex);
+        else if(n==0)
         {
+            printf("\n服务端已经停止了工作,请退出客户端\n");
+            exit(0);
+        }
+        int flag;
+        memcpy(&flag,buf,sizeof(int));
+        printf("client recv flag:%d\n",flag);
+        switch (flag)
+        {
+            case PRINT_APPLY:
+                //pthread_mutex_lock(&mutex);
+                Print_apply(buf);
+                //pthread_cond_signal(&cond);
+                break;
+            case REGISTER_APPLY:
+                Register_apply(buf);
+                break;
+            case LOGIN_APPLY:
+                Login_apply(buf);
+                break;
             case ADD_FRIEND_APPLY:
-                Add_friend_apply(pack_t);
+                Add_friend_apply(buf);
                 break;
+            case ADD_FRIEND_ACCEPT_APPLY:
+                Add_friend_accept_appy(buf);
             case DEL_FRIEND_APPLY:
-                Del_friend_apply(pack_t);
+                Del_friend_apply(buf);
                 break;
-            /*case QUERY_FRIEND_APPLY:
-                Query_friend_apply(pack_t);
-                break;*/
             //一起实现
+            //case SHOW_FRIEND_STATUS_APPLY:
             case VIEW_FRIEND_LIST_APPLY:
-                View_friend_list_apply(pack_t);
-                break;
-            case SHOW_FRIEND_STATUS_APPLY:
-                Show_friend_status_apply(pack_t);
+                View_friend_list_apply(buf);
+                //pthread_cond_signal(&cond);
                 break;
             case SHIELD_APPLY:
-                Shield_friend_apply(pack_t);
+                Shield_friend_apply(buf);
                 break;
             case UNSHIELD_APPLY:
-                Unshield_friend_apply(pack_t);
+                Unshield_friend_apply(buf);
                 break;
-            case PRIVATE_CHAT:
-                recv_chat_pack[++chat_num]=pack_t;
+            case PRIVATE_CHAT_APPLY:
+                Private_chat_apply(buf);
                 break;
-            case GROUP_CHAT:
-                recv_chat_pack[++chat_num]=pack_t;
+            case VIEW_CHAT_HISTORY_APPLY:
+                View_chat_history_apply(buf);
                 break;
             case CREAT_GROUP_APPLY:
-                Create_group_apply(pack_t);
+                Create_group_apply(buf);
                 break;
             case ADD_GROUP_APPLY:
-                Add_group_apply(pack_t);
+                Add_group_apply(buf);
                 break;
+            case GROUP_APPLY:
+                Group_apply(buf);
+                break;
+            case ADD_GROUP_ACCEPT_APPLY:
+                Add_group_accept_apply(buf);
+                break;
+            //一起实现
             case DEL_GROUP_APPLY:
-                Del_group_apply(pack_t);
+                Del_group_apply(buf);
                 break;
             case WITHDRAW_GROUP_APPLY:
-                Withdraw_group_apply(pack_t);
+                Withdraw_group_apply(buf);
                 break;
-            case KICK_APPLY:
-                Kick_apply(pack_t);
+            //case VIEW_GROUP_MEMBER_APPLY:
+            case VIEW_ADD_GROUP_APPLY:
+                View_add_group_apply(buf);
+                break;
+            case GROUP_CHAT:
+                Group_chat();
+                break;
+            case VIEW_GROUP_RECORD_APPLY:
+                View_group_record_apply(buf);
                 break;
             case SET_GROUP_ADMIN_APPLY:
-                Set_group_admin_apply(pack_t);
+                Set_group_admin_apply(buf);
                 break;
-            case VIEW_ADD_GROUP_APPLY:
-                View_add_group_apply(pack_t);
+            case KICK_APPLY:
+                Kick_apply(buf);
                 break;
-            case VIEW_GROUP_MEMBER_APPLY:
-               View_group_member_apply(pack_t);
-               break;
-            case VIEW_CHAT_HISTORY:
-            case VIEW_GROUP_RECORD:
-                Print_message_record(pack_t);
+            case RECV_FILE:
+                Recv_file(buf);
                 break;
-            case SEND_FILE:
-                break; 
         }
-        pthread_mutex_unlock(&mutex);
+        //pthread_mutex_unlock(&mutex);
     }
 }
 void Turn_worker_thread()
@@ -279,566 +336,943 @@ void Turn_worker_thread()
     pthread_t pid_recv;
     pthread_create(&pid_recv,NULL,Recv_pack,NULL);
 }
-
-void Add_friend_apply(PACK recv_pack)
+void Friend_box()
 {
-    int flag_add;
-    char choice;
-    flag_add=recv_pack.data.message[0];
-    if(flag_add==0)
+    //printf("111");
+    Relation_t relation;
+    //box_list_t pos=head;
+    box_list_t pos;
+    List_ForEach(head,pos)
     {
-        printf("---[%s]想要添加你为好友!\n",recv_pack.data.send_name);
-        
-        printf("[1]:同意\t\t[2]:不同意\n");
-        scanf("%c",&choice);
-        switch (choice)
+        if(pos->data.recver==username)
         {
-            case 'y':
-                Send_pack_message(ADD_FRIEND,recv_pack.data.recv_name,"server","y");
-            case 'n':
-                Send_pack_message(ADD_FRIEND,recv_pack.data.recv_name,"server","n");
+            printf("uid\tsender\trecver\tmessage\n");
+            printf("%d\t%d\t%d\t%s\n",username,pos->data.sender,pos->data.recver,pos->data.message);
+        //pos=pos->next;
+            break;
         }
     }
-    else if(flag_add==1)
+    List_ForEach(head,pos)
     {
-        printf("%s同意了%s的请求,添加成功!\n",recv_pack.data.send_name,recv_pack.data.recv_name);
-        user.friend_num++;
+        if(pos->data.recver==username)
+        {
+            List_DelNode(pos);
+            char ch;
+            printf("请输入同意还是不同意:\n");
+        scanf("%c",&ch);
+        if(ch=='Y' || ch=='y')
+        {
+                char str[BUFSIZ];
+                memset(str,0,sizeof(str));
+                
+                relation.flag=ADD_FRIEND_ACCEPT;
+                strcpy(relation.message,"y");
+                relation.sender=pos->data.recver;//被申请者
+                relation.recver=pos->data.sender;//申请者
+                //mes.send_fd=box_tt.send_fd;//申请者客户端端口号
+                //mes.recv_fd=box_tt.recv_fd;//被申请者客户端端口号
+                memcpy(str,&relation,sizeof(relation));
+                if(send(cfd,str,sizeof(str),0)<0)
+                {
+                    my_err("send error",__LINE__);
+                }
+                printf("同意好友申请发送成功\n");
+        }
+        else
+        {
+            char str[BUFSIZ];
+            memset(str,0,sizeof(str));
+                
+            relation.flag=ADD_FRIEND_ACCEPT;
+            strcpy(relation.message,"n");
+            relation.sender=pos->data.recver;//被申请者
+            relation.recver=pos->data.sender;//申请者
+            //mes.send_fd=box_tt.send_fd;//申请者客户端端口号
+            //mes.recv_fd=box_tt.recv_fd;//被申请者客户端端口号
+            memcpy(str,&relation,sizeof(relation));
+            if(send(cfd,str,sizeof(str),0)<0)
+            {
+                my_err("send error",__LINE__);
+            }
+            printf("拒绝好友申请发送成功\n");
+        }
+        }
     }
-    else if(flag_add==2)
-        printf("%s拒绝了%s的请求!\n",recv_pack.data.send_name,recv_pack.data.recv_name);
-    else if(flag_add==3)
-        printf("%s不存在!\n",recv_pack.data.send_name);
-    else if(flag_add==4)
-        printf("%s已经是你的好友!\n",recv_pack.data.send_name);
+    /*
+    system("clear");
+    box_list_t pos;
+    while(pos!=NULL)
+    {
+        printf("好友消息盒子信息\n");
+        printf("uid\tsend_fd\trecv_fd\t消息\n");
+        printf("%d\t%d\t%d\t%s\t",username,pos->data.send_fd,pos->data.recv_fd,pos->data.message);
+        pos=pos->next;
+    }
+    apply_messgae mes;
+    char str[BUFSIZ];
+    memset(&mes,0,sizeof(mes));
+    mes.flag=ADD_FRIEND_ACCPET;
+    //strcpy(mes.message,"y");
+    mes.sender=username;//被申请者
+    mes.recver=pos->data.sender;//申请者
+    mes.send_fd=pos->data.send_fd;//申请者客户端端口号
+    mes.recv_fd=pos->data.recv_fd;//被申请者客户端端口号
+    memcpy(str,&mes,sizeof(mes));
+    printf("cfd:%d\n",cfd);
+    int id;
+    List_ForEach(head,pos)
+    {
+        apply_messgae mes;
+        memcpy(&mes,buf,sizeof(mes));
+        printf("[%d]申请向您添加为好友\n",mes.recver);
+        char ch;
+        scanf("%c",&ch);
+        getchar();
+        if(ch=='Y' || ch=='y')
+        {
+            //strcpy(mes.message,"y");
+            if(send(,str,sizeof(str),0)<0)
+            {
+                my_err("send error",__LINE__);
+            }
+            printf("同意好友申请发送成功\n");
+        }
+        else
+        {
+            char str1[BUFSIZ];
+            //memset(&mes,0,sizeof(mes));
+            mes.flag=ADD_FRIEND_ACCPET;
+            strcpy(mes.message,"n");
+            mes.sender=username;//被申请者
+            mes.recver=pos->data.sender;//申请者
+            memcpy(str1,&mes,sizeof(mes));
+            if(send(cfd,str1,sizeof(str1),0)<0)
+            {
+                my_err("send error",__LINE__);
+            }
+            printf("拒绝好友申请发送成功\n");
+        }
+     
+    }   
+*/
+    
+}
+
+void Print_apply(char* buf)
+{
+    
+    message mes;
+    memcpy(&mes,buf,sizeof(mes));
+    //pthread_mutex_lock(&mutex);
+    if(strcmp(mes.messsge,"d")==0)
+    {
+        printf("您申请的好友不在线,您可以选择添加其他朋友\n");
+    }
+    else if(strcmp(mes.messsge,"w")==0)
+        printf("正在等待对方验证，请不要重复发好友申请\n");
+    else 
+        printf("--%s\n",mes.messsge);
+    //pthread_cond_wait(&cond,&mutex);
+    //pthread_mutex_unlock(&mutex);    
+}
+void Add_friend_accept_appy(char* buf)
+{
+    apply_messgae mes;
+    memcpy(&mes,buf,sizeof(mes));
+    printf("-----%s\n",mes.message);
+}
+void Add_friend_apply(char* buf)
+{
+    //apply_messgae mes;
+    box_t box;
+    memcpy(&box,buf,sizeof(box));
+    
+
+    
+    box_list_t new;
+    new=(box_list_t)malloc(sizeof(box_node_t));
+    printf("你有请求消息来了,在消息盒子\n");
+   
+
+    new->data.flag=box.flag;
+    new->data.sender=box.sender;//申请者
+    new->data.recver=box.recver;//被申请者
+    new->data.send_fd=box.send_fd;//申请者客户端端口号
+    new->data.recv_fd=box.recv_fd;//被申请者客户端端口号
+    strcpy(new->data.message,box.message);
+    List_AddTail(head,new);
+
+    printf("client message:%s\n",new->data.message);
+
+    printf("server send message:%s\n",box.message);
+    printf("server send flag:%d\n",box.flag);
+    printf("server/ friend send id:%d\n",box.sender);
+    printf("server/ friend recv id:%d\n",box.recver);
+    //朋友客户端号
+    printf("server/ friend recv_fd:%d\n",new->data.recv_fd);
+    printf("server/ friend send_fd:%d\n",new->data.send_fd);
+    
+
+
+    usleep(100);
+
+    /*if(mes.sender==username)
+    {
+        printf("不能向自己发送好友申请\n");
+        return;
+    }*/
+ 
 }
 void Add_friend()
 {
-    int flag=ADD_FRIEND;
-    char name_buf[MAX];
-
-    display("请输入要添加的好友账号:");
-    Get_string(name_buf,MAX);
-
-    Send_pack_message(flag,user.username,name_buf,"");
-
+    int id;
+    puts("请输入想要添加好友的账号[id]:\n");
+    scanf("%d",&id);
+    if(id==username)
+        printf("请不要添加自己为好友\n");
     
+    char buf[BUFSIZ];
+    sprintf(buf,"%d",id);
+    printf("buf:%s\n",buf);
+
+    char str[BUFSIZ];
+    memset(str,0,sizeof(str));
+    Relation_t relation;
+    relation.flag=ADD_FRIEND;
+    relation.sender=username;//发送者
+    relation.recver=id;//被申请者
+    strcpy(relation.message,"");
+    memcpy(str,&relation,sizeof(relation));
+
+    printf("client flag:%d\n",relation.flag);
+    printf("client message:%s\n",relation.message);
+    printf("client send:%d\n",relation.sender);
+    printf("client recv:%d\n",relation.recver);
+
+    if(send(cfd,str,sizeof(str),0)<0)
+    {
+        my_err("send error!",__LINE__);
+    }
+}
+
+
+void Del_friend()
+{
+    
+    int id;
+    puts("请输入要删除的好友账号:");
+    scanf("%d",&id);
+
+    char buf[BUFSIZ];
+    sprintf(buf,"%d",id);
+    printf("buf:%s\n",buf);
+
+    char str[BUFSIZ];
+    memset(str,0,sizeof(str));
+    Relation_t relation;
+    relation.flag=DEL_FRIEND;
+    relation.sender=username;//发送者
+    relation.recver=id;//被申请者
+    strcpy(relation.message,"");
+    memcpy(str,&relation,sizeof(relation));
+
+    printf("client flag:%d\n",relation.flag);
+    printf("client message:%s\n",relation.message);
+    printf("client send:%d\n",relation.sender);
+    printf("client recv:%d\n",relation.recver);
+
+    if(send(cfd,str,sizeof(str),0)<0)
+    {
+        my_err("send error!",__LINE__);
+    }
+
     return;
 }
-void Update_friend_message()
+void Del_friend_apply(char* buf)
 {
-    PACK friend_message;
-    friend_message.flag=VIEW_FRIEND_LIST;
-    strcpy(friend_message.data.send_name,friend_message.data.recv_name);
-    strcpy(friend_message.data.recv_name,"server");
-    memset(friend_message.data.message,0,sizeof(friend_message.data.message));
-    if(send(cfd,&friend_message,sizeof(PACK),0)<0)
+    message mes;
+    memcpy(&mes,buf,sizeof(mes));
+
+    printf("--%s\n",mes.messsge);
+
+}
+void Shield_friend()
+{
+    int id;
+    printf("请输入你要屏蔽的好友账号:\n");
+    scanf("%d",&id);
+    char buf[BUFSIZ];
+    sprintf(buf,"%d",id);
+    printf("buf:%s\n",buf);
+
+    char str[BUFSIZ];
+    memset(str,0,sizeof(str));
+    Relation_t relation;
+    relation.flag=SHIELD;
+    relation.sender=username;//发送者
+    relation.recver=id;//被申请者
+    strcpy(relation.message,"");
+    memcpy(str,&relation,sizeof(relation));
+
+    printf("client flag:%d\n",relation.flag);
+    printf("client message:%s\n",relation.message);
+    printf("client send:%d\n",relation.sender);
+    printf("client recv:%d\n",relation.recver);
+
+
+}
+void Shield_friend_apply(char* buf)
+{
+    message mes;
+    memcpy(&mes,buf,sizeof(mes));
+
+    printf("--%s\n",mes.messsge);
+}
+void Unshield_friend()
+{
+    int id;
+    printf("请输入你要解除屏蔽的好友账号:\n");
+    scanf("%d",&id);
+    char buf[BUFSIZ];
+    sprintf(buf,"%d",id);
+    printf("buf:%s\n",buf);
+
+    char str[BUFSIZ];
+    memset(str,0,sizeof(str));
+    Relation_t relation;
+    relation.flag=UNSHIELD;
+    relation.sender=username;//发送者
+    relation.recver=id;//被申请者
+    strcpy(relation.message,"");
+    memcpy(str,&relation,sizeof(relation));
+
+    printf("client flag:%d\n",relation.flag);
+    printf("client message:%s\n",relation.message);
+    printf("client send:%d\n",relation.sender);
+    printf("client recv:%d\n",relation.recver); 
+}
+void Unshield_friend_apply(char* buf)
+{
+    message mes;
+    memcpy(&mes,buf,sizeof(mes));
+
+    printf("--%s\n",mes.messsge);
+}
+
+//一起实现
+//void Show_friend_status();
+void View_friend_list()
+{
+    
+    //pthread_mutex_lock(&mutex);
+    printf("-----------------------\n");
+    printf("账号     状态\n");
+    
+
+    char str[BUFSIZ];
+    memset(str,0,sizeof(str));
+    Friend_t friend;
+    friend.flag=VIEW_FRIEND_LIST;
+    friend.send=username;//发送者
+    friend.recv=username;//接收者
+    strcpy(friend.message,"");
+    memcpy(str,&friend,sizeof(friend));
+
+    if(send(cfd,str,sizeof(str),0)<0)
+    {
+        my_err("send error",__LINE__);
+    }
+
+    //printf("client flag:%d\n",friend.flag);
+    //printf("client message:%s\n",friend.message);
+    //printf("client send:%d\n",friend.send);
+    //printf("client recv:%d\n",friend.recv); 
+
+    printf("-------------------------\n");
+    //pthread_cond_wait(&cond,&mutex);
+    //pthread_mutex_unlock(&mutex);
+    
+}
+void View_friend_list_apply(char* buf)
+{
+    message mes;
+    memcpy(&mes,buf,sizeof(mes));
+    printf("%s\n",mes.messsge);
+}
+
+
+void Private_chat()
+{
+    int id;
+    printf("请输入要私聊的好友账号:\n");
+    scanf("%d",&id);
+    //Chat_message mes;
+    //memset(&mes, 0, sizeof(message));
+  
+ 
+    char buf[256];
+    //char time[100];
+    //char str[BUFSIZ];
+
+    /*char time[30];
+
+    memset(time,0,sizeof(time));
+    strcpy(time,Time());*/
+    system("clear");
+
+    printf("-----正在与 %d 聊天-----\n",id);
+    printf("   --- quit 退出 ---\n");
+
+    printf("=============================\n");
+    //printf("time:%s",time);
+    scanf("%s",buf);
+    do
+    {
+
+        char str[BUFSIZ];
+       
+        Chat_message mes;
+        mes.flag=PRIVATE_CHAT;
+        mes.sender=username;
+        mes.recver=id;
+        //strcpy(mes.time,time);
+        //printf("client send:%s\n",time);
+        strcpy(mes.message,buf);
+        memcpy(str,&mes,sizeof(mes));
+        if(send(cfd,str,sizeof(str),0)<0)
+        {
+            my_err("send error!",__LINE__);
+        }
+        //memset(buf,0,sizeof(buf));
+        //memset(str,0,sizeof(str));
+        //memset(&mes, 0, sizeof(message));
+
+
+        //fgets(buf,sizeof(buf),stdin);
+        scanf("%s",buf);
+
+        /*if(strcmp(buf,"quit")==0)
+            break;*/
+
+
+    }while(strcmp(buf,"quit"));
+   /* printf("按任意键返回\n");
+    getchar();*/
+    return ;
+}
+char *Time()
+{
+    /*time_t time_t;
+    char timep[100];
+    int len;
+    //时间
+    time(&time_t);
+    strcpy(timep,ctime(&time_t));
+    len=strlen(timep);
+    timep[len-5]='\0'; */
+
+    char* str;
+    time_t  time_t;
+    time(&time_t);
+
+    str=ctime(&time_t);
+    str[strlen(str-1)]='\0';
+    return str;
+}
+void Private_chat_apply(char* buf)
+{
+    Chat_message mes;
+    memcpy(&mes,buf,sizeof(mes));
+    if(strcmp(mes.message,"d")==0)
+        printf("[%d]不在线 \n",mes.recver);
+    else
+    {
+        //printf("                       %s",mes.time);
+        printf("                         [%d]:%s\n",mes.sender,mes.message);
+    } 
+}
+
+
+void View_chat_history()
+{
+   
+    int id;
+    //system("clear");
+    printf("请输入要查询聊天的好友账号:");
+    scanf("%d",&id);
+    
+    char buf[BUFSIZ];
+    Chat_message mes;
+    mes.flag=VIEW_CHAT_HISTORY;
+    strcpy(mes.message,"");
+    mes.sender=username;
+    mes.recver=id;
+    memcpy(buf,&mes,sizeof(mes));
+    if(send(cfd,buf,sizeof(buf),0)<0)
+    {
+        my_err("send error!",__LINE__);
+    }
+
+
+    /*pthread_mutex_lock(&lock_msg);
+    pthread_cond_wait(&cond_msg,&lock_msg);
+    pthread_mutex_unlock(&lock_msg);*/
+}
+void View_chat_history_apply(char*  buf)
+{
+    Chat_message mes;
+    memcpy(&mes,buf,sizeof(mes));
+    printf("--------------------聊天记录-------------------------\n");
+    printf("     %s\n",mes.message);
+}
+
+void Create_group()
+{
+    char buf[BUFSIZ];
+    Group_t group; 
+ 
+
+    printf("请输入群名:");
+    scanf("%s",group.group_name);
+    printf("此群名只是当前群的称谓,创建者id为该群唯一标识\n");
+    group.group_owner=username;
+    group.flag=CREAT_GROUP;
+    memcpy(buf,&group,sizeof(group));
+    if(send(cfd,buf,sizeof(buf),0)<0)
+    {
+        my_err("send error",__LINE__);
+    }    
+}
+void Create_group_apply(char* buf)
+{
+    message mes;
+    memcpy(&mes,buf,sizeof(mes));
+
+    printf("--%s\n",mes.messsge);
+
+}
+void Add_group()
+{
+   int id;
+   printf("请输入要加入的群号:\n");
+   scanf("%d",&id);
+
+    char buf[BUFSIZ];
+    Relation_t relation;
+    relation.flag=ADD_GROUP;
+    relation.sender=username;
+    relation.recver=id;
+    strcpy(relation.message,"");
+    memcpy(buf,&relation,sizeof(relation));
+    if(send(cfd,buf,sizeof(buf),0)<0)
+    {
+        my_err("send error",__LINE__);
+    }    
+}
+void Add_group_apply(char* buf)
+{
+    box_t fbox;
+    memcpy(&fbox,buf,sizeof(fbox));
+    
+
+    
+    box_list_t fnew;
+    fnew=(box_list_t)malloc(sizeof(box_node_t));
+    printf("你有群请求消息来了,在消息盒子\n");
+   
+
+    fnew->data.flag=fbox.flag;
+    fnew->data.sender=fbox.sender;//申请者
+    fnew->data.recver=fbox.recver;//管理员
+    fnew->data.send_fd=fbox.send_fd;//申请者客户端端口号
+    fnew->data.recv_fd=fbox.recv_fd;//管理员客户端端口号
+    strcpy(fnew->data.message,fbox.message);
+    List_AddTail(fhead,fnew);
+
+    printf("client message:%s\n",fnew->data.message);
+
+    printf("server send message:%s\n",fbox.message);
+    printf("server send flag:%d\n",fbox.flag);
+    printf("server/ group apply send id:%d\n",fbox.sender);
+    printf("server/ group apply recv id:%d\n",fbox.recver);
+    //朋友客户端号
+    printf("server/ group recv_fd:%d\n",fnew->data.recv_fd);
+    printf("server/ group send_fd:%d\n",fnew->data.send_fd);
+    
+
+
+    usleep(100);
+}
+void Group_box()
+{
+    //printf("111");
+    Relation_t relation;
+    //box_list_t pos=head;
+    box_list_t pos;
+    List_ForEach(fhead,pos)
+    {
+        if(pos->data.recver==username)
+        {
+            printf("uid\tsender\trecver\tmessage\n");
+            printf("%d\t%d\t%d\t%s\n",username,pos->data.sender,pos->data.recver,pos->data.message);
+        //pos=pos->next;
+            break;
+        }
+    }
+    List_ForEach(fhead,pos)
+    {
+        if(pos->data.recver==username)
+        {
+            List_DelNode(pos);
+            char ch;
+            printf("请输入同意还是不同意:\n");
+        scanf("%c",&ch);
+        if(ch=='Y' || ch=='y')
+        {
+                char str[BUFSIZ];
+                //memset(str,0,sizeof(str));
+                
+                relation.flag=ADD_GROUP_ACCEPT;
+                strcpy(relation.message,"y");
+                relation.sender=pos->data.recver;//管理员
+                relation.recver=pos->data.sender;//申请者
+                //mes.send_fd=box_tt.send_fd;//申请者客户端端口号
+                //mes.recv_fd=box_tt.recv_fd;//被申请者客户端端口号
+                memcpy(str,&relation,sizeof(relation));
+                if(send(cfd,str,sizeof(str),0)<0)
+                {
+                    my_err("send error",__LINE__);
+                }
+                printf("同意群申请发送成功\n");
+        }
+        else
+        {
+            char str[BUFSIZ];
+            //memset(str,0,sizeof(str));
+                
+            relation.flag=ADD_GROUP_ACCEPT;
+            strcpy(relation.message,"n");
+            relation.sender=pos->data.recver;//被申请者
+            relation.recver=pos->data.sender;//申请者
+            //mes.send_fd=box_tt.send_fd;//申请者客户端端口号
+            //mes.recv_fd=box_tt.recv_fd;//被申请者客户端端口号
+            memcpy(str,&relation,sizeof(relation));
+            if(send(cfd,str,sizeof(str),0)<0)
+            {
+                my_err("send error",__LINE__);
+            }
+            printf("拒绝群申请发送成功\n");
+        }
+        }
+    }
+}
+void Add_group_accept_apply(char* buf)
+{
+    apply_messgae mes;
+    memcpy(&mes,buf,sizeof(mes));
+    printf("-----%s\n",mes.message);
+}
+void Group_apply(char* buf)
+{
+    message mes;
+    memcpy(&mes,buf,sizeof(mes));
+
+    printf("--%s\n",mes.messsge);
+}
+
+void Withdraw_group()
+{
+    int id;
+    printf("请输入你要退出的群号:");
+    scanf("%d",&id);
+
+    char buf[BUFSIZ];
+    Relation_t relation;
+    relation.flag=WITHDRAW_GROUP;
+    relation.sender=username;
+    relation.recver=id;
+    strcpy(relation.message,"");
+    memcpy(buf,&relation,sizeof(relation));
+    if(send(cfd,buf,sizeof(buf),0)<0)
+    {
+        my_err("send error",__LINE__);
+    }    
+    
+    
+
+}
+//一起实现
+//void Del_group();
+void Withdraw_group_apply(char* buf)
+{
+    message mes;
+    memcpy(&mes,buf,sizeof(mes));
+
+    printf("--%s\n",mes.messsge);
+}
+void Del_group_apply(char* buf)
+{
+    message mes;
+    memcpy(&mes,buf,sizeof(mes));
+
+    printf("--%s\n",mes.messsge);
+}
+//一起实现
+//void View_group_member();
+//void View_group_member_apply(char* buf);
+void View_add_group()
+{
+    printf("----------------------------\n");
+    printf("%s\t%s\t%s\t%s\n","群号","群主","管理员","群名");
+    char str[BUFSIZ];
+    memset(str,0,sizeof(str));
+    Relation_t relation;
+    relation.flag=VIEW_ADD_GROUP;
+    relation.sender=username;//发送者
+    relation.recver=username;//接收者
+    strcpy(relation.message,"");
+    memcpy(str,&relation,sizeof(relation));
+
+    if(send(cfd,str,sizeof(str),0)<0)
+    {
+        my_err("send error",__LINE__);
+    }
+    printf("-----------------------------\n");
+ 
+}
+void View_add_group_apply(char* buf)
+{
+    message mes;
+    memcpy(&mes,buf,sizeof(mes));
+
+    printf("--%s\n",mes.messsge);
+
+}
+
+
+void Group_chat()
+{
+    int id;
+    printf("请输入要发送聊天的群账号:\n");
+    scanf("%d",&id);
+    while(getchar()!='\n');
+    //Chat_message mes;
+    //memset(&mes, 0, sizeof(message));
+  
+ 
+    char buf[256];
+    //char time[100];
+    //char str[BUFSIZ];
+
+    /*char time[30];
+
+    memset(time,0,sizeof(time));
+    strcpy(time,Time());*/
+    system("clear");
+
+    printf("-----正在与 %d 群里聊天-----\n",id);
+    printf("   --- quit 退出 ---\n");
+
+    printf("=============================\n");
+    //printf("time:%s",time);
+    fgets(buf,sizeof(buf),stdin);
+    do
+    {
+
+        char str[BUFSIZ];
+       
+        Chat_message mes;
+        mes.flag=GROUP_CHAT;
+        mes.sender=username;
+        mes.recver=id;
+        //strcpy(mes.time,time);
+        //printf("client send:%s\n",time);
+        strcpy(mes.message,buf);
+        memcpy(str,&mes,sizeof(mes));
+        if(send(cfd,str,sizeof(str),0)<0)
+        {
+            my_err("send error!",__LINE__);
+        }
+        //memset(buf,0,sizeof(buf));
+        //memset(str,0,sizeof(str));
+        //memset(&mes, 0, sizeof(message));
+
+
+        //fgets(buf,sizeof(buf),stdin);
+        fgets(buf,sizeof(buf),stdin);
+        /*if(strcmp(buf,"quit")==0)
+            break;*/
+
+
+    }while(strcmp(buf,"quit"));
+
+}
+void Group_chat_apply(char* buf)
+{
+     Chat_message mes;
+    memcpy(&mes,buf,sizeof(mes));
+    /*if(strcmp(mes.message,"d")==0)
+        printf("[%d]不在线 \n",mes.recver);*/
+    //else
+    //{
+        //printf("                       %s",mes.time);
+        printf("                         [%d]:%s\n",mes.sender,mes.message);
+    //} 
+   
+}
+void View_group_record()
+{
+    int id;
+    //system("clear");
+    printf("请输入要查询聊天的群账号:");
+    scanf("%d",&id);
+    
+    char buf[BUFSIZ];
+    Chat_message mes;
+    mes.flag=VIEW_GROUP_RECORD;
+    strcpy(mes.message,"");
+    mes.sender=username;
+    mes.recver=id;
+    memcpy(buf,&mes,sizeof(mes));
+    if(send(cfd,buf,sizeof(buf),0)<0)
     {
         my_err("send error!",__LINE__);
     }
 
 }
-void Del_friend()
-{
-    int flag=DEL_FRIEND;
-    char name_buf[MAX];
-
-    display("请输入要删除的好友账号:");
-    Get_string(name_buf,MAX);
-
-    Send_pack_message(flag,user.username,"server",name_buf);
-    Update_friend_message();
-
-    return;
-}
-void Del_friend_apply(PACK recv_pack)
-{
-    int flag_del=recv_pack.data.message[0];
-    if(flag_del==1)
-    {
-        printf("删除好友%s成功!",recv_pack.data.send_name);
-        user.friend_num--;
-    }
-    else if(flag_del==0)
-    {
-        printf("%s不是你的好友",recv_pack.data.send_name);
-    }
-}
-/*void Query_friend()
-{
-    int flag=QUERY_FRIEND;
-    char name_buf[MAX];
-    pthread_mutex_lock(&mutex);
-    display("请输入要查询的好友账号:");
-    Get_string(name_buf,MAX);
-
-    Send_pack_message(flag,user.username,"server",name_buf);
-    pthread_cond_wait(&cond,&mutex);
-    pthread_mutex_unlock(&mutex);
-
-    return;
-}
-void Query_friend_apply(PACK recv_pack)
-{
-    int flag_query;
-    flag_query=recv_pack.data.message[0];
-    if(flag_query==1)
-    {
-        printf("查询%s成功!\n",recv_pack.data.send_name);
-    }
-    else if(flag_query==0)
-        printf("%s不是你的好友!\n",recv_pack.data.send_name);
-    
-    pthread_cond_signal(&cond);
-}*/
-void Shield_friend()
-{
-    int flag=SHIELD;
-    char name_buf[MAX];
-    pthread_mutex_lock(&mutex);
-    printf("请输入要屏蔽的好友名称:");
-    Get_string(name_buf,MAX);
-
-    Send_pack_message(flag,user.username,"server",name_buf);
-    pthread_cond_wait(&cond,&mutex);
-    pthread_mutex_unlock(&mutex);
-}
-void Shield_friend_apply(PACK recv_pack)
-{
-    int flag_shield;
-    flag_shield=recv_pack.data.message[0];
-    if(flag_shield==1)
-        printf("屏蔽%s成功!\n",recv_pack.data.send_name);
-    else if(flag_shield==0)
-        printf("%s不是你的好友!\n",recv_pack.data.send_name);
-    
-    pthread_cond_signal(&cond);
-}
-void Unshield_friend()
-{
-    int flag=UNSHIELD;
-    char name_buf[MAX];
-    pthread_mutex_lock(&mutex);
-    printf("请输入要解除屏蔽的好友名称:");
-    Get_string(name_buf,MAX);
-
-    Send_pack_message(flag,user.username,"server",name_buf);
-    pthread_cond_wait(&cond,&mutex);
-    pthread_mutex_unlock(&mutex);
-}
-void Unshield_friend_apply(PACK recv_pack)
+void View_group_record_apply(char* buf)
 {
 
-    int flag_unshield;
-    flag_unshield=recv_pack.data.message[0];
-    if(flag_unshield==1)
-        printf("解除屏蔽%s成功!\n",recv_pack.data.send_name);
-    else if(flag_unshield==0)
-        printf("%s不是你的好友!\n",recv_pack.data.send_name);
-    
-    pthread_cond_signal(&cond);
-}
-void View_friend_list()
-{
-    int flag=VIEW_FRIEND_LIST;
-    char buf[MAX_CHAR];
-    memset(buf,0,sizeof(buf));
-    memset(&relation,0,sizeof(RELATION_INFO));
-
-    pthread_mutex_lock(&mutex);
-    Send_pack_message(flag,user.username,"server","");
-    pthread_cond_wait(&cond, &mutex);
-
-    printf("\n\t\t\033[0;34m**********好友列表*********\033[0m\n");
-    if(relation.friend_num==0)
-        printf("\t暂无好友!,请先添加\n");
-    else
-    {
-        for(int i=0;i<relation.friend_num;i++)
-        {
-            switch (relation.friend_relation[i])
-            {
-                case BLACK:
-                    printf("[%s]----[%d]\n",relation.friend_message[i],relation.friend_relation[i]);
-                    break;
-                
-                case UNBLACK:
-                    printf("[%s]----[%d]\n",relation.friend_message[i],relation.friend_relation[i]);
-            }
-        }
-    }
-    pthread_mutex_unlock(&mutex);
-
-    /*for(int i=0;i<=user.friend_num;i++)
-        {
-            if(user.friend_status[i]==1)
-            {
-               printf("\t\t\033[1;32m联系人:%s  (在线)\033[0m\n",user.friends[i].name);
-               if(user.friends[i].message_num)
-                    printf("\t\t\033[1;32m未回复的消息数:%d  \033[0m\n",user.friends[i].message_num);
-                else
-                {
-                    printf("\t\t\033[1;32m暂未消息  \033[0m\n");
-                }
-            }
-            else if(user.friends[i].statue==2)
-            {
-                printf("\t\t\033[1;32m联系人:%s  (已下线)\033[0m\n",user.friends[i].name);
-                if(user.friends[i].message_num)
-                    printf("\t\t\033[1;32m未回复的消息数:%d  \033[0m\n",user.friends[i].message_num);
-                else
-                {
-                    printf("\t\t\033[1;32m暂未消息  \033[0m\n");
-                }
-            }
-            
-        }*/
-}
-void View_friend_list_apply(PACK recv_pack)
-{
-    memcpy(&relation,&recv_pack.relation,sizeof(RELATION_INFO));
-    pthread_cond_signal(&cond);
-}
-void Show_friend_status()
-{
-    int flag=SHOW_FRIEND_STATUS;
-    char name_buf[MAX];
-    pthread_mutex_lock(&mutex);
-    printf("请输入要查看好友状态的名称:");
-    Get_string(name_buf,MAX);
-
-    Send_pack_message(flag,user.username,"server",name_buf);
-    pthread_cond_wait(&cond,&mutex);
-    pthread_mutex_unlock(&mutex);
-}
-void Show_friend_status_apply(PACK recv_pack)
-{
-    int flag_status;
-    char message[50];
-    flag_status=recv_pack.data.message[0];
-    if(flag_status==0)
-    {
-        strcpy(message,recv_pack.message);
-        if(strcmp(message,"DOWNLINE")==0)
-        {
-            printf("[%s] 状态:[%s]",recv_pack.data.send_name,message);
-        }
-    }
-    else if(flag_status==1)
-    {
-        strcpy(message,recv_pack.message);
-        if(strcmp(message,"ONLINE")==0)
-        {
-            printf("[%s] 状态:[%s]",recv_pack.data.send_name,message);
-        }
-    }
-    pthread_cond_signal(&cond);
-}
-void Private_chat()
-{
-    pthread_t pid;
-    int id;
-    char name_buf[MAX];
-    int flag=PRIVATE_CHAT;
-    View_friend_list();
- 
-    printf("请输入私聊的名称\n");
-    fgets(name_buf,sizeof(name_buf),stdin);
-
-    int i;
-    for(i=1;i<=relation.friend_num;i++)
-    {
-        if(strcmp(relation.friend_message[i],name_buf)!=0)
-        {
-            printf("没有此好友%s\n",name_buf);
-            return ;
-        }
-    }
-    
-    
-    printf("\033[;34m\033[1m********************message*******************\033[0m\n");
-
-    flag_print_mes=1;
-    user.relation[id].message_num=0;
-    //开启线程显示信息
-    pthread_create(&pid,NULL,Show_message,(void *)name_buf);
-   
-    Send_message(flag,name_buf);
-  
-}
-void Group_chat()
-{
-    pthread_t pid;
-    char group_name_buf[MAX];
-    int flag=GROUP_CHAT;
-    View_add_group();
-
-    printf("请输入群名称\n");
-    Get_string(group_name_buf,MAX);
-
-    int i;
-    for(i=1;i<=group.group_num;i++)
-    {
-        if(strcmp(group.group_message[i],group_name_buf)!=0)
-        {
-            printf("没有此群%s\n",group_name_buf);
-            return ;
-        }
-    }
-   
- 
-
-    printf("\033[;34m\033[1m********************message*******************\033[0m\n");
-    
-
-    flag_print_mes=1;
-
-    pthread_create(&pid,NULL,Show_message,(void *)group_name_buf);
-    
-    Send_message(flag,group_name_buf);   
-}
-void Send_message(int flag,char* buf)
-{
-    char message[MAX_CHAR];
-    time_t timep;
-    printf("\033[;34m\033[1m******************请输入***************\033[0m\n");
-    while(1)
-    {
-        time(&timep);
-        memset(message,0,sizeof(message));
-        //保存光标位置
-        printf("\033[s");
-        fflush(stdout);
-
-        fgets(message,MAX_CHAR,stdin);
-        while(message[0]==10)
-        {
-            //光标上移一行
-            printf("\033[1A");
-            fflush(stdout);
-
-            fgets(message,MAX_CHAR,stdin);
-        }
-        if(strcmp(message,"quit\n")==0)
-            break;
-
-        //恢复光标位置
-        printf("\033[u");
-        fflush(stdout);
-        //保存光标位置
-        printf("\033[s");
-        fflush(stdout);
-        // 清除从光标到行尾的内容 
-        printf("\033[K\n");
-        printf("\033[K\n");
-        printf("\033[K\n");
-        fflush(stdout);
-        //恢复光标位置
-        printf("\033[u");
-        fflush(stdout);
-
-        //输入的的同时，输出信息
-        Show_message_print(user.username,message);
-
-        Send_pack_message(flag,user.username,buf,message);
-
-    }
-    flag_print_mes=EXIT;
-}
-void Show_message_print(char* name,char* message)
-{
-    time_t time_t;
-    int number=10;
-    char timep[100];
-    int len; 
-    //时间
-    time(&time_t);
-    strcpy(timep,ctime(&time_t));
-    len=strlen(timep);
-    timep[len-5]='\0'; 
-
-    //确认要打印的聊天信息发送方
-    if(print_message_num==number)
-    {
-        for(int i=1;i<=5;i++)
-            print_mes[i]=print_mes[i+1];
-        strcpy(print_mes[number].name,name);
-        strcpy(print_mes[number].time,timep);
-        strcpy(print_mes[number].message,message);
-    }
-    else
-    {
-        strcpy(print_mes[++print_message_num].name,name);
-        strcpy(print_mes[number].time,timep);
-        strcpy(print_mes[print_message_num].message,message);
-    }
- 
-    //打印聊天信息
-    for(int i=1;i<=print_message_num;i++)
-    {
-        if(strcmp(print_mes[i].name,user.username)==0)
-        {
-            printf("%s\t%s\n",print_mes[i].name,timep);
-            printf("%s\n",print_mes[i].message);
-        }
-        else
-        {
-            printf("%s\t%s\n",print_mes[i].name,timep);
-            printf("%s\n",print_mes[i].message);
-        }
-    }
-    fflush(stdout);
-}
-void *Show_message(void* arg)
-{
-    int id;
-    int i;
-    char* username=(char*)arg;
-    while(1)
-    {
-        if(flag_print_mes==EXIT)
-            break;
-        pthread_mutex_lock(&mutex);
-        id=0;
-
-        for(i=1;i<=chat_num;i++)
-        {
-            if(strcmp(recv_chat_pack[i].data.send_name,username)==0)
-            {
-                id=i;
-                print_message(id);
-                chat_num--;
-                for(int j=id;j<=chat_num && chat_num;j++)
-                {
-                    recv_chat_pack[j]=recv_chat_pack[j+1];
-                }
-                break;
-            }
-        }
-        pthread_mutex_unlock(&mutex); 
-        usleep(1);    
-    }
-    return NULL;
-}
-void print_message(int id)
-{
-    char group_print_name[MAX_CHAR];
-
-
-    memset(group_print_name,0,sizeof(group_print_name));
-    
-
-    if(recv_chat_pack[id].flag==PRIVATE_CHAT)
-    {
-        Show_message_print(recv_chat_pack[id].data.send_name,recv_chat_pack[id].data.message);
-    }
-    else if(recv_chat_pack[id].flag==GROUP_CHAT)
-    {    
-        //群聊下依次存入发消息的人的名称
-        for(int i=0;i<SAVE;i++)
-        {
-            group_print_name[i]=recv_chat_pack[id].data.message[i];
-        } 
-        //strcpy(group_print_name,recv_chat_pack[id].data.group_chat);
-        Show_message_print(group_print_name,recv_chat_pack[id].data.message+SAVE);
-    }
-}
-void View_chat_history()
-{
-    char name_buf[MAX];
-    int flag=VIEW_CHAT_HISTORY;
-    do
-    {
-        View_friend_list();
-        printf("请输入要查看的名称[退出:q]:\n");
-
-        fflush(stdin);
-        Get_string(name_buf,MAX);
-
-        
-        if(strcmp(name_buf,"q\0")==0)
-        {
-            return;
-        }
-
-        int i;
-        for(i=1;i<=relation.friend_num;i++)
-        {
-            if(strcmp(relation.friend_message[i],name_buf)!=0)
-            {
-                printf("你没有这位好友%s\n",name_buf);
-                printf("请重新输入\n");
-                continue;
-            }
-            else
-            {
-                printf("找到好友\n");
-                break;
-            }
-        }
-     
- 
-    }while(strcmp(name_buf,"q\0")!=0);
-
-    Send_pack_message(flag,user.username,"server",name_buf);
-
-    sleep(1);
-    printf("加载中--------------------------------\n");
-    return;
-}
-void View_group_record()
-{
-    char group_name[MAX];
-    
-   int flag=VIEW_GROUP_RECORD;
-    
-    do
-    {
-        View_add_group();
-       
-        printf("请输入要查看的群[退出:q]:\n");
-
-        fflush(stdin);
-        Get_string(group_name,MAX);
-        
-        
-        if(strcmp(group_name,"q\0")==0)
-        {
-            return;
-        }
-        
-
-        int i;
-        for(i=1;i<=group.group_num;i++)
-        {
-            if(strcmp(group.group_message[i],group_name)!=0)
-            {
-                printf("你没有加入这个群%s\n",group_name);
-                printf("请重新输入\n");
-                continue;
-            }
-            else
-            {
-                printf("找到群\n");
-                break;
-            }
-            
-        }    
-    }while(strcmp(group_name,"q\0")!=0);
-        
-    Send_pack_message(flag,user.username,"server",group_name);
-
-    printf("加载中-----------------------------\n");
-    sleep(1);    
-    return ;
-}
-void Print_message_record(PACK recv_pack)
-{
-    PACK *pack_t;
-    pack_t=(PACK*)malloc(sizeof(PACK));
-    memcpy(pack_t,&recv_pack,sizeof(PACK));
+    Chat_message mes;
+    memcpy(&mes,buf,sizeof(mes));
     printf("--------------------聊天记录-------------------------\n");
-    printf("%s:\n",pack_t->data.group_chat);
-    printf("%s:\n",pack_t->data.message);
+    printf("     %s\n",mes.message);
+}
+
+void Set_group_admin()
+{
+    char buf[BUFSIZ];
+    Group_leader leader;
+    leader.flag=SET_GROUP_ADMIN;
+    leader.sender=username;
+    printf("请输入你设置的群号:");
+    scanf("%d",&leader.recver);
+    printf("请输入你要设置管理员的账号：");
+    scanf("%d",&leader.admin);
+    strcpy(leader.message,"");
+
+    memcpy(buf,&leader,sizeof(leader));
+    if(send(cfd,buf,sizeof(buf),0)<0) 
+    {
+        my_err("send error",__LINE__);
+    }
+}
+void Set_group_admin_apply(char *buf)
+{
+    
+    Group_leader leader;
+    memcpy(&leader,buf,sizeof(leader));
+    printf("--%s\n",leader.message);
+}
+void Kick()
+{
+    char buf[BUFSIZ];
+    Group_leader leader;
+    leader.flag=KICK;
+    leader.sender=username;
+    printf("请输入你设置的群号:");
+    scanf("%d",&leader.recver);
+    printf("请输入你要删除成员的账号：");
+    scanf("%d",&leader.admin);
+    strcpy(leader.message,"");
+
+    memcpy(buf,&leader,sizeof(leader));
+    if(send(cfd,buf,sizeof(buf),0)<0) 
+    {
+        my_err("send error",__LINE__);
+    }
+    
+}
+void Kick_apply(char *buf)
+{
+    Group_leader leader;
+    memcpy(&leader,buf,sizeof(leader));
+    printf("--%s\n",leader.message);
+}
+void Send_file()
+{
+    int id;
+    printf("请输入要发送文件的好友账号");
+    scanf("%d",&id);
+    char file_name[100];
+    printf("请输入要发送的文件的路径");
+    scanf("%s",file_name);
+    
+    
+    int flag=0;
+    file file_t;
+    char buf[BUFSIZ];
+
+    file_t.recver=id;
+    file_t.sender=username;
+    file_t.flag=SEND_FILE;
+    strcpy(file_t.file_name,file_name);
+    printf("sizeof(file)=%ld\n",sizeof(file));
+    int fd=open(file_name,O_RDONLY);
+    if(fd<0)
+    {
+        my_err("open error",__LINE__);
+    }
+
+    //read返回值为0表示读到尾
+    while((file_t.file_size=read(fd,file_t.message,sizeof(file_t.message)))!=0)
+    {
+        len+=file_t.file_size;
+        memcpy(buf,&file_t,sizeof(file_t));
+        if(send(cfd,buf,sizeof(buf),0)<0)
+        {
+            flag=1;
+            sys_err("send error",__LINE__);
+        } 
+    }
+    close(fd);
+    if(flag==0)
+    {
+        printf("文件发送成功\n");
+        usleep(1000);
+        getchar();
+    }
+    else if(flag==1)
+    {
+        printf("文件发送失败\n");
+        usleep(1000);
+        getchar();
+    }
+}
+void Recv_file(char *buf)
+{
+    int fd;
+    file file_t;
+    memcpy(&file_t,buf,sizeof(file_t));
+    //如果文件不存在创建文件
+    if((fd=open(file_t.file_name,O_RDWR | O_CREAT | O_APPEND,0600))<0)
+    {
+        my_err("open file_name error",__LINE__);
+    }
+    
+    
+    int ret=write(fd,file_t.message,file_t.file_size);
+    if(ret<0)
+    {
+        my_err("write file error",__LINE__);
+    }
+
+    printf("ret=%d\n",ret);
+    printf("file_name=%s\n",file_t.file_name);
+    printf("recver=%d\n",file_t.recver);
+    printf("sender=%d\n",file_t.sender);
+    printf("file_size=%d\n",file_t.file_size);
+    close(fd);
 }
 void Friend_menu()
 {
@@ -847,31 +1281,30 @@ void Friend_menu()
     
     while(choice)
     {
+        sleep(1);
         printf("\t\t\033[;36m\033[1m*********朋友管理*********\033[0m\n");
         printf("\t\t\033[1;36m|\033[0m--------1.添加好友-------\033[1;36m|\033[0m\n");
-        printf("\t\t\033[1;36m|\033[0m--------2.删除好友-------\033[1;36m|\033[0m\n");
-        printf("\t\t\033[1;36m|\033[0m--------3.查询好友-------\033[1;36m|\033[0m\n");
+        printf("\t\t\033[1;36m|\033[0m--------2.好友消息盒子-------\033[1;36m|\033[0m\n");
+        printf("\t\t\033[1;36m|\033[0m--------3.删除好友-------\033[1;36m|\033[0m\n");
         printf("\t\t\033[1;36m|\033[0m--------4.私聊好友-------\033[1;36m|\033[0m\n");
         printf("\t\t\033[1;36m|\033[0m--------5.屏蔽好友-------\033[1;36m|\033[0m\n");
         printf("\t\t\033[1;36m|\033[0m------6.解除屏蔽好友-----\033[1;36m|\033[0m\n");
         printf("\t\t\033[1;36m|\033[0m------7.查看好友列表-----\033[1;36m|\033[0m\n");
-        printf("\t\t\033[1;36m|\033[0m------8.显示好友状态-----\033[1;36m|\033[0m\n");
-        printf("\t\t\033[1;36m|\033[0m------9.查看聊天记录-----\033[1;36m|\033[0m\n");
-        printf("\t\t\033[1;36m|\033[0m-------- 0.退出 ---------\033[1;36m|\033[0m\n");
+        printf("\t\t\033[1;36m|\033[0m------8.查看聊天记录-----\033[1;36m|\033[0m\n");
   
         printf("请输入选择:");
         scanf("%d",&choice);
-        Clear_buffer();
+        while(getchar() != '\n');
         switch (choice)
         {
             case 1:
                 Add_friend();
                 break;
             case 2:
-                Del_friend();
+                Friend_box();
                 break;
             case 3:
-                //Query_friend();
+                Del_friend();
                 break;
             case 4:
                 Private_chat();
@@ -886,9 +1319,6 @@ void Friend_menu()
                 View_friend_list();
                 break;
             case 8:
-                Show_friend_status();
-                break;
-            case 9:
                 View_chat_history();
                 break;
             case 0:
@@ -897,201 +1327,28 @@ void Friend_menu()
     }
     return;
 }
-
-
-void Create_group()
-{
-    int flag=CREAT_GROUP;
-    char name_buf[MAX];
-    pthread_mutex_lock(&mutex);
-    printf("请输入要创建的群名称:");
-    Get_string(name_buf,MAX);
-
-    Send_pack_message(flag,user.username,"server",name_buf);
-    pthread_cond_wait(&cond, &mutex);
-    pthread_mutex_unlock(&mutex);
-}
-void Create_group_apply(PACK recv_pack)
-{
-    int flag_create;
-    flag_create=recv_pack.data.message[0];
-    if(flag_create==0)
-        printf("群%s已存在\n",recv_pack.data.send_name);
-    else if(flag_create==1)
-        printf("群%s成功建立\n",recv_pack.data.send_name);
-    pthread_cond_signal(&cond);
-}
-void Add_group()
-{
-    int flag=ADD_GROUP;
-    char name_buf[MAX];
-
-    printf("请输入想要加入的群名称:");
-    Get_string(name_buf,MAX);
-
-    Send_pack_message(flag,user.username,"server",name_buf);
-}
-void Add_group_apply(PACK recv_pack)
-{
-    int flag_add;
-    char choice;
-    flag_add=recv_pack.data.message[0];
-    if(flag_add==0)
-    {
-        printf("群%s不存在\n",recv_pack.message);
-    }
-    else if(flag_add==1)
-    {
-        printf("---[%s]想要加入群聊%s!\n",recv_pack.data.send_name,recv_pack.message);
-        
-        printf("[1]:同意\t\t[2]:不同意\n");
-        scanf("%c",&choice);
-        switch (choice)
-        {
-            case 'y':
-                Send_pack_message(ADD_FRIEND,recv_pack.data.recv_name,recv_pack.data.send_name,"y");
-            case 'n':
-                Send_pack_message(ADD_FRIEND,recv_pack.data.recv_name,recv_pack.data.send_name,"n");
-        }
-    }
-    else if(flag_add==2)
-    {
-        printf("%s同意了%s的请求,添加成功!\n",recv_pack.data.recv_name,recv_pack.data.send_name);
-        user.member_num++;
-    }
-    else if(flag_add==3)
-        printf("%s拒绝了%s的请求!\n",recv_pack.data.recv_name,recv_pack.data.send_name);
-}
-
-void Withdraw_group()
-{
-    int flag=WITHDRAW_GROUP;
-    char name_buf[MAX];
-    pthread_mutex_lock(&mutex);
-    printf("请输入想要退出的群名称:");
-    Get_string(name_buf,MAX);
-
-    Send_pack_message(flag,user.username,"server",name_buf);
-    pthread_cond_wait(&cond, &mutex);
-    pthread_mutex_unlock(&mutex);
-}
-void Withdraw_group_apply(PACK recv_pack)
-{
-    int flag_withdraw;
-    flag_withdraw=recv_pack.data.message[0];
-    if(flag_withdraw==0)
-    {
-        printf("群%s不存在\n",recv_pack.message);
-    }
-    else if(flag_withdraw==1)
-    {
-        printf("%s退群%s成功\n",recv_pack.data.recv_name,recv_pack.message);
-    }
-    pthread_cond_signal(&cond);
-}
-void View_add_group()
-{
-    int flag=VIEW_ADD_GROUP;
-    char buf[MAX_CHAR];
-    memset(&group,0,sizeof(GROUP_INFO));
-
-    pthread_mutex_lock(&mutex);
-    Send_pack_message(flag,user.username,"server","");
-    pthread_cond_wait(&cond, &mutex);
-
-    printf("\n\t\t\033[0;34m**********群组列表*********\033[0m\n");
-    if(group.group_num==0)
-        printf("\t\t暂无群组!,请先添加\n");
-    else
-    {
-        for(int i=0;i<group.group_num;i++)
-        {       
-            printf("\t\t\033[1;32m群组名称:%s  \033[0m\n",group.group_message[i]);
-        }
-    }
-    pthread_mutex_unlock(&mutex);
-
-
-
-    /*else
-    {
-        for(int i=0;i<user.group_num;i++)
-        {       
-            printf("\t\t\033[1;32m群组名称:%s  \033[0m\n",user.group[i].name);
-        }
-    }
-    pthread_mutex_unlock(&mutex);*/
-}
-void View_add_group_apply(PACK recv_pack)
-{
-    memcpy(&group,&recv_pack.group,sizeof(GROUP_INFO));
-    pthread_cond_signal(&cond);
-}
-void View_group_member()
-{
-    int flag=VIEW_GROUP_MEMBER;
-    char buf[MAX];
-    int i;
-    int flag_t;
-
-    pthread_mutex_lock(&mutex);
-    printf("请输入想要查看哪个群成员信息");
-    Get_string(buf,MAX);
-    for(i=0;i<group.group_num;i++)
-    {
-        if(strcmp(group.group_message[i],buf)==0)
-        {
-            flag_t=1;
-            break;
-        }
-    }
-    
-    if(flag_t==0)
-        printf("\t\t没有加入此群\n");
-    else
-    {
-        memset(&relation,0,sizeof(relation));
-        Send_pack_message(flag,user.username,"server",buf);
-        pthread_cond_wait(&cond,&mutex);
-
-        printf("\n\t\t\033[0;34m**********群成员信息列表*********\033[0m\n");
-        if(relation.friend_num==0)
-            printf("\t\t暂无成员!,请先添加\n");
-        else
-        {
-            for(i=0;i<relation.friend_num;i++)
-            {       
-                printf("\t\t\033[1;32m群成员名称:%s  \033[0m\n",relation.friend_message[i]);
-            }
-        }
-        pthread_mutex_unlock(&mutex);
-
-    }
-    
-
-}
-void View_group_member_apply(PACK recv_pack)
-{
-    memcpy(&relation,&recv_pack.relation,sizeof(RELATION_INFO));
-    pthread_cond_signal(&cond);
-}
 void Group_menu()
 {
     system("clear");
     int choice=1;
     while(choice)
     {
-        printf("\t\t\033[;34m\033[1m*********群管理*********\033[0m\n");
+        //printf("\t\t\033[;34m\033[1m*********群管理*********\033[0m\n");
         printf("\t\t\033[1;34m|\033[0m--------1.创建群-------\033[1;34m|\033[0m\n");
         printf("\t\t\033[1;34m|\033[0m--------2.添加群-------\033[1;34m|\033[0m\n");
-        printf("\t\t\033[1;34m|\033[0m--------3.退群---------\033[1;34m|\033[0m\n");
-        printf("\t\t\033[1;34m|\033[0m--------4.群聊---------\033[1;34m|\033[0m\n");
-        printf("\t\t\033[1;34m|\033[0m--------5.已加群-------\033[1;34m|\033[0m\n");
-        printf("\t\t\033[1;34m|\033[0m--------6.群成员-------\033[1;34m|\033[0m\n");
+        printf("\t\t\033[1;34m|\033[0m--------3.群消息盒子-------\033[1;34m|\033[0m\n");
+        printf("\t\t\033[1;34m|\033[0m--------4.退群---------\033[1;34m|\033[0m\n");
+        printf("\t\t\033[1;34m|\033[0m--------5.群聊---------\033[1;34m|\033[0m\n");
+        printf("\t\t\033[1;34m|\033[0m--------6.显示群列表-------\033[1;34m|\033[0m\n");
         printf("\t\t\033[1;34m|\033[0m-----7.查看聊天记录----\033[1;34m|\033[0m\n");
-        printf("\t\t\033[1;34m|\033[0m------8.群管理权限-----\033[1;34m|\033[0m\n");
-        printf("\t\t\033[1;34m|\033[0m-------- 0.退出--------\033[1;34m|\033[0m\n");
-        printf("请输入选择:");
+        //printf("\t\t\033[1;34m|\033[0m------群管理权限-----\033[1;34m|\033[0m\n");
+        //printf("\t\t\033[1;34m|\033[0m-------------------\033[1;34m|\033[0m\n");
+        //printf("\t\t\033[1;34m|\033[0m*群主--1,2,3/管理员--3权限*\033[1;34m|\033[0m\n");
+        //printf("\t\t\033[1;34m|\033[0m-------------------\033[1;34m|\033[0m\n");
+        printf("\t\t\033[1;34m|\033[0m------8.设置管理员------\033[1;34m|\033[0m\n");
+        printf("\t\t\033[1;34m|\033[0m------9.踢人-----\033[1;34m|\033[0m\n");
+        printf("\t\t\033[1;34m|\033[0m--------0.退出--------\033[1;34m|\033[0m\n");
+        printf("\t\tchoice:\n");
         scanf("%d",&choice);
         Clear_buffer();
         switch (choice)
@@ -1103,22 +1360,25 @@ void Group_menu()
                 Add_group();
                 break;
             case 3:
-                Withdraw_group();
+                Group_box();
                 break;
             case 4:
-                Group_chat();
+                Withdraw_group();
                 break;
             case 5:
-                View_add_group();
+                Group_chat();
                 break;
             case 6:
-                View_group_member();
+                View_add_group();
                 break;
             case 7:
                 View_group_record();
                 break;
             case 8:
-                Group_leader_menu();
+                Set_group_admin();
+                break;
+            case 9:
+                Kick();
                 break;
             case 0:
                 break;
@@ -1127,173 +1387,29 @@ void Group_menu()
     return;
 }
 
-void Del_group()
+void Print_menu()
 {
-    int flag=DEL_GROUP;
-    char name_buf[MAX];
-    pthread_mutex_lock(&mutex);
-
-    printf("请输入想要解散的群名称:");
-    Get_string(name_buf,MAX);
-
-    Send_pack_message(flag,user.username,"server",name_buf);
-    pthread_cond_wait(&cond, &mutex);
-    pthread_mutex_unlock(&mutex);
-}
-void Del_group_apply(PACK recv_pack)
-{
-    int flag_del;
-    flag_del=recv_pack.data.message[0];
-    if(flag_del==0)
-    {
-        printf("群%s不存在\n",recv_pack.data.send_name);
-    }
-    else if(flag_del==1)
-    {
-        printf("群主%s解散了群%s成功!\n",recv_pack.data.recv_name,recv_pack.data.send_name);
-    }
-    else if(flag_del==2)
-    {
-        printf("只有群主%s才能解散群\n",recv_pack.data.recv_name);
-    }
-    pthread_cond_signal(&cond);
-}
-void Set_group_admin()
-{
-    int flag=SET_GROUP_ADMIN;
-    char group_name_buf[MAX];
-    char admin_buf[MAX];
-    pthread_mutex_lock(&mutex);
-    printf("请输入设置某个群里的管理员:");
-    Get_string(group_name_buf,MAX);
-
-    Get_string(admin_buf,MAX);
-   
-
-    Send_pack_message(flag,user.username,group_name_buf,admin_buf);
-    pthread_cond_wait(&cond, &mutex);
-    pthread_mutex_unlock(&mutex);
-}
-void Set_group_admin_apply(PACK recv_pack)
-{
-    int flag_set;
-    flag_set=recv_pack.data.message[0];
-    if(flag_set==0)
-    {
-        printf("群%s不存在\n",recv_pack.data.send_name);
-    }
-    else if(flag_set==1)
-    {
-        printf("设置群成员%s为群%s管理员成功\n",recv_pack.message,recv_pack.data.send_name);
-    }
-    else if(flag_set==2)
-    {
-        printf("只有群主%s可以设置群%s管理员\n",recv_pack.data.recv_name,recv_pack.data.send_name);
-    }
-    else if(flag_set==3)
-    {
-        printf("群成员%s不在群%s中\n",recv_pack.message,recv_pack.data.send_name);
-    }
-    else if(flag_set==4)
-    {
-        printf("您%s已经被设置为群%s的管理员\n",recv_pack.message,recv_pack.data.send_name);
-    }
-}
-void Kick()
-{
-    int flag=KICK;
-    char group_name_buf[MAX];
-    char staff_buf[MAX];
-    pthread_mutex_lock(&mutex);
-    printf("请输入踢出某个群里的人员:");
-    Get_string(group_name_buf,MAX);
-
-    Get_string(staff_buf,MAX);
-   
-
-    Send_pack_message(flag,user.username,group_name_buf,staff_buf);
-    pthread_cond_wait(&cond, &mutex);
-    pthread_mutex_unlock(&mutex);
-
-}
-void Kick_apply(PACK recv_pack)
-{
-    int flag_kick;
-    flag_kick=recv_pack.data.message[0];
-    if(flag_kick==0)
-    {
-        printf("群%s不存在\n",recv_pack.data.send_name);
-    }
-    else if(flag_kick==1)
-    {
-        printf("群%s踢出%s成功\n",recv_pack.data.send_name,recv_pack.message);
-    }
-    else if(flag_kick==2)
-    {
-        printf("只有群主%s或者管理员才能踢人\n",recv_pack.data.recv_name);
-    }
-    else if(flag_kick==3)
-    {
-        printf("该成员%s不在群中\n",recv_pack.message);
-    }
-    else if(flag_kick==4)
-    {
-        printf("你不是该群%s成员，无法踢人\n",recv_pack.data.send_name);
-    }
-    else if(flag_kick==5)
-    {
-        printf("你%s被踢出了群聊%s",recv_pack.message,recv_pack.data.send_name);
-    }
-    pthread_cond_signal(&cond);
-}
-void Group_leader_menu()
-{
-    int choice=1;
-    system("clear");
-    while(choice)
-    {
-        printf("\t\t\033[;33m\033[1;37m**************************\033[0m\n");
-        printf("\n\t\t\033[1;31m    群主--1,2,3/管理员--3权限     \033[0m\n");
-        printf("\t\t\033[1;31m         1.解散群  \033[0m\n");
-        printf("\t\t\033[1;31m         2.设置管理员\033[0m\n");
-        printf("\t\t\033[1;31m         3.踢人  \033[0m\n");
-        printf("\t\t\033[1;31m         0.返回  \033[0m\n");
-        printf("请输入选择:");
-        scanf("%d",&choice);
-        Clear_buffer();
-        switch (choice)
-        {
-            case 1:
-                Del_group();
-                break;
-            case 2:
-                Set_group_admin();
-                break;
-            case 3:
-                Kick();
-                break;
-            case 0:
-                break;
-        }
-    }
+    printf("\t\t\033[1;34m**************************\033[0m\n");
+    printf("\t\t\033[1;34m|        1.好友管理      \033[1;34m|\033[0m \n");
+    printf("\t\t\033[1;34m|        2.群管理        \033[1;34m|\033[0m \n");
+    printf("\t\t\033[1;34m|        3.发送文件      \033[1;34m|\033[0m \n");
+    printf("\t\t\033[1;34m|        0.退出          \033[1;34m|\033[0m \n");
+    printf("\t\t\033[1;34m**************************\033[0m\n");
+    printf("\t\tchoice:");
 }
 void Menu()
 {
     system("clear");
     int choice=1;
-    while(choice)
-    {
-        
-        printf("\t\t\033[1;34m**************************\033[0m\n");
-        printf("\t\t\033[1;34m|        1.好友管理      \033[1;34m|\033[0m \n");
-        printf("\t\t\033[1;34m|        2.群管理        \033[1;34m|\033[0m \n");
-        printf("\t\t\033[1;34m|        3.发送文件      \033[1;34m|\033[0m \n");
-        printf("\t\t\033[1;34m|        5.离线传输      \033[1;34m|\033[0m \n");
-        printf("\t\t\033[1;34m|        0.退出          \033[1;34m|\033[0m \n");
-        printf("\t\t\033[1;34m**************************\033[0m\n");
-        printf("\t\tchoice:");
-        scanf("%d",&choice);
+    //char choice_t[50];
 
+    do
+    {
+      
+        Print_menu();
+        scanf("%d",&choice);
+        //choice=Get_choice(choice_t);
+       
         switch (choice)
         {
             case 1:
@@ -1303,15 +1419,12 @@ void Menu()
                 Group_menu();
                 break;
             case 3:
-                //Send_file();
-                break;
-            case 4:
-                //Offline_transmission();
+                Send_file();
                 break;
             case 0:
                 break;
         }
-    }
+    }while(choice!=0);
  
 }
 void my_err(const char* err_string,int line)
@@ -1370,36 +1483,20 @@ char* Get_string(char* buf,int len)
 	}
 	return str;
 }
-
-
-
-void Send_pack_message(int flag,char *send_name,char* recv_name,char* message)
-{
-    PACK pack_send_msg;
-    memset(&pack_send_msg, 0, sizeof(PACK));
-    pack_send_msg.flag=flag;
-    //pack_send_msg.data.recv_fd=cfd;
-    strcpy(pack_send_msg.data.send_name,send_name);
-    strcpy(pack_send_msg.data.recv_name,recv_name);
-    strcpy(pack_send_msg.data.message, message);
-    printf("client send:%s\n",pack_send_msg.data.send_name);
-    printf("client message%s\n",pack_send_msg.data.message);
-    printf("client recv:%s\n",pack_send_msg.data.recv_name);
-    if(send(cfd, &pack_send_msg,sizeof(PACK),0)==-1)
-    {
-        my_err("send error!",__LINE__);
-    }
-}
 int Get_choice(char *choice_t)
 {
-    int i;
-    i = atoi(choice_t);
-    if(i<0||i>9)
+    int choice =0;
+    for(int i=0;i<strlen(choice_t) ;i++)
+        if(choice_t[i]<'0' || choice_t[i]>'9')
+            return -1;
+    for(int i=0;i<strlen(choice_t);i++)
     {
-    	return 9;
-	}
-	else
-	{
-		return i;
-	}
+        int t=1;
+        for(int j=1;j<strlen(choice_t)-i;j++)
+        {
+            t *=10;
+        }
+        choice += t*(int)(choice_t[i] - 48);
+    }
+    return choice;
 }

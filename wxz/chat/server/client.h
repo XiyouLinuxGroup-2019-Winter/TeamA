@@ -178,11 +178,9 @@ int print_message_num;
 typedef struct account_info
 {
     int flag;
-    char username[30];
-    char password[30];
+    char username[MAX];
+    char password[MAX];
 
-    char phone[30];
-    char e_mail[50];
 
     int friend_num;
     char friend_message[MAX][MAX];
@@ -230,8 +228,7 @@ void Group_chat();
 void Private_chat();
 void Send_message(int flag,char* buf);
 void Show_message_print(char* name,char* message);
-void *Show_message(void *arg);
-void print_message(int id);
+
 
 void Shield_friend();
 void Shield_friend_apply(PACK recv_pack);
@@ -244,8 +241,8 @@ void View_friend_list_apply(PACK recv_pack);
 
 
 void View_chat_history();
-void View_group_record();
-void Print_message_record(PACK recv_pack);
+
+
 
 void Create_group();
 void Create_group_apply(PACK recv_pack);
@@ -259,6 +256,11 @@ void View_add_group();
 void View_add_group_apply(PACK recv_pack);
 void View_group_member();
 void View_group_member_apply(PACK recv_pack);
+
+void Group_chat();
+void Group_chat_apply(char* buf);
+void View_group_record();
+void View_group_record_apply(char* buf);
 
 
 void Group_menu();

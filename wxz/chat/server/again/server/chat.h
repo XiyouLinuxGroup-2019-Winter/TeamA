@@ -14,7 +14,6 @@
 #include <mysql/mysql.h>
 #include "wrang.h"
 //#include "prest.h"
-#include "List.h"
 #include "pthreadpool.h"
 
 
@@ -38,14 +37,6 @@ typedef struct group_info
     int type;
     int status[MAX_CHAR];
 }GROUP_INFO;
-
-typedef struct group_node
-{
-    GROUP_INFO group;
-    struct group_info_node* next;
-    struct group_info_node* prev;
-}group_node_t,*group_list_t;
-
 
 typedef struct file
 {
@@ -74,23 +65,8 @@ typedef struct package
     DATA data;
 }PACK;
 
-typedef struct box
-{
-    char send_name[MAX];
-    char recv_name[MAX];
-    int send_fd;
-    int recv_fd;
 
-    char message[MAX_CHAR];
-    int flag;
-}BOX;
 
-typedef struct bos_node
-{
-   BOX data;
-   struct box_info* next;
-   struct box_info* prev;
-}box_node_t,*box_list_t;
 
 
 
@@ -99,14 +75,14 @@ typedef struct bos_node
 
 typedef struct account_info
 {
-    int flag;
-    char username[30];
-    char password[30];
+    char username[MAX];
+    char password[MAX];
+    int online;
+    int connfd;
 
-    char phone[30];
-    char e_mail[50];
-
-    int friend_num;
+    char chat[MAX_CHAR];
+    struct account_info* next;
+    /*int friend_num;
     char friend_message[MAX][MAX];
     int friend_relation[MAX];
 
@@ -116,19 +92,12 @@ typedef struct account_info
 
     FRIEND_INFO friends[MAX_CHAR];
     GROUP_INFO group[MAX_CHAR];
-    RELATION_INFO relation[MAX_CHAR];
-
-
+    RELATION_INFO relation[MAX_CHAR];*/
 }ACCOUNT_INFO;
 
-typedef struct account_node
-{
-    ACCOUNT_INFO data;
-    struct account_node* next;
-    struct account_node* prev;
-}account_node_t,*account_list_t;
 
-account_list_t list_ser;
+
+
 
 
 int cfd,lfd,epfd;
