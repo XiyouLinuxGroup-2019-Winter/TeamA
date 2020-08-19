@@ -1,2 +1,2 @@
-- make 得到server再运行./server
-- gcc client.c wrang.c -lpthread -o client在运行./client
+- gcc final.c wrang.c -lpthread -lmysqlclient -o server 再运行./server
+- gcc client.c wrang.c -lpthread -o client 再运行./client
