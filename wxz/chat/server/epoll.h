@@ -78,7 +78,9 @@
 #define VIEW_GROUP_RECORD_APPLY 51
 #define GROUP_CHAT_APPLY 52
 #define RECV_FILE 53
-
+//#define REGISTER_ERROR_APPLY 54
+#define EXIT 54
+//#define EXIT_APPLY 55
 
 #define DOWNLINE 0
 #define ONLINE 1
@@ -90,7 +92,7 @@
 #define COMMON 3
 
 
-#define EXIT -1
+
 
 pthread_mutex_t mutex_login;
 pthread_cond_t cond_login;
@@ -170,6 +172,8 @@ typedef struct friend_info
     int recv;
     int status;
     int relation;
+    char name[MAX];
+
     char message[256];
 }Friend_t;
 
@@ -221,26 +225,38 @@ void Login_menu();
 void Menu();
 void Friend_menu();
 void Group_menu();
-void Friend_box();
-void Send_file();
+
 
 void Register();
 void Register_apply(char* buf);
+//void Register_error_apply(char* buf);
+
 void Login();
 void Login_apply(char* buf);
+
+void Exit();
+void Exit_apply(char* buf);
+
 void Add_friend();
 void Add_friend_apply(char* buf);
+void Friend_box();
 void Add_friend_accept_appy(char* buf);
+
 void Del_friend();
 void Del_friend_apply(char* buf);
+
 void Shield_friend();
 void Shield_friend_apply(char* buf);
+
 void Unshield_friend();
 void Unshield_friend_apply(char* buf);
+
 void View_friend();
 void View_friend_list_apply(char* buf);
+
 void Private_chat();
 void Private_chat_apply(char* buf);
+
 void View_chat_history();
 void View_chat_history_apply(char*  buf);
 
@@ -250,6 +266,7 @@ void Create_group_apply(char* buf);
 
 void Add_group();
 void Add_group_apply(char* buf);
+
 void Group_box();
 void Group_apply(char* buf);
 void Add_group_accept_apply(char* buf);
@@ -257,16 +274,24 @@ void Add_group_accept_apply(char* buf);
 void Withdraw_group();
 void Withdraw_group_apply(char* buf);
 void Del_group_apply(char* buf);
+
 void View_add_group();
 void View_add_group_apply(char* buf);
 
+
+void View_group_member();
+void View_group_member_apply(char* buf);
+
+
 void Group_chat();
 void Group_chat_apply(char* buf);
+
 void View_group_record();
 void View_group_record_apply(char* buf);
 
 void Set_group_admin();
 void Set_group_admin_apply(char* buf);
+
 void Kick();
 void Kick_apply(char* buf);
 

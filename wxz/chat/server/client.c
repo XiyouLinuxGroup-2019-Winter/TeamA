@@ -6,6 +6,7 @@ int Check_data(char *num);//检查输入是否为数字
 int Get_choice_int(char* str);
 char *Time();
 void Print_apply(char* buf);
+int GetPassword(char *password);
 int main()
 {
     Init_socket();
@@ -47,6 +48,33 @@ void Init_socket()
 
 }
 
+//密码回显
+//返回值不包括'\0'
+int GetPassword(char *password)
+{
+	char ch;
+	int i=0;
+    do
+    {
+        ch = getch();
+        if(ch != '\n' && ch != '\r' && ch!=127)
+        {
+            password[i]=ch;
+            printf("*");
+            i++;
+        }
+        else if(((ch!='\n')|(ch!='\r'))&&(ch==127))
+        {
+            if(i>0)
+            {
+                i--;
+                printf("\b \b");
+            }
+        }
+    }while(ch!='\n'&&ch!='\r');
+    password[i]='\0';
+	return i;
+}
 void Register()
 {
     Account_t register_t;
@@ -83,9 +111,17 @@ void Register_apply(char* buf)
     printf("您的账号是:%d\n",mes.id);
     printf(">...\n");
     printf("正在返回登录界面\n");
+    usleep(1000);
+    Login_menu();
     //sleep(1);
     //getchar();
 }
+/*void Register_error_apply(char* buf)
+{
+    message mes;
+    printf("-----%s\n",mes.messsge);
+
+}*/
 int Check_data(char *num)
 {
     int i;
@@ -183,6 +219,11 @@ void Login_apply(char* buf)
         printf("账号已登录\n");
     else if(strcmp(mes.messsge,"n")==0)
         printf("密码错误或账户不存在\n");
+    /*else if 
+    {
+        printf("---%s\n",mes.message);
+    }*/
+    
     
     pthread_cond_signal(&cond_login);
     pthread_mutex_unlock(&mutex_login);
@@ -195,7 +236,7 @@ void Login_menu()
     //int choice=-1;
     while(choice)
     {
-        sleep(1);
+        usleep(10000);
         //system("clear");
         printf("\t\t\033[44;34m\033[44;37m**************************\033[0m\n");
         printf("\t\t\033[1;34m*        1.注册          \033[1;34m*\033[0m \n");
@@ -217,7 +258,7 @@ void Login_menu()
                 break;
             case 2:
                 puts("登录");
-                    Login();
+                Login();
                 break;
             /*case 3:
                 puts("找回密码");
@@ -228,7 +269,32 @@ void Login_menu()
         }
     }
 }
+void Exit()
+{
+    message mes;
+    mes.flag=EXIT;
+    mes.id=username;
+    char mess[256];
+    sprintf(mess,"用户[%d]退出登录\n",username);
+    strcpy(mes.messsge,mess);
 
+    char buf[BUFSIZ];
+    memcpy(buf,&mes,sizeof(mes));
+    if(send(cfd,buf,sizeof(buf),0)<0)
+    {
+        my_err("send error",__LINE__);
+    }
+   // Login_menu();
+}
+/*void Exit_apply(char* buf)
+{   
+    pthread_mutex_lock(&mutex);
+    message mes;
+    printf("---%s\n",mes.messsge);
+    pthread_cond_wait(&cond,&mutex);
+    pthread_mutex_unlock(&mutex);
+
+}*/
 void *Recv_pack(void *arg)
 {
     pthread_t apply_id;
@@ -252,6 +318,12 @@ void *Recv_pack(void *arg)
         printf("client recv flag:%d\n",flag);
         switch (flag)
         {
+            /*case EXIT_APPLY:
+                pthread_mutex_lock(&mutex);
+                Exit_apply(buf);
+                pthread_cond_signal(&cond);
+                pthread_mutex_unlock(&mutex);
+                break;*/
             case PRINT_APPLY:
                 //pthread_mutex_lock(&mutex);
                 Print_apply(buf);
@@ -260,6 +332,9 @@ void *Recv_pack(void *arg)
             case REGISTER_APPLY:
                 Register_apply(buf);
                 break;
+            /*case REGISTER_ERROR_APPLY:
+                Register_error_apply(buf);
+                break;*/
             case LOGIN_APPLY:
                 Login_apply(buf);
                 break;
@@ -308,12 +383,14 @@ void *Recv_pack(void *arg)
             case WITHDRAW_GROUP_APPLY:
                 Withdraw_group_apply(buf);
                 break;
-            //case VIEW_GROUP_MEMBER_APPLY:
+            case VIEW_GROUP_MEMBER_APPLY:
+                View_group_member_apply(buf);
+                break;
             case VIEW_ADD_GROUP_APPLY:
                 View_add_group_apply(buf);
                 break;
-            case GROUP_CHAT:
-                Group_chat();
+            case GROUP_CHAT_APPLY:
+                Group_chat_apply(buf);
                 break;
             case VIEW_GROUP_RECORD_APPLY:
                 View_group_record_apply(buf);
@@ -359,6 +436,7 @@ void Friend_box()
             List_DelNode(pos);
             char ch;
             printf("请输入同意还是不同意:\n");
+            printf("同意[y or Y]不同意[n]");
         scanf("%c",&ch);
         if(ch=='Y' || ch=='y')
         {
@@ -614,6 +692,11 @@ void Shield_friend()
     strcpy(relation.message,"");
     memcpy(str,&relation,sizeof(relation));
 
+    if(send(cfd,str,sizeof(str),0)<0)
+    {
+        my_err("send error",__LINE__);
+    }
+
     printf("client flag:%d\n",relation.flag);
     printf("client message:%s\n",relation.message);
     printf("client send:%d\n",relation.sender);
@@ -646,6 +729,11 @@ void Unshield_friend()
     strcpy(relation.message,"");
     memcpy(str,&relation,sizeof(relation));
 
+    if(send(cfd,str,sizeof(str),0)<0)
+    {
+        my_err("send error",__LINE__);
+    }
+
     printf("client flag:%d\n",relation.flag);
     printf("client message:%s\n",relation.message);
     printf("client send:%d\n",relation.sender);
@@ -666,7 +754,7 @@ void View_friend_list()
     
     //pthread_mutex_lock(&mutex);
     printf("-----------------------\n");
-    printf("账号     状态\n");
+    printf("账号\t姓名\t状态\t关系\n");
     
 
     char str[BUFSIZ];
@@ -781,15 +869,16 @@ char *Time()
 }
 void Private_chat_apply(char* buf)
 {
-    Chat_message mes;
+    message mes;
     memcpy(&mes,buf,sizeof(mes));
-    if(strcmp(mes.message,"d")==0)
-        printf("[%d]不在线 \n",mes.recver);
-    else
-    {
+    //if(strcmp(mes.message,"d")==0)
+    //    printf("[%d]不在线 \n",mes.recver);
+    //else
+    //{
         //printf("                       %s",mes.time);
-        printf("                         [%d]:%s\n",mes.sender,mes.message);
-    } 
+        printf("账号\t姓名\t消息\n");
+        printf("%s\n",mes.messsge);
+    //} 
 }
 
 
@@ -823,7 +912,7 @@ void View_chat_history_apply(char*  buf)
     Chat_message mes;
     memcpy(&mes,buf,sizeof(mes));
     printf("--------------------聊天记录-------------------------\n");
-    printf("     %s\n",mes.message);
+    printf("%s\n",mes.message);
 }
 
 void Create_group()
@@ -871,33 +960,33 @@ void Add_group()
 }
 void Add_group_apply(char* buf)
 {
-    box_t fbox;
-    memcpy(&fbox,buf,sizeof(fbox));
+    box_t box;
+    memcpy(&box,buf,sizeof(box));
     
 
     
-    box_list_t fnew;
-    fnew=(box_list_t)malloc(sizeof(box_node_t));
+    box_list_t new;
+    new=(box_list_t)malloc(sizeof(box_node_t));
     printf("你有群请求消息来了,在消息盒子\n");
    
 
-    fnew->data.flag=fbox.flag;
-    fnew->data.sender=fbox.sender;//申请者
-    fnew->data.recver=fbox.recver;//管理员
-    fnew->data.send_fd=fbox.send_fd;//申请者客户端端口号
-    fnew->data.recv_fd=fbox.recv_fd;//管理员客户端端口号
-    strcpy(fnew->data.message,fbox.message);
-    List_AddTail(fhead,fnew);
+    new->data.flag=box.flag;
+    new->data.sender=box.sender;//申请者
+    new->data.recver=box.recver;//管理员
+    new->data.send_fd=box.send_fd;//申请者客户端端口号
+    new->data.recv_fd=box.recv_fd;//管理员客户端端口号
+    strcpy(new->data.message,box.message);
+    List_AddTail(fhead,new);
 
-    printf("client message:%s\n",fnew->data.message);
+    printf("client message:%s\n",new->data.message);
 
-    printf("server send message:%s\n",fbox.message);
-    printf("server send flag:%d\n",fbox.flag);
-    printf("server/ group apply send id:%d\n",fbox.sender);
-    printf("server/ group apply recv id:%d\n",fbox.recver);
-    //朋友客户端号
-    printf("server/ group recv_fd:%d\n",fnew->data.recv_fd);
-    printf("server/ group send_fd:%d\n",fnew->data.send_fd);
+    printf("server send message:%s\n",box.message);
+    printf("server send flag:%d\n",box.flag);
+    printf("server/ group apply send id:%d\n",box.sender);
+    printf("server/ group apply recv id:%d\n",box.recver);
+    //管理员客户端号
+    printf("server/ group recv_fd:%d\n",new->data.recv_fd);
+    printf("server/ group send_fd:%d\n",new->data.send_fd);
     
 
 
@@ -907,7 +996,7 @@ void Group_box()
 {
     //printf("111");
     Relation_t relation;
-    //box_list_t pos=head;
+
     box_list_t pos;
     List_ForEach(fhead,pos)
     {
@@ -926,15 +1015,34 @@ void Group_box()
             List_DelNode(pos);
             char ch;
             printf("请输入同意还是不同意:\n");
-        scanf("%c",&ch);
-        if(ch=='Y' || ch=='y')
-        {
+             printf("同意[y or Y]不同意[n]");
+            scanf("%c",&ch);
+            if(ch=='Y' || ch=='y')
+            {
+                    char str[BUFSIZ];
+                    memset(str,0,sizeof(str));
+                    
+                    relation.flag=ADD_GROUP_ACCEPT;
+                    strcpy(relation.message,"y");
+                    relation.sender=pos->data.recver;//管理员
+                    relation.recver=pos->data.sender;//申请者
+                    //mes.send_fd=box_tt.send_fd;//申请者客户端端口号
+                    //mes.recv_fd=box_tt.recv_fd;//被申请者客户端端口号
+                    memcpy(str,&relation,sizeof(relation));
+                    if(send(cfd,str,sizeof(str),0)<0)
+                    {
+                        my_err("send error",__LINE__);
+                    }
+                    printf("同意群申请发送成功\n");
+            }
+            else
+            {
                 char str[BUFSIZ];
-                //memset(str,0,sizeof(str));
-                
+                memset(str,0,sizeof(str));
+                    
                 relation.flag=ADD_GROUP_ACCEPT;
-                strcpy(relation.message,"y");
-                relation.sender=pos->data.recver;//管理员
+                strcpy(relation.message,"n");
+                relation.sender=pos->data.recver;//被申请者
                 relation.recver=pos->data.sender;//申请者
                 //mes.send_fd=box_tt.send_fd;//申请者客户端端口号
                 //mes.recv_fd=box_tt.recv_fd;//被申请者客户端端口号
@@ -943,26 +1051,8 @@ void Group_box()
                 {
                     my_err("send error",__LINE__);
                 }
-                printf("同意群申请发送成功\n");
-        }
-        else
-        {
-            char str[BUFSIZ];
-            //memset(str,0,sizeof(str));
-                
-            relation.flag=ADD_GROUP_ACCEPT;
-            strcpy(relation.message,"n");
-            relation.sender=pos->data.recver;//被申请者
-            relation.recver=pos->data.sender;//申请者
-            //mes.send_fd=box_tt.send_fd;//申请者客户端端口号
-            //mes.recv_fd=box_tt.recv_fd;//被申请者客户端端口号
-            memcpy(str,&relation,sizeof(relation));
-            if(send(cfd,str,sizeof(str),0)<0)
-            {
-                my_err("send error",__LINE__);
+                printf("拒绝群申请发送成功\n");
             }
-            printf("拒绝群申请发送成功\n");
-        }
         }
     }
 }
@@ -977,9 +1067,11 @@ void Group_apply(char* buf)
     message mes;
     memcpy(&mes,buf,sizeof(mes));
 
-    printf("--%s\n",mes.messsge);
+    printf("%s\n",mes.messsge);
 }
 
+//一起实现
+//void Del_group();
 void Withdraw_group()
 {
     int id;
@@ -1001,35 +1093,57 @@ void Withdraw_group()
     
 
 }
-//一起实现
-//void Del_group();
 void Withdraw_group_apply(char* buf)
 {
     message mes;
     memcpy(&mes,buf,sizeof(mes));
 
-    printf("--%s\n",mes.messsge);
+    printf("%s\n",mes.messsge);
 }
 void Del_group_apply(char* buf)
 {
     message mes;
     memcpy(&mes,buf,sizeof(mes));
 
-    printf("--%s\n",mes.messsge);
+    printf("%s\n",mes.messsge);
 }
-//一起实现
-//void View_group_member();
-//void View_group_member_apply(char* buf);
-void View_add_group()
+
+void View_group_member()
+{
+    int id;
+    printf("请输入你要查询的群号:");
+    scanf("%d",&id);
+
+    char buf[BUFSIZ];
+    Relation_t relation;
+    relation.flag=VIEW_GROUP_MEMBER;
+    relation.sender=username;
+    relation.recver=id;
+    strcpy(relation.message,"");
+    memcpy(buf,&relation,sizeof(relation));
+    if(send(cfd,buf,sizeof(buf),0)<0)
+    {
+        my_err("send error",__LINE__);
+    }    
+}
+void View_group_member_apply(char* buf)
 {
     printf("----------------------------\n");
-    printf("%s\t%s\t%s\t%s\n","群号","群主","管理员","群名");
+    printf("账号\t姓名\t状态\n");
+    
+    message mes;
+    memcpy(&mes,buf,sizeof(mes));
+
+    printf("%s\n",mes.messsge);
+}
+void View_add_group()
+{
     char str[BUFSIZ];
     memset(str,0,sizeof(str));
     Relation_t relation;
     relation.flag=VIEW_ADD_GROUP;
     relation.sender=username;//发送者
-    relation.recver=username;//接收者
+    relation.recver=username;//群号
     strcpy(relation.message,"");
     memcpy(str,&relation,sizeof(relation));
 
@@ -1042,10 +1156,12 @@ void View_add_group()
 }
 void View_add_group_apply(char* buf)
 {
+    printf("----------------------------\n");
+    printf("群号\t群名\t地位\n");
     message mes;
     memcpy(&mes,buf,sizeof(mes));
 
-    printf("--%s\n",mes.messsge);
+    printf("%s\n",mes.messsge);
 
 }
 
@@ -1075,7 +1191,8 @@ void Group_chat()
 
     printf("=============================\n");
     //printf("time:%s",time);
-    fgets(buf,sizeof(buf),stdin);
+    //fgets(buf,sizeof(buf),stdin);
+    scanf("%s",buf);
     do
     {
 
@@ -1096,10 +1213,10 @@ void Group_chat()
         //memset(buf,0,sizeof(buf));
         //memset(str,0,sizeof(str));
         //memset(&mes, 0, sizeof(message));
-
+        scanf("%s",buf);
 
         //fgets(buf,sizeof(buf),stdin);
-        fgets(buf,sizeof(buf),stdin);
+       
         /*if(strcmp(buf,"quit")==0)
             break;*/
 
@@ -1109,14 +1226,15 @@ void Group_chat()
 }
 void Group_chat_apply(char* buf)
 {
-     Chat_message mes;
+    message mes;
     memcpy(&mes,buf,sizeof(mes));
     /*if(strcmp(mes.message,"d")==0)
         printf("[%d]不在线 \n",mes.recver);*/
     //else
     //{
         //printf("                       %s",mes.time);
-        printf("                         [%d]:%s\n",mes.sender,mes.message);
+        printf("账号\t名字\t信息\n");
+        printf("%s\n",mes.messsge);
     //} 
    
 }
@@ -1143,10 +1261,10 @@ void View_group_record()
 void View_group_record_apply(char* buf)
 {
 
-    Chat_message mes;
+    message mes;
     memcpy(&mes,buf,sizeof(mes));
     printf("--------------------聊天记录-------------------------\n");
-    printf("     %s\n",mes.message);
+    printf("%s\n",mes.messsge);
 }
 
 void Set_group_admin()
@@ -1172,7 +1290,7 @@ void Set_group_admin_apply(char *buf)
     
     Group_leader leader;
     memcpy(&leader,buf,sizeof(leader));
-    printf("--%s\n",leader.message);
+    printf("%s\n",leader.message);
 }
 void Kick()
 {
@@ -1197,7 +1315,7 @@ void Kick_apply(char *buf)
 {
     Group_leader leader;
     memcpy(&leader,buf,sizeof(leader));
-    printf("--%s\n",leader.message);
+    printf("%s\n",leader.message);
 }
 void Send_file()
 {
@@ -1281,7 +1399,7 @@ void Friend_menu()
     
     while(choice)
     {
-        sleep(1);
+        usleep(1000);
         printf("\t\t\033[;36m\033[1m*********朋友管理*********\033[0m\n");
         printf("\t\t\033[1;36m|\033[0m--------1.添加好友-------\033[1;36m|\033[0m\n");
         printf("\t\t\033[1;36m|\033[0m--------2.好友消息盒子-------\033[1;36m|\033[0m\n");
@@ -1291,8 +1409,9 @@ void Friend_menu()
         printf("\t\t\033[1;36m|\033[0m------6.解除屏蔽好友-----\033[1;36m|\033[0m\n");
         printf("\t\t\033[1;36m|\033[0m------7.查看好友列表-----\033[1;36m|\033[0m\n");
         printf("\t\t\033[1;36m|\033[0m------8.查看聊天记录-----\033[1;36m|\033[0m\n");
-  
-        printf("请输入选择:");
+        printf("\t\t\033[1;36m|\033[0m------0.退出-----\033[1;36m|\033[0m\n");
+        printf("\t\tchoice:\n");
+        //printf("请输入选择:");
         scanf("%d",&choice);
         while(getchar() != '\n');
         switch (choice)
@@ -1333,24 +1452,26 @@ void Group_menu()
     int choice=1;
     while(choice)
     {
+        usleep(1000);
         //printf("\t\t\033[;34m\033[1m*********群管理*********\033[0m\n");
         printf("\t\t\033[1;34m|\033[0m--------1.创建群-------\033[1;34m|\033[0m\n");
         printf("\t\t\033[1;34m|\033[0m--------2.添加群-------\033[1;34m|\033[0m\n");
         printf("\t\t\033[1;34m|\033[0m--------3.群消息盒子-------\033[1;34m|\033[0m\n");
         printf("\t\t\033[1;34m|\033[0m--------4.退群---------\033[1;34m|\033[0m\n");
         printf("\t\t\033[1;34m|\033[0m--------5.群聊---------\033[1;34m|\033[0m\n");
-        printf("\t\t\033[1;34m|\033[0m--------6.显示群列表-------\033[1;34m|\033[0m\n");
-        printf("\t\t\033[1;34m|\033[0m-----7.查看聊天记录----\033[1;34m|\033[0m\n");
+        printf("\t\t\033[1;34m|\033[0m--------6.已加群-------\033[1;34m|\033[0m\n");
+        printf("\t\t\033[1;34m|\033[0m--------7.群成员-------\033[1;34m|\033[0m\n");
+        printf("\t\t\033[1;34m|\033[0m-----8.查看聊天记录----\033[1;34m|\033[0m\n");
         //printf("\t\t\033[1;34m|\033[0m------群管理权限-----\033[1;34m|\033[0m\n");
         //printf("\t\t\033[1;34m|\033[0m-------------------\033[1;34m|\033[0m\n");
         //printf("\t\t\033[1;34m|\033[0m*群主--1,2,3/管理员--3权限*\033[1;34m|\033[0m\n");
         //printf("\t\t\033[1;34m|\033[0m-------------------\033[1;34m|\033[0m\n");
-        printf("\t\t\033[1;34m|\033[0m------8.设置管理员------\033[1;34m|\033[0m\n");
-        printf("\t\t\033[1;34m|\033[0m------9.踢人-----\033[1;34m|\033[0m\n");
+        printf("\t\t\033[1;34m|\033[0m------9.设置管理员------\033[1;34m|\033[0m\n");
+        printf("\t\t\033[1;34m|\033[0m------10.踢人-----\033[1;34m|\033[0m\n");
         printf("\t\t\033[1;34m|\033[0m--------0.退出--------\033[1;34m|\033[0m\n");
         printf("\t\tchoice:\n");
         scanf("%d",&choice);
-        Clear_buffer();
+        while(getchar() != '\n');
         switch (choice)
         {
             case 1:
@@ -1372,12 +1493,15 @@ void Group_menu()
                 View_add_group();
                 break;
             case 7:
-                View_group_record();
+                View_group_member();
                 break;
             case 8:
-                Set_group_admin();
+                View_group_record();
                 break;
             case 9:
+                Set_group_admin();
+                break;
+            case 10:
                 Kick();
                 break;
             case 0:
@@ -1422,6 +1546,8 @@ void Menu()
                 Send_file();
                 break;
             case 0:
+                Exit();
+                //Login_menu();
                 break;
         }
     }while(choice!=0);

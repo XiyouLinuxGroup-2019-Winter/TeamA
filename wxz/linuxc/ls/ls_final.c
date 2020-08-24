@@ -207,7 +207,8 @@ void display_R(int flag_param,char* path)
     int flag_param_temp=flag_param;
     struct stat buf;
     
-    if((dir=opendir(path))==NULL)
+    dir=opendir(path);
+    if(dir==NULL)
     {
     	if(errno!=13)
         	my_err("opendir",__LINE__);
@@ -217,7 +218,9 @@ void display_R(int flag_param,char* path)
     while((ptr=readdir(dir))!=NULL)
     {
         if(g_maxlen<strlen(ptr->d_name))
+        {
             g_maxlen=strlen(ptr->d_name);
+        }
         count++;
     }
 
@@ -258,7 +261,7 @@ void display_R(int flag_param,char* path)
             ptr=readdir(dir);
             if(dir==NULL)
             {
-                my_err("readdir",__LINE__);
+                my_err("readdir error",__LINE__);
                 exit(1);
             }
             strncpy(filenames[i],path,len);
@@ -266,7 +269,7 @@ void display_R(int flag_param,char* path)
             strcat(filenames[i],ptr->d_name);
             filenames[i][len+strlen(ptr->d_name)]='\0';
         }
-       
+            
             for(int i=0;i<count;i++)
             {
                 lstat(filenames[i],&buf);
@@ -288,6 +291,7 @@ void display_R(int flag_param,char* path)
                 else 
                     display(flag_param,filenames[i]);
             }
+           
         //}
         //else
 		//{
@@ -340,7 +344,10 @@ void display(int flag,char* pathname)
     //用lstat而不是stat以方便解析链接文件
     if(lstat(pathname,&buf)==-1)
     {
-        my_err("lstat",__LINE__);
+        if(errno!=13)
+        	my_err("lstat error",__LINE__);
+        else
+        	return ;
     }
 
     //\e[1; --开启颜色输出  + 颜色号码 + 字符串 + \e[0m 关闭颜色输出
@@ -459,7 +466,7 @@ void display_dir(int flag_param,char* path)
             printf("\n");
     
     }
-    }
+}
 int main(int argc,char const* argv[])
 {
     int i,j,k,num;

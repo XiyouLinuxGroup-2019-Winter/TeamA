@@ -1,5 +1,5 @@
 start:
-	@gcc -o server final.c pthreadpool.c wrang.c -lpthread -lmysqlclient -o server -w
+	@gcc -o final.c wrang.c -lpthread -lmysqlclient -o server
 	@echo "--------finish"
 clean:
 	@rm -rf server

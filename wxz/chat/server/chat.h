@@ -87,7 +87,9 @@
 #define VIEW_GROUP_RECORD_APPLY 51
 #define GROUP_CHAT_APPLY 52
 #define RECV_FILE 53
-
+//#define REGISTER_ERROR_APPLY 54
+#define EXIT 54
+//#define EXIT_APPLY 55
 
 #define DOWNLINE 0
 #define ONLINE 1
@@ -112,6 +114,9 @@ typedef struct message
     int id;
     char message[256];
 }message;
+
+
+
 
 typedef struct apply_messgae
 {
@@ -162,6 +167,7 @@ typedef struct friend_info
     int recv;
     int status;
     int relation;
+    char name[MAX];
     char message[256];
 }Friend_t;
 
@@ -252,7 +258,10 @@ void Turn_worker_thread();
 void *work(void* arg);
 
 void Login(int fd,char* buf);
+void Send_offline_apply(int fd,int recver);
+void Send_offline_messgae(int fd,int recver);
 void Register(int fd,char* buf);
+void Exit(int fd,char* buf);
 
 void Add_friend(int fd,char* buf);
 void Add_friend_accept(int fd,char* buf);
@@ -265,6 +274,7 @@ void Unshield_friend(int fd,char* buf);
 //void Show_friend_status();
 void View_friend_list(int fd,char* buf);
 
+int Check_relationship(int fd,int send,int recv);
 void Private_chat(int fd,char* buf);
 void View_chat_history(int fd,char* buf);
 
@@ -274,7 +284,7 @@ void Add_group_accept(int fd,char* buf);
 void Withdraw_group(int fd,char* buf);
 
 //一起实现
-//void View_group_member();
+void View_group_member(int fd,char* buf);
 void View_add_group(int fd,char* buf);
 
 void Group_chat(int fd,char* buf);
@@ -305,6 +315,13 @@ void Read_from_mysql();
 
 void Mysql_with_error(MYSQL* mysql);
 void Signal_close(int i);
+
+
+
+void Add_node(int fd,int id,char* name);
+void Send_register_pack(int fd,int flag,char* buf,int id);
+int Get_status(int id);
+char* Get_name(int id);
 
 
 
