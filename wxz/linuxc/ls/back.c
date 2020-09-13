@@ -122,9 +122,8 @@ void display_attribute(struct stat buf,char* name)
     if(buf.st_mode & S_IRGRP)//用户组具有可读权限
         printf("r");
     else
-    printf("\033[%dm%s\033[0m",colour,name);
-    //display_colour(name,buf);
-　　　可写
+        printf("-");
+    if(buf.st_mode & S_IWGRP)//　　　可写
         printf("w");
     else
         printf("-");
@@ -193,6 +192,133 @@ void display_single(char* name)
 }
 
 
+void display_R(int flag_param,char* path)
+{
+    int i;
+    DIR* dir;
+    struct dirent* ptr;
+    int count=0;
+    int flag_param_temp=flag_param;
+    struct stat buf;
+    
+    dir=opendir(path);
+    
+    
+    printf("\n%s:\n", path);
+    printf("\n");
+    if(dir==NULL)
+    {
+    	if(errno!=13)
+        	my_err("opendir",__LINE__);
+        else
+        	return ;
+    }
+    while((ptr=readdir(dir))!=NULL)
+    {
+        if(g_maxlen<strlen(ptr->d_name))
+         {
+            g_maxlen=strlen(ptr->d_name);
+        }
+        count++;
+    }
+                    
+
+        /*if(count>=256)
+        {
+            my_err("too mant files under this dir",__LINE__);
+        	exit(0);
+        
+        }*/
+    char ** filenames=(char**)malloc(sizeof(char*)*count);
+    for(int i=0;i<count;i++)
+        filenames[i]=(char*)malloc(sizeof(char)*PATH_MAX+1);
+    
+    closedir(dir);
+
+    //printf("\n%s:\n", path);
+    //display_dir(flag_param, path);
+    //printf("\n");
+    
+    
+    int len=strlen(path);
+    dir=opendir(path);
+
+        /*if(ptr->d_name[0]!='.'&&ptr->d_name[0]!=DT_DIR)
+        {
+            strncpy(filenames,path,len);
+            filenames[len]='\0';
+            strcat(filenames,ptr->d_name);
+            filenames[len+strlen(ptr->d_name)]='/';
+			filenames[len+strlen(ptr->d_name)+1]='\0';
+            display_R(flag_param,filenames);
+        }*/
+        
+        //if(strcmp(ptr->d_name,".")==0 || strcmp(ptr->d_name,"..")==0)
+        //  continue;
+        for(int i=0;i<count;i++)
+        {
+            ptr=readdir(dir);
+            if(dir==NULL)
+            {
+                my_err("readdir error",__LINE__);
+                exit(1);
+            }
+            strncpy(filenames[i],path,len);
+            filenames[i][len]='\0';
+            strcat(filenames[i],ptr->d_name);
+            filenames[i][len+strlen(ptr->d_name)]='\0';
+        }
+                    
+            for(int i=0;i<count;i++)
+            {
+                lstat(filenames[i],&buf);
+                if(S_ISDIR(buf.st_mode))
+                {
+                    len=strlen(filenames[i]);
+                    if(filenames[i][len-1]=='.' && filenames[i][len-2]=='/'||filenames[i][len-1] == '.' && filenames[i][len-2]=='.'&&filenames[i][len-3]=='/')
+						continue;
+                    if(flag_param>=8)
+                        display(3,filenames[i]);
+                    else
+                    {
+                        display(flag_param-4,filenames[i]);
+                    }
+
+                    len=strlen(filenames[i]);
+                    filenames[i][len]='/';
+			        filenames[i][len+1]='\0';
+                    //strcat(filenames[i],"/"); 
+                    display_R(flag_param_temp,filenames[i]);
+                }
+                else 
+                    display(flag_param,filenames[i]);
+            }
+           
+        //}
+        //else
+		//{
+		//	for (i = 0; i < count; i++)
+		//		display(flag_param,filenames[i]);
+
+		//}
+
+        
+        /*strncpy(filenames,path,len);
+        filenames[len]='\0';
+        strcat(filenames,ptr->d_name);
+        filenames[len+strlen(ptr->d_name)]='/';
+		filenames[len+strlen(ptr->d_name)+1]='\0';
+        display_R(flag_param,filenames);*/
+
+   
+    
+     if((flag_param & PARAM_L) == 0)
+        printf("\n");
+    for(int i;i<count;i++)
+        free(filenames[i]);
+    closedir(dir);
+}
+
 
 /*
 *  根据命令行参数和完整路径名显示目标文件
@@ -201,8 +327,7 @@ void display_single(char* name)
 */
 void display(int flag,char* pathname)
 {
-
-    int i,j;
+     int i,j;
     struct stat buf;
     char name[256];
     char link_name[PATH_MAX+1];
@@ -223,9 +348,10 @@ void display(int flag,char* pathname)
     //用lstat而不是stat以方便解析链接文件
     if(lstat(pathname,&buf)==-1)
     {
-        if(errno!=13)
-        	my_err("lstat error",__LINE__);
+        if(errno==13)
+            return ;
         else
+            my_err("lstat error",__LINE__);
         	return ;
     }
     
@@ -317,117 +443,13 @@ void display(int flag,char* pathname)
     }
 }
 
+
 void display_dir(int flag_param,char* path)
 {
-   
-    char t;
-    
-    DIR* dir;
-    struct dirent* ptr;
-    int count=0;
-
-    //int flag_param_temp=flag_param;
-    struct stat buf;
-    
-    dir=opendir(path);
-    if(dir==NULL)
+    if(flag_param>=4)
+        display_R(flag_param,path);
+    else
     {
-    	if(errno!=13)
-        	my_err("opendir",__LINE__);
-        else
-        	return ;
-    }
-    while((ptr=readdir(dir))!=NULL)
-    {
-        if(g_maxlen<strlen(ptr->d_name))
-        {
-            g_maxlen=strlen(ptr->d_name);
-        }
-        count++;
-    }
-
-        /*if(count>=256)
-        {
-            my_err("too mant files under this dir",__LINE__);
-        	exit(0);
-        
-        }*/
-    char ** filenames=(char**)malloc(sizeof(char*)*count);
-    for(int i=0;i<count;i++)
-        filenames[i]=(char*)malloc(sizeof(char)*PATH_MAX+1);
-    
-    closedir(dir);
-
-    printf("\n%s:\n", path);
-    //display_dir(flag_param, path);
-    printf("\n");
-    
-    
-    int len=strlen(path);
-    dir=opendir(path);
-
-        /*if(ptr->d_name[0]!='.'&&ptr->d_name[0]!=DT_DIR)
-        {
-            strncpy(filenames,path,len);
-            filenames[len]='\0';
-            strcat(filenames,ptr->d_name);
-            filenames[len+strlen(ptr->d_name)]='/';
-			filenames[len+strlen(ptr->d_name)+1]='\0';
-            display_R(flag_param,filenames);
-        }*/
-        
-        //if(strcmp(ptr->d_name,".")==0 || strcmp(ptr->d_name,"..")==0)
-        //  continue;
-        for(int i=0;i<count;i++)
-        {
-            ptr=readdir(dir);
-            if(dir==NULL)
-            {
-                my_err("readdir error",__LINE__);
-                exit(1);
-            }
-            strncpy(filenames[i],path,len);
-            filenames[i][len]='\0';
-            strcat(filenames[i],ptr->d_name);
-            filenames[i][len+strlen(ptr->d_name)]='\0';
-        }
-            
-            for(int i=0;i<count;i++)
-            {
-                lstat(filenames[i],&buf);
-                if(S_ISDIR(buf.st_mode))
-                {
-                    len=strlen(filenames[i]);
-                    if(filenames[i][len-1]=='.' && filenames[i][len-2]=='/'||filenames[i][len-1] == '.' && filenames[i][len-2]=='.'&&filenames[i][len-3]=='/')
-						continue;
-                    if(flag_param>=8)
-                        display(3,filenames[i]);
-                    else
-                    	{
-                            display(flag_param-4,filenames[i]);
-                      	}
-                    	len=strlen(filenames[i]);
-                    
-                    filenames[i][len]='/';
-			        filenames[i][len+1]='\0';
-                    //strcat(filenames[i],"/"); 
-                    display_R(flag_param_temp,filenames[i]);
-                }
-                else 
-                    display(flag_param,filenames[i]);
-            }
-
-
-
-
-
-
-
-
-
-
-
-
     DIR *dir;
     struct dirent  *ptr;
     int count=0;
@@ -441,7 +463,9 @@ void display_dir(int flag_param,char* path)
         while((ptr=readdir(dir))!=NULL)
         {
             if(g_maxlen<strlen(ptr->d_name))
+            {
                 g_maxlen=strlen(ptr->d_name);
+            }
             count++;
         }
         //closedir(dir);
@@ -496,6 +520,8 @@ void display_dir(int flag_param,char* path)
     
     }
 }
+
+
 int main(int argc,char const* argv[])
 {
     int i,j,k,num;
@@ -521,6 +547,7 @@ int main(int argc,char const* argv[])
         //num++;  //保存"-"的个数
     }
     
+
     //只支持参数a和l,R,如果含有其他选项就报错
     for(i=0;i<j;i++)
     {
@@ -553,6 +580,7 @@ int main(int argc,char const* argv[])
         display_dir(flag_param,path);
         return 0;
     }
+
     /* if(argc==1)
     {
         strcpy(path, ".");

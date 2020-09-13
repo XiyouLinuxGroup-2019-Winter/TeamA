@@ -9,9 +9,11 @@
 #include <sys/types.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <sys/stat.h>
 #include <time.h>
 #include <pthread.h>
 #include <mysql/mysql.h>
+#include <sys/sendfile.h>
 #include "wrang.h"
 //#include "prest.h"
 #include "List.h"
@@ -20,8 +22,10 @@
 
 
 
-
-#define SERV_ADDRESS "127.0.0.1"
+//#define SERV_ADDRESS "47.94.14.45"
+//#define SERV_ADDRESS "127.0.0.1"
+//#define SERV_ADDRESS "192.168.30.185"
+#define SERV_ADDRESS "192.168.1.184"
 #define SERV_PORT 8013
 
 #define MAX 50
@@ -90,6 +94,9 @@
 //#define REGISTER_ERROR_APPLY 54
 #define EXIT 54
 //#define EXIT_APPLY 55
+#define RECV_APPLY 55
+#define UPLOAD 56
+#define DOWNLOAD 57
 
 #define DOWNLINE 0
 #define ONLINE 1
@@ -234,18 +241,16 @@ server_list_t list_ser;
 
 typedef struct file
 {
+   
     int flag;
     int sender;
     int recver;
     int file_size;
     char file_name[100];
-    char message[MAX_CHAR];
-}file;
+    char data[800];
+}file_t;
 
 
-
-pthread_mutex_t mutex;
-pthread_cond_t cond;
 
 
 int lfd;
@@ -295,9 +300,12 @@ void Set_group_admin(int fd,char* buf);
 void Kick(int fd,char* buf);
 
 
-void Send_file(int fd,char* buf);
-void *Recv_file(void* arg);
+int Check_relationship2(int fd,int send,int recv);
+void Upload(int fd,char* buf);
+void *Send_file(void *arg);
 
+void Recv_file(int fd,char* buf);
+void Download(int fd,char* buf);
 
 
 void my_err(const char* err_string,int line);
@@ -310,7 +318,8 @@ void Send_pack(int fd,int flag,char* buf);
 void Send_connfd_pack(int flag,int sender,int recver,char* buf);
 void Send_pack_name(int flag ,int sender,int recver,char *buf);
 
-void Read_from_mysql();
+
+
 
 
 void Mysql_with_error(MYSQL* mysql);

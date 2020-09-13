@@ -1,5 +1,13 @@
 #include "epoll.h"
 #define SIZE 100
+#define MAXLEN  80 //一行显示的最多字符数
+#define BUFFSIZE 32
+#define BUFMAX 1024
+
+int g_leave_len=MAXLEN; //一行剩余长度，用于输出对齐
+int g_maxlen;      //存放某目录下最长文件名的长度
+
+
 void Print_menu();
 
 int Check_data(char *num);//检查输入是否为数字
@@ -7,22 +15,55 @@ int Get_choice_int(char* str);
 char *Time();
 void Print_apply(char* buf);
 int GetPassword(char *password);
+int get_choice_int(int min, int max);
+
+void Client_list();
+void Display(char* pathname);
+void Display_single(char* name);
+
+
+void clear_stdin();
+char* get_str(char* str,size_t len);
+
+
+
+
+
+
 int main()
 {
     Init_socket();
+    
 
     List_Init(head,box_node_t);
     List_Init(fhead,box_node_t);
     pthread_mutex_init(&mutex_login,NULL);
     pthread_cond_init(&cond_login,NULL);
-    pthread_mutex_init(&mutex,NULL);
-    pthread_cond_init(&cond,NULL);
+
+    pthread_mutex_init(&mutex_add_grp,NULL);
+    pthread_cond_init(&cond_add_grp,NULL);
+
+    pthread_mutex_init(&mutex_gchat,NULL);
+    pthread_cond_init(&cond_gchat,NULL);
+
+    pthread_mutex_init(&mutex_show,NULL);
+    pthread_cond_init(&cond_show,NULL);
+
+    pthread_mutex_init(&mutex_msg,NULL);
+    pthread_cond_init(&cond_msg,NULL);
+
+    pthread_mutex_init(&mutex_gcord,NULL);
+    pthread_cond_init(&cond_gcord,NULL);
+
+    pthread_mutex_init(&mutex_gmb,NULL);
+    pthread_cond_init(&cond_gmb,NULL);
 
 
     Login_menu();
     //printf("开始收包\n");
     Turn_worker_thread();
     //Menu();
+
     close(cfd);
 }
 void Init_socket()
@@ -79,7 +120,7 @@ void Register()
 {
     Account_t register_t;
     
-    char buf[BUFSIZ];
+    char buf[BUFMAX];
     memset(buf,0,sizeof(buf));
     printf("用户名:");
     printf("[此用户名为您暂时的名字,并不是登录账号]\n");
@@ -120,7 +161,6 @@ void Register_apply(char* buf)
 {
     message mes;
     printf("-----%s\n",mes.messsge);
-
 }*/
 int Check_data(char *num)
 {
@@ -163,7 +203,7 @@ int Get_choice_int(char* str)
 }
 void Login()
 {
-    char buf[BUFSIZ];
+    char buf[BUFMAX];
     Account_t account;
     account.flag=LOGIN;
     //printf("wraning------[[[不要输入之前注册的用户名]]]\n");
@@ -278,7 +318,7 @@ void Exit()
     sprintf(mess,"用户[%d]退出登录\n",username);
     strcpy(mes.messsge,mess);
 
-    char buf[BUFSIZ];
+    char buf[BUFMAX];
     memcpy(buf,&mes,sizeof(mes));
     if(send(cfd,buf,sizeof(buf),0)<0)
     {
@@ -298,7 +338,7 @@ void Exit()
 void *Recv_pack(void *arg)
 {
     pthread_t apply_id;
-    char buf[BUFSIZ];    
+    char buf[BUFMAX];    
     while(1)
     {
         int n=recv(cfd,buf,sizeof(buf),0);
@@ -315,7 +355,7 @@ void *Recv_pack(void *arg)
         }
         int flag;
         memcpy(&flag,buf,sizeof(int));
-        printf("client recv flag:%d\n",flag);
+        //printf("client recv flag:%d\n",flag);
         switch (flag)
         {
             /*case EXIT_APPLY:
@@ -325,9 +365,7 @@ void *Recv_pack(void *arg)
                 pthread_mutex_unlock(&mutex);
                 break;*/
             case PRINT_APPLY:
-                //pthread_mutex_lock(&mutex);
                 Print_apply(buf);
-                //pthread_cond_signal(&cond);
                 break;
             case REGISTER_APPLY:
                 Register_apply(buf);
@@ -350,7 +388,6 @@ void *Recv_pack(void *arg)
             //case SHOW_FRIEND_STATUS_APPLY:
             case VIEW_FRIEND_LIST_APPLY:
                 View_friend_list_apply(buf);
-                //pthread_cond_signal(&cond);
                 break;
             case SHIELD_APPLY:
                 Shield_friend_apply(buf);
@@ -401,12 +438,24 @@ void *Recv_pack(void *arg)
             case KICK_APPLY:
                 Kick_apply(buf);
                 break;
+                //
+            //case SEND_FILE:
+              //  {
+                    //printf(">>>>>>\n");
+                //    Recv_file(buf);
+                    //printf("??????\n");
+                  //  break;
+                //}
             case RECV_FILE:
                 Recv_file(buf);
+                break;
+            case RECV_APPLY:
+                Recv_apply(buf);
                 break;
         }
         //pthread_mutex_unlock(&mutex);
     }
+    memset(buf,0,sizeof(buf));
 }
 void Turn_worker_thread()
 {
@@ -440,7 +489,7 @@ void Friend_box()
         scanf("%c",&ch);
         if(ch=='Y' || ch=='y')
         {
-                char str[BUFSIZ];
+                char str[BUFMAX];
                 memset(str,0,sizeof(str));
                 
                 relation.flag=ADD_FRIEND_ACCEPT;
@@ -458,7 +507,7 @@ void Friend_box()
         }
         else
         {
-            char str[BUFSIZ];
+            char str[BUFMAX];
             memset(str,0,sizeof(str));
                 
             relation.flag=ADD_FRIEND_ACCEPT;
@@ -487,7 +536,7 @@ void Friend_box()
         pos=pos->next;
     }
     apply_messgae mes;
-    char str[BUFSIZ];
+    char str[BUFMAX];
     memset(&mes,0,sizeof(mes));
     mes.flag=ADD_FRIEND_ACCPET;
     //strcpy(mes.message,"y");
@@ -517,7 +566,7 @@ void Friend_box()
         }
         else
         {
-            char str1[BUFSIZ];
+            char str1[BUFMAX];
             //memset(&mes,0,sizeof(mes));
             mes.flag=ADD_FRIEND_ACCPET;
             strcpy(mes.message,"n");
@@ -542,14 +591,8 @@ void Print_apply(char* buf)
     message mes;
     memcpy(&mes,buf,sizeof(mes));
     //pthread_mutex_lock(&mutex);
-    if(strcmp(mes.messsge,"d")==0)
-    {
-        printf("您申请的好友不在线,您可以选择添加其他朋友\n");
-    }
-    else if(strcmp(mes.messsge,"w")==0)
-        printf("正在等待对方验证，请不要重复发好友申请\n");
-    else 
-        printf("--%s\n",mes.messsge);
+   
+    printf("%s\n",mes.messsge);
     //pthread_cond_wait(&cond,&mutex);
     //pthread_mutex_unlock(&mutex);    
 }
@@ -557,7 +600,7 @@ void Add_friend_accept_appy(char* buf)
 {
     apply_messgae mes;
     memcpy(&mes,buf,sizeof(mes));
-    printf("-----%s\n",mes.message);
+    printf("%s\n",mes.message);
 }
 void Add_friend_apply(char* buf)
 {
@@ -580,15 +623,15 @@ void Add_friend_apply(char* buf)
     strcpy(new->data.message,box.message);
     List_AddTail(head,new);
 
-    printf("client message:%s\n",new->data.message);
+   // printf("client message:%s\n",new->data.message);
 
-    printf("server send message:%s\n",box.message);
-    printf("server send flag:%d\n",box.flag);
-    printf("server/ friend send id:%d\n",box.sender);
-    printf("server/ friend recv id:%d\n",box.recver);
+    //printf("server send message:%s\n",box.message);
+    //printf("server send flag:%d\n",box.flag);
+    //printf("server/ friend send id:%d\n",box.sender);
+    //printf("server/ friend recv id:%d\n",box.recver);
     //朋友客户端号
-    printf("server/ friend recv_fd:%d\n",new->data.recv_fd);
-    printf("server/ friend send_fd:%d\n",new->data.send_fd);
+    //printf("server/ friend recv_fd:%d\n",new->data.recv_fd);
+    //printf("server/ friend send_fd:%d\n",new->data.send_fd);
     
 
 
@@ -607,13 +650,16 @@ void Add_friend()
     puts("请输入想要添加好友的账号[id]:\n");
     scanf("%d",&id);
     if(id==username)
+    {
         printf("请不要添加自己为好友\n");
+        return ;
+    }
     
-    char buf[BUFSIZ];
+    char buf[BUFMAX];
     sprintf(buf,"%d",id);
     printf("buf:%s\n",buf);
 
-    char str[BUFSIZ];
+    char str[BUFMAX];
     memset(str,0,sizeof(str));
     Relation_t relation;
     relation.flag=ADD_FRIEND;
@@ -622,10 +668,10 @@ void Add_friend()
     strcpy(relation.message,"");
     memcpy(str,&relation,sizeof(relation));
 
-    printf("client flag:%d\n",relation.flag);
-    printf("client message:%s\n",relation.message);
-    printf("client send:%d\n",relation.sender);
-    printf("client recv:%d\n",relation.recver);
+    //printf("client flag:%d\n",relation.flag);
+    //printf("client message:%s\n",relation.message);
+    //printf("client send:%d\n",relation.sender);
+    //printf("client recv:%d\n",relation.recver);
 
     if(send(cfd,str,sizeof(str),0)<0)
     {
@@ -641,11 +687,11 @@ void Del_friend()
     puts("请输入要删除的好友账号:");
     scanf("%d",&id);
 
-    char buf[BUFSIZ];
+    char buf[BUFMAX];
     sprintf(buf,"%d",id);
     printf("buf:%s\n",buf);
 
-    char str[BUFSIZ];
+    char str[BUFMAX];
     memset(str,0,sizeof(str));
     Relation_t relation;
     relation.flag=DEL_FRIEND;
@@ -654,10 +700,10 @@ void Del_friend()
     strcpy(relation.message,"");
     memcpy(str,&relation,sizeof(relation));
 
-    printf("client flag:%d\n",relation.flag);
-    printf("client message:%s\n",relation.message);
-    printf("client send:%d\n",relation.sender);
-    printf("client recv:%d\n",relation.recver);
+    //printf("client flag:%d\n",relation.flag);
+   // printf("client message:%s\n",relation.message);
+   // printf("client send:%d\n",relation.sender);
+   // printf("client recv:%d\n",relation.recver);
 
     if(send(cfd,str,sizeof(str),0)<0)
     {
@@ -671,7 +717,7 @@ void Del_friend_apply(char* buf)
     message mes;
     memcpy(&mes,buf,sizeof(mes));
 
-    printf("--%s\n",mes.messsge);
+    printf("%s\n",mes.messsge);
 
 }
 void Shield_friend()
@@ -679,11 +725,11 @@ void Shield_friend()
     int id;
     printf("请输入你要屏蔽的好友账号:\n");
     scanf("%d",&id);
-    char buf[BUFSIZ];
+    char buf[BUFMAX];
     sprintf(buf,"%d",id);
-    printf("buf:%s\n",buf);
+    //printf("buf:%s\n",buf);
 
-    char str[BUFSIZ];
+    char str[BUFMAX];
     memset(str,0,sizeof(str));
     Relation_t relation;
     relation.flag=SHIELD;
@@ -697,10 +743,10 @@ void Shield_friend()
         my_err("send error",__LINE__);
     }
 
-    printf("client flag:%d\n",relation.flag);
+    /*printf("client flag:%d\n",relation.flag);
     printf("client message:%s\n",relation.message);
     printf("client send:%d\n",relation.sender);
-    printf("client recv:%d\n",relation.recver);
+    printf("client recv:%d\n",relation.recver);*/
 
 
 }
@@ -709,18 +755,19 @@ void Shield_friend_apply(char* buf)
     message mes;
     memcpy(&mes,buf,sizeof(mes));
 
-    printf("--%s\n",mes.messsge);
+    printf("%s\n",mes.messsge);
 }
 void Unshield_friend()
 {
+    
     int id;
     printf("请输入你要解除屏蔽的好友账号:\n");
     scanf("%d",&id);
-    char buf[BUFSIZ];
+    char buf[BUFMAX];
     sprintf(buf,"%d",id);
-    printf("buf:%s\n",buf);
+    //printf("buf:%s\n",buf);
 
-    char str[BUFSIZ];
+    char str[BUFMAX];
     memset(str,0,sizeof(str));
     Relation_t relation;
     relation.flag=UNSHIELD;
@@ -734,17 +781,17 @@ void Unshield_friend()
         my_err("send error",__LINE__);
     }
 
-    printf("client flag:%d\n",relation.flag);
+   /* printf("client flag:%d\n",relation.flag);
     printf("client message:%s\n",relation.message);
     printf("client send:%d\n",relation.sender);
-    printf("client recv:%d\n",relation.recver); 
+    printf("client recv:%d\n",relation.recver); */
 }
 void Unshield_friend_apply(char* buf)
 {
     message mes;
     memcpy(&mes,buf,sizeof(mes));
 
-    printf("--%s\n",mes.messsge);
+    printf("%s\n",mes.messsge);
 }
 
 //一起实现
@@ -752,12 +799,12 @@ void Unshield_friend_apply(char* buf)
 void View_friend_list()
 {
     
-    //pthread_mutex_lock(&mutex);
+    pthread_mutex_lock(&mutex_show);
     printf("-----------------------\n");
     printf("账号\t姓名\t状态\t关系\n");
     
 
-    char str[BUFSIZ];
+    char str[BUFMAX];
     memset(str,0,sizeof(str));
     Friend_t friend;
     friend.flag=VIEW_FRIEND_LIST;
@@ -770,22 +817,34 @@ void View_friend_list()
     {
         my_err("send error",__LINE__);
     }
-
+    printf("-----------------------------\n");
     //printf("client flag:%d\n",friend.flag);
     //printf("client message:%s\n",friend.message);
     //printf("client send:%d\n",friend.send);
     //printf("client recv:%d\n",friend.recv); 
-
-    printf("-------------------------\n");
-    //pthread_cond_wait(&cond,&mutex);
-    //pthread_mutex_unlock(&mutex);
-    
+    pthread_cond_wait(&cond_show,&mutex_show);
+     printf("=========================\n");
+    pthread_mutex_unlock(&mutex_show);    
 }
 void View_friend_list_apply(char* buf)
 {
     message mes;
     memcpy(&mes,buf,sizeof(mes));
-    printf("%s\n",mes.messsge);
+    //printf("%s\n",mes.messsge);
+    if(strcmp(mes.messsge,"over"))
+    {
+        printf("%s\n",mes.messsge);
+    }
+    else
+    {
+        pthread_mutex_lock(&mutex_show);
+        pthread_cond_signal(&cond_show);
+        pthread_mutex_unlock(&mutex_show);
+    }
+   //getch();
+   //Friend_menu();
+   //usleep(1000);
+    return;
 }
 
 
@@ -796,11 +855,8 @@ void Private_chat()
     scanf("%d",&id);
     //Chat_message mes;
     //memset(&mes, 0, sizeof(message));
-  
- 
-    char buf[256];
     //char time[100];
-    //char str[BUFSIZ];
+    //char str[BUFMAX];
 
     /*char time[30];
 
@@ -810,14 +866,15 @@ void Private_chat()
 
     printf("-----正在与 %d 聊天-----\n",id);
     printf("   --- quit 退出 ---\n");
-
-    printf("=============================\n");
+   // getchar();
+    //printf("=============================\n");
     //printf("time:%s",time);
-    scanf("%s",buf);
-    do
+    //scanf("%s",buf);
+    //fgets(buf,sizeof(buf),stdin);
+    while(1)
     {
 
-        char str[BUFSIZ];
+        char str[BUFMAX];
        
         Chat_message mes;
         mes.flag=PRIVATE_CHAT;
@@ -825,7 +882,31 @@ void Private_chat()
         mes.recver=id;
         //strcpy(mes.time,time);
         //printf("client send:%s\n",time);
+        char buf[256];
+        memset(buf,0,sizeof(buf));
+         fgets(buf,sizeof(buf),stdin);
+        if(strcmp(buf,"quit\n")==0)
+            break;
+
         strcpy(mes.message,buf);
+
+        //保存光标位置
+         //printf("\033[s");
+        //fflush(stdout);
+      
+
+        //printf("\33[u");
+        //fflush(stdout);
+        /*printf("\33[s");
+        fflush(stdout);
+
+        //清除从光标到行尾的内容
+        printf("\33[K\n\33[K\n\33[K\n");
+        fflush(stdout);
+        //恢复光标位置
+        printf("\33[u");
+        fflush(stdout);*/
+
         memcpy(str,&mes,sizeof(mes));
         if(send(cfd,str,sizeof(str),0)<0)
         {
@@ -837,13 +918,8 @@ void Private_chat()
 
 
         //fgets(buf,sizeof(buf),stdin);
-        scanf("%s",buf);
-
-        /*if(strcmp(buf,"quit")==0)
-            break;*/
-
-
-    }while(strcmp(buf,"quit"));
+        //scanf("%s",buf);
+    }
    /* printf("按任意键返回\n");
     getchar();*/
     return ;
@@ -871,53 +947,65 @@ void Private_chat_apply(char* buf)
 {
     message mes;
     memcpy(&mes,buf,sizeof(mes));
-    //if(strcmp(mes.message,"d")==0)
-    //    printf("[%d]不在线 \n",mes.recver);
-    //else
-    //{
+
         //printf("                       %s",mes.time);
-        printf("账号\t姓名\t消息\n");
-        printf("%s\n",mes.messsge);
-    //} 
+       printf("账号\t姓名\t消息\n");
+
+        printf("%s\n",mes.messsge); 
 }
 
 
 void View_chat_history()
 {
-   
+    pthread_mutex_lock(&mutex_msg);
     int id;
     //system("clear");
     printf("请输入要查询聊天的好友账号:");
     scanf("%d",&id);
     
-    char buf[BUFSIZ];
+    char buf[BUFMAX];
     Chat_message mes;
     mes.flag=VIEW_CHAT_HISTORY;
     strcpy(mes.message,"");
     mes.sender=username;
     mes.recver=id;
     memcpy(buf,&mes,sizeof(mes));
+
+    printf("\n");
+    printf("--------------------聊天记录-------------------------\n");
+
     if(send(cfd,buf,sizeof(buf),0)<0)
     {
         my_err("send error!",__LINE__);
     }
 
 
-    /*pthread_mutex_lock(&lock_msg);
-    pthread_cond_wait(&cond_msg,&lock_msg);
-    pthread_mutex_unlock(&lock_msg);*/
+    pthread_cond_wait(&cond_msg,&mutex_msg);
+    pthread_mutex_unlock(&mutex_msg);
 }
-void View_chat_history_apply(char*  buf)
+void View_chat_history_apply(char* buf)
 {
-    Chat_message mes;
+    message mes;
     memcpy(&mes,buf,sizeof(mes));
-    printf("--------------------聊天记录-------------------------\n");
-    printf("%s\n",mes.message);
+    
+    if(strcmp(mes.messsge,"over"))
+    {
+        printf("%s\n",mes.messsge);
+    } 
+    else
+    {
+        pthread_mutex_lock(&mutex_msg);
+        pthread_cond_signal(&cond_msg);
+        pthread_mutex_unlock(&mutex_msg);       
+    }
+   // getch();
+    return;
+
 }
 
 void Create_group()
 {
-    char buf[BUFSIZ];
+    char buf[BUFMAX];
     Group_t group; 
  
 
@@ -937,7 +1025,7 @@ void Create_group_apply(char* buf)
     message mes;
     memcpy(&mes,buf,sizeof(mes));
 
-    printf("--%s\n",mes.messsge);
+    printf("%s\n",mes.messsge);
 
 }
 void Add_group()
@@ -946,7 +1034,7 @@ void Add_group()
    printf("请输入要加入的群号:\n");
    scanf("%d",&id);
 
-    char buf[BUFSIZ];
+    char buf[BUFMAX];
     Relation_t relation;
     relation.flag=ADD_GROUP;
     relation.sender=username;
@@ -978,7 +1066,7 @@ void Add_group_apply(char* buf)
     strcpy(new->data.message,box.message);
     List_AddTail(fhead,new);
 
-    printf("client message:%s\n",new->data.message);
+   /* printf("client message:%s\n",new->data.message);
 
     printf("server send message:%s\n",box.message);
     printf("server send flag:%d\n",box.flag);
@@ -986,7 +1074,7 @@ void Add_group_apply(char* buf)
     printf("server/ group apply recv id:%d\n",box.recver);
     //管理员客户端号
     printf("server/ group recv_fd:%d\n",new->data.recv_fd);
-    printf("server/ group send_fd:%d\n",new->data.send_fd);
+    printf("server/ group send_fd:%d\n",new->data.send_fd);*/
     
 
 
@@ -1019,7 +1107,7 @@ void Group_box()
             scanf("%c",&ch);
             if(ch=='Y' || ch=='y')
             {
-                    char str[BUFSIZ];
+                    char str[BUFMAX];
                     memset(str,0,sizeof(str));
                     
                     relation.flag=ADD_GROUP_ACCEPT;
@@ -1037,7 +1125,7 @@ void Group_box()
             }
             else
             {
-                char str[BUFSIZ];
+                char str[BUFMAX];
                 memset(str,0,sizeof(str));
                     
                 relation.flag=ADD_GROUP_ACCEPT;
@@ -1060,7 +1148,7 @@ void Add_group_accept_apply(char* buf)
 {
     apply_messgae mes;
     memcpy(&mes,buf,sizeof(mes));
-    printf("-----%s\n",mes.message);
+    printf("%s\n",mes.message);
 }
 void Group_apply(char* buf)
 {
@@ -1078,7 +1166,7 @@ void Withdraw_group()
     printf("请输入你要退出的群号:");
     scanf("%d",&id);
 
-    char buf[BUFSIZ];
+    char buf[BUFMAX];
     Relation_t relation;
     relation.flag=WITHDRAW_GROUP;
     relation.sender=username;
@@ -1110,35 +1198,55 @@ void Del_group_apply(char* buf)
 
 void View_group_member()
 {
+    pthread_mutex_lock(&mutex_gmb);
     int id;
     printf("请输入你要查询的群号:");
     scanf("%d",&id);
-
-    char buf[BUFSIZ];
+    
+    char buf[BUFMAX];
     Relation_t relation;
     relation.flag=VIEW_GROUP_MEMBER;
     relation.sender=username;
     relation.recver=id;
     strcpy(relation.message,"");
     memcpy(buf,&relation,sizeof(relation));
+
+    printf("----------------------------\n");
+    printf("账号\t姓名\t状态\n");
     if(send(cfd,buf,sizeof(buf),0)<0)
     {
         my_err("send error",__LINE__);
     }    
+
+    printf("-----------------------------\n");
+    pthread_cond_wait(&cond_gmb,&mutex_gmb);
+    printf("=========================\n");
+    pthread_mutex_unlock(&mutex_gmb);
+ 
 }
 void View_group_member_apply(char* buf)
 {
-    printf("----------------------------\n");
-    printf("账号\t姓名\t状态\n");
     
     message mes;
     memcpy(&mes,buf,sizeof(mes));
-
-    printf("%s\n",mes.messsge);
+    if(strcmp(mes.messsge,"over"))
+    {
+        printf("%s\n",mes.messsge);
+    }
+    else
+    {
+        pthread_mutex_lock(&mutex_gmb);
+        pthread_cond_signal(&cond_gmb);
+        pthread_mutex_unlock(&mutex_gmb);
+    }
+    //getch();
+    return;
 }
 void View_add_group()
 {
-    char str[BUFSIZ];
+    pthread_mutex_lock(&mutex_add_grp);
+
+    char str[BUFMAX];
     memset(str,0,sizeof(str));
     Relation_t relation;
     relation.flag=VIEW_ADD_GROUP;
@@ -1147,21 +1255,38 @@ void View_add_group()
     strcpy(relation.message,"");
     memcpy(str,&relation,sizeof(relation));
 
+    printf("----------------------------\n");
+    printf("群号\t群名\t地位\n");
     if(send(cfd,str,sizeof(str),0)<0)
     {
         my_err("send error",__LINE__);
     }
     printf("-----------------------------\n");
+     //阻塞等待
+    pthread_cond_wait(&cond_add_grp,&mutex_add_grp);
+    printf("=============================\n");
+    pthread_mutex_unlock(&mutex_add_grp);
  
 }
 void View_add_group_apply(char* buf)
 {
-    printf("----------------------------\n");
-    printf("群号\t群名\t地位\n");
+    
     message mes;
     memcpy(&mes,buf,sizeof(mes));
 
-    printf("%s\n",mes.messsge);
+    if(strcmp(mes.messsge,"over"))
+    {
+        printf("%s\n",mes.messsge);
+    }
+    else
+    {
+        //唤醒阻塞状态的好友列表
+        pthread_mutex_lock(&mutex_add_grp);
+        pthread_cond_signal(&cond_add_grp);
+        pthread_mutex_unlock(&mutex_add_grp);
+    }
+   // getch();
+	return;
 
 }
 
@@ -1176,9 +1301,9 @@ void Group_chat()
     //memset(&mes, 0, sizeof(message));
   
  
-    char buf[256];
+    //char buf[256];
     //char time[100];
-    //char str[BUFSIZ];
+    //char str[BUFMAX];
 
     /*char time[30];
 
@@ -1192,11 +1317,11 @@ void Group_chat()
     printf("=============================\n");
     //printf("time:%s",time);
     //fgets(buf,sizeof(buf),stdin);
-    scanf("%s",buf);
-    do
+    //scanf("%s",buf);
+    while(1)
     {
 
-        char str[BUFSIZ];
+        char str[BUFMAX];
        
         Chat_message mes;
         mes.flag=GROUP_CHAT;
@@ -1204,6 +1329,13 @@ void Group_chat()
         mes.recver=id;
         //strcpy(mes.time,time);
         //printf("client send:%s\n",time);
+
+        char buf[256];
+        memset(buf,0,sizeof(buf));
+         fgets(buf,sizeof(buf),stdin);
+        if(strcmp(buf,"quit\n")==0)
+            break;
+
         strcpy(mes.message,buf);
         memcpy(str,&mes,sizeof(mes));
         if(send(cfd,str,sizeof(str),0)<0)
@@ -1213,15 +1345,11 @@ void Group_chat()
         //memset(buf,0,sizeof(buf));
         //memset(str,0,sizeof(str));
         //memset(&mes, 0, sizeof(message));
-        scanf("%s",buf);
+        //scanf("%s",buf);
 
         //fgets(buf,sizeof(buf),stdin);
-       
-        /*if(strcmp(buf,"quit")==0)
-            break;*/
 
-
-    }while(strcmp(buf,"quit"));
+    }
 
 }
 void Group_chat_apply(char* buf)
@@ -1233,19 +1361,23 @@ void Group_chat_apply(char* buf)
     //else
     //{
         //printf("                       %s",mes.time);
-        printf("账号\t名字\t信息\n");
-        printf("%s\n",mes.messsge);
-    //} 
+    
+  
+            printf("账号\t名字\t信息\n");
+            printf("%s\n",mes.messsge);
    
 }
 void View_group_record()
 {
+    pthread_mutex_lock(&mutex_gcord);
+    printf("--------------------聊天记录-------------------------\n");
+
     int id;
     //system("clear");
     printf("请输入要查询聊天的群账号:");
     scanf("%d",&id);
     
-    char buf[BUFSIZ];
+    char buf[BUFMAX];
     Chat_message mes;
     mes.flag=VIEW_GROUP_RECORD;
     strcpy(mes.message,"");
@@ -1256,20 +1388,35 @@ void View_group_record()
     {
         my_err("send error!",__LINE__);
     }
+    
 
+    pthread_cond_wait(&cond_gcord,&mutex_gcord);
+     printf("=========================\n");
+    pthread_mutex_unlock(&mutex_gcord);  
 }
 void View_group_record_apply(char* buf)
 {
-
+  
     message mes;
     memcpy(&mes,buf,sizeof(mes));
-    printf("--------------------聊天记录-------------------------\n");
-    printf("%s\n",mes.messsge);
+    if(strcmp(mes.messsge,"over"))
+    {
+         printf("%s\n",mes.messsge);
+    }
+    else
+    {
+        pthread_mutex_lock(&mutex_gcord);
+        pthread_cond_signal(&cond_gcord);
+        pthread_mutex_unlock(&mutex_gcord);     
+           
+    }
+    //  getch();
+    return;
 }
 
 void Set_group_admin()
 {
-    char buf[BUFSIZ];
+    char buf[BUFMAX];
     Group_leader leader;
     leader.flag=SET_GROUP_ADMIN;
     leader.sender=username;
@@ -1288,13 +1435,13 @@ void Set_group_admin()
 void Set_group_admin_apply(char *buf)
 {
     
-    Group_leader leader;
-    memcpy(&leader,buf,sizeof(leader));
-    printf("%s\n",leader.message);
+    message mes;
+    memcpy(&mes,buf,sizeof(mes));
+    printf("%s\n",mes.messsge);
 }
 void Kick()
 {
-    char buf[BUFSIZ];
+    char buf[BUFMAX];
     Group_leader leader;
     leader.flag=KICK;
     leader.sender=username;
@@ -1313,84 +1460,465 @@ void Kick()
 }
 void Kick_apply(char *buf)
 {
-    Group_leader leader;
-    memcpy(&leader,buf,sizeof(leader));
-    printf("%s\n",leader.message);
+    message mes;
+    memcpy(&mes,buf,sizeof(mes));
+    printf("%s\n",mes.messsge);
 }
+void File_menu()
+{
+    int choice=1;
+    system("clear");
+    
+    while(choice)
+    {
+        usleep(1000);
+        printf("\t\t\033[;33m\033[1m*********文件管理**********\033[0m\n");
+        printf("\t\t\033[1;33m|\033[0m-1.查看本地客户端目录文件-\033[1;33m|\033[0m\n");
+        printf("\t\t\033[1;33m|\033[0m----------2.上传----------\033[1;33m|\033[0m\n");
+        printf("\t\t\033[1;33m|\033[0m----------3.下载----------\033[1;33m|\033[0m\n");
+        printf("\t\t\033[1;33m|\033[0m----------0.退出----------\033[1;33m|\033[0m\n");
+
+        printf("\t\tchoice:\n");
+        //printf("请输入选择:");
+        scanf("%d",&choice);
+        while(getchar() != '\n');
+        switch (choice)
+        {
+            case 1:
+                Client_list();
+                break;
+            case 2:
+               //Upload();
+                Send_file();
+                break;
+            case 3:
+                Download();
+                break;
+            case 0:
+                break;
+        }
+    }
+    return;
+}
+void Client_list()
+{
+    printf("当前客户端目录列表:\n");
+	DIR *dir;
+	
+	struct dirent *dirent;
+    char name[256];
+    int i,j;
+    int count=0;
+
+
+    char filenames[256][PATH_MAX+1],temp[PATH_MAX+1];
+    //获取该目录下文件总数和最长的文件名
+    dir=opendir("."); //统计文件名数量
+    if(dir==NULL)
+        my_err("opendir",__LINE__);
+    while((dirent=readdir(dir))!=NULL)
+    {
+        if(g_maxlen<strlen(dirent->d_name))
+                g_maxlen=strlen(dirent->d_name);
+        count++;
+    }
+
+        if(count>256)
+            my_err("too mant files under this dir",__LINE__);
+        
+        closedir(dir);
+    
+
+    int len=strlen(".");
+        //获取该目录下所有的文件名
+        dir=opendir(".");
+        for(i=0;i<count;i++)
+        {
+            dirent=readdir(dir);
+            if(dirent==NULL)
+                my_err("readdir",__LINE__);
+
+            strncpy(filenames[i],"",len);
+            filenames[i][len]='\0';
+            strcat(filenames[i],dirent->d_name);
+            filenames[i][len+strlen(dirent->d_name)]='\0';
+        }
+        closedir(dir);
+
+        //使用冒泡法对文件名进行排序，排序后文件名按字母顺序存储于filenames
+        for(i=0;i<count-1;i++)
+        {
+            for(j=0;j<count-1-i;j++)
+            {
+                if(strcmp(filenames[j],filenames[j+1])>0)
+                {
+                    strcpy(temp,filenames[j+1]);
+                    temp[strlen(filenames[j+1])]='\0';
+                    strcpy(filenames[j+1],filenames[j]);
+                    filenames[j+1][strlen(filenames[j])]='\0';
+                    strcpy(filenames[j],temp);
+                    filenames[j][strlen(temp)]='\0';
+                }
+            }
+        }
+    for(i=0;i<count;i++)
+        Display(filenames[i]);
+
+	/*while((dirent=readdir(dir))!=NULL)
+	{
+		printf("%s ",dirent->d_name);
+        printf("\n");
+
+    }*/
+
+      
+
+	printf("\n");
+
+    printf("\033[;33m请按任意键继续\033[0m\n");
+	getch();
+	return;
+}
+void Display(char* pathname)
+{
+    int i,j;
+    struct stat buf;
+    char name[256];
+
+    //从路径中解析出文件名
+    for(i=0,j=0;i<strlen(pathname);i++)
+    {
+        if(pathname[i]=='/')
+        {
+            j=0;
+            continue;
+        }
+        name[j++]=pathname[i];
+    }
+    name[j]='\0';
+    
+
+    //如果本行不足以打印一个文件名则换行
+    if(g_leave_len<g_maxlen)
+    {
+        printf("\n");
+        g_leave_len=MAXLEN;
+    }
+
+    len=strlen(name);
+    len=g_maxlen-len;
+   
+    printf("\033[;33m%s\033[0m",name);
+
+    for(i=0;i<len;i++)
+        printf(" ");
+
+    printf(" ");
+
+    //下面的2指示空两格
+    g_leave_len-=(g_maxlen+2);//一行中剩下的字符数量
+
+    //Display_single(name);
+}
+
+/*void Display_single(char* name)
+{
+    int i,len;
+     //如果本行不足以打印一个文件名则换行
+    if(g_leave_len<g_maxlen)
+    {
+        printf("\n");
+        g_leave_len=MAXLEN;
+    }
+
+    len=strlen(name);
+    len=g_maxlen-len;
+   
+    printf("\033[;33m%s\033[0m",name);
+
+    for(i=0;i<len;i++)
+        printf(" ");
+
+    printf(" ");
+
+    //下面的2指示空两格
+    g_leave_len-=(g_maxlen+2);//一行中剩下的字符数量
+}*/
+
+/*void Send_file()
+{
+    int id;
+    printf("请输入要发送文件的好友账号:\n");
+    scanf("%d",&id);
+
+  
+	printf("请输入文件名:\n");
+	char pathname[100];
+
+
+	//get_str(pathname,100);
+    scanf("%s",pathname);
+    
+    int fd=open(pathname,O_RDONLY);
+    if(fd<0)
+    {
+       printf("请输入正确的文件路径\n");
+       return ;
+    }
+
+    file_t file;
+    memset(&file,0,sizeof(file));
+    file.recver=id;
+    file.sender=username;
+    file.flag=SEND_FILE;
+    strcpy(file.file_name,pathname);
+
+
+
+    struct stat stat;
+	int fs=fstat(fd,&stat);
+	long file_size=0;
+	file_size=stat.st_size;
+   // file.file_size=file_size;
+    printf("file.file_size=%d\n",file.file_size);
+    
+    printf("sizeof(file)=%ld\n",sizeof(file));
+    printf("file_size=%ld\n",file_size);
+    
+    int filefd = open(pathname,O_RDONLY);
+    assert(filefd>0);
+    struct stat file_stat;
+    //为了获取文件大小
+    fstat(filefd,&file_stat);
+
+    sendfile(connfd,filefd,NULL,file_stat.st_size);
+    close(filefd);
+ 
+    close(fd);    
+}*/
 void Send_file()
 {
     int id;
-    printf("请输入要发送文件的好友账号");
+    printf("请输入要发送文件的好友账号:\n");
     scanf("%d",&id);
-    char file_name[100];
-    printf("请输入要发送的文件的路径");
-    scanf("%s",file_name);
-    
-    
-    int flag=0;
-    file file_t;
-    char buf[BUFSIZ];
 
-    file_t.recver=id;
-    file_t.sender=username;
-    file_t.flag=SEND_FILE;
-    strcpy(file_t.file_name,file_name);
-    printf("sizeof(file)=%ld\n",sizeof(file));
-    int fd=open(file_name,O_RDONLY);
+  
+	printf("请输入文件名:\n");
+	char pathname[100];
+
+
+	//get_str(pathname,100);
+    scanf("%s",pathname);
+    
+    /*int fd=open(pathname,O_RDONLY);
     if(fd<0)
     {
-        my_err("open error",__LINE__);
+       printf("请输入正确的文件路径\n");
+       return ;
     }
 
-    //read返回值为0表示读到尾
-    while((file_t.file_size=read(fd,file_t.message,sizeof(file_t.message)))!=0)
+
+    struct stat st;
+    long int size=stat(pathname, &st);
+    if(size < 0)
     {
-        len+=file_t.file_size;
-        memcpy(buf,&file_t,sizeof(file_t));
-        if(send(cfd,buf,sizeof(buf),0)<0)
+        printf("file stat error\n");
+        exit(1);
+    }
+    printf("file size:%ld\n",st.st_size);
+
+    off_t pos=lseek(fd,0,SEEK_SET);
+    if(pos < 0)
+    {
+        printf("get file_pos error\n");
+        exit(1);
+    }*/
+
+    
+    file_t file;
+    file.flag=UPLOAD;
+    strcpy(file.file_name,pathname);
+    file.recver=id;
+    file.sender=username;
+
+    char buf[BUFMAX];
+    memcpy(buf,&file,sizeof(file));
+
+    send(cfd,buf,sizeof(buf),0);
+
+    char buff[1024];
+    memset(buff,0,sizeof(buff));
+    // FILE *fp = fopen(file.file_name,"r");
+    int fp=open(pathname,O_RDONLY);
+    if(fp<0)
+    {
+        perror("open failed");
+        return;
+    }
+    else 
+    {
+        int i = 0;
+
+        memset(buff,0,sizeof(buff));
+        int len=0;
+        //while((len=fread(buff,sizeof(char),1024,fp))> 0)
+        while((len=read(fp,buff,sizeof(buff)))>0)
         {
-            flag=1;
-            sys_err("send error",__LINE__);
-        } 
-    }
-    close(fd);
-    if(flag==0)
+                            
+            i++;
+                                
+            //  printf("len= %d\n",len);
+            if(send(cfd,buff,len,0)<=0)
+            {
+                printf("Send file failed\n");
+                break;
+            }
+            memset(buff,0,sizeof(buff));
+
+        }
+        close(fp);
+        memset(buff,0,sizeof(buff));
+                            
+        sleep(1);
+        strcpy(buff,"end");
+        send(cfd,buff,strlen(buff),0);
+    }           
+
+
+    /*long int ssize = 0;
+    char buffer[BUFMAX];
+    long int n=0;
+    
+    while(1)
     {
-        printf("文件发送成功\n");
-        usleep(1000);
-        getchar();
+        bzero(buffer,1024);
+        int rn = read(fd, buffer, 1024);
+        int wn = write(cfd, buffer, 1024);
+        if(n >= st.st_size)
+        {
+            printf("size:%ld\n", n);
+            printf("size:%ld\n", st.st_size);
+            break;
+        }
+        n += rn;
     }
-    else if(flag==1)
+    if(n==-1)
     {
-        printf("文件发送失败\n");
-        usleep(1000);
-        getchar();
-    }
+        printf("send file error\n");
+        exit(1);
+    }*/
+
 }
-void Recv_file(char *buf)
+
+void Download()
 {
-    int fd;
-    file file_t;
-    memcpy(&file_t,buf,sizeof(file_t));
+    file_t file;
+
+    //char file_name[100];
+    printf("请输入下载文件名:\n");
+    scanf("%s",file.file_name);
+
+    file.flag=DOWNLOAD;
+    file.sender=username;
+    file.recver=0;//服务器接收
+
+    char buf[BUFMAX];
+    memcpy(buf,&file,sizeof(file));
+
+    send(cfd,buf,sizeof(buf),0);
+
+}
+
+void Recv_file(char* buf)
+{
+
+    file_t file;
+    memcpy(&file,buf,sizeof(file));
+
+    char buff[1024];
+    memset(buff,0,sizeof(buff));
+    char file_name[100];
+    memset(file_name,0,sizeof(file_name));
+
+
+         
+    strcpy(file_name,file.file_name);    
+    printf("file name=%s\n",file_name);
+    int fp = open(file_name,O_CREAT  | O_TRUNC ,0666);
+    if(fp < 0)
+    {
+        perror("open file fail");
+    }
+    close(fp);
+
+    fp = open(file_name,O_APPEND | O_WRONLY);
+    if(fp<0)
+        perror("open file fail");
+
+    memset(buff,0,sizeof(buff));
+    int len=0;
+    int write_len;
+    int i = 0;
+    while( (len=recv(cfd,buff,sizeof(buff),0) ) > 0 )
+    {
+                        
+                    
+        if(strcmp(buff,"end") == 0)
+            break;
+                    
+        if(len<0)
+        {
+            printf("Download file error\n");
+            break;
+        }
+                    
+        write_len=write(fp,buff,len);
+        /*                
+        if(write_len!= len)
+        {
+            printf("write failed\n");
+            return 0;
+        }*/
+        memset(buff,0,sizeof(buff));
+                    
+    }
+    close(fp);
+   // arg=(char*)arg;
+    /*int fd;
+    file_t file;
+    memcpy(&file,buf,sizeof(file));
+    printf("file name:%s\n",file.file_name);
     //如果文件不存在创建文件
-    if((fd=open(file_t.file_name,O_RDWR | O_CREAT | O_APPEND,0600))<0)
+    if((fd=open(file.file_name,O_RDWR | O_CREAT | O_APPEND,0777))<0)
     {
         my_err("open file_name error",__LINE__);
     }
     
     
-    int ret=write(fd,file_t.message,file_t.file_size);
+    int ret=write(fd,file.data,file.file_size);
     if(ret<0)
     {
         my_err("write file error",__LINE__);
-    }
+    }*/
 
+
+    /*
     printf("ret=%d\n",ret);
-    printf("file_name=%s\n",file_t.file_name);
-    printf("recver=%d\n",file_t.recver);
-    printf("sender=%d\n",file_t.sender);
-    printf("file_size=%d\n",file_t.file_size);
-    close(fd);
+    printf("file_name=%s\n",file.file_name);
+    printf("recver=%d\n",file.recver);
+    printf("sender=%d\n",file.sender);
+    printf("file_size=%d\n",file.file_size);
+    */
+
+//    close(fd);
+}
+
+void Recv_apply(char* buf)
+{
+    message mes;
+    memcpy(&mes,buf,sizeof(mes));
+    printf("%s\n",mes.messsge);
+
 }
 void Friend_menu()
 {
@@ -1516,10 +2044,11 @@ void Print_menu()
     printf("\t\t\033[1;34m**************************\033[0m\n");
     printf("\t\t\033[1;34m|        1.好友管理      \033[1;34m|\033[0m \n");
     printf("\t\t\033[1;34m|        2.群管理        \033[1;34m|\033[0m \n");
-    printf("\t\t\033[1;34m|        3.发送文件      \033[1;34m|\033[0m \n");
+    printf("\t\t\033[1;34m|        3.文件管理      \033[1;34m|\033[0m \n");
     printf("\t\t\033[1;34m|        0.退出          \033[1;34m|\033[0m \n");
     printf("\t\t\033[1;34m**************************\033[0m\n");
     printf("\t\tchoice:");
+    printf("\n");
 }
 void Menu()
 {
@@ -1529,9 +2058,11 @@ void Menu()
 
     do
     {
-      
+       
         Print_menu();
         scanf("%d",&choice);
+        //get_choice_int(0,3);
+         //while(getchar()!='\n');
         //choice=Get_choice(choice_t);
        
         switch (choice)
@@ -1543,7 +2074,7 @@ void Menu()
                 Group_menu();
                 break;
             case 3:
-                Send_file();
+                File_menu();
                 break;
             case 0:
                 Exit();
@@ -1580,7 +2111,25 @@ void display(char* str)
     putchar('\n');
     return;
 }
-char getch()
+int get_choice_int(int min, int max)
+{
+	int input;
+	char ch;
+
+	while ( (scanf("%d", &input) != 1) || (input < min) || (input > max))
+	{
+		while ((ch =getchar()) != '\n')
+            continue;
+		printf("请输入正确选项：\n");
+	}
+
+    while ((ch =getchar()) != '\n')
+            continue;
+
+	return input;
+}
+
+/*char getch()
 {
 	char ch;
 
@@ -1591,7 +2140,32 @@ char getch()
     system("stty echo");//回显
 
     return ch;
+}*/
+//　修改终端的控制方式，1取消回显、确认　２获取数据　3还原
+int getch()
+{
+    // 记录终端的配置信息
+    struct termios old;
+    // 获取终端的配置信息
+    tcgetattr(STDIN_FILENO,&old);
+    // 设置新的终端配置   
+    struct termios new1 = old;
+    // 取消确认、回显
+    new1.c_lflag &= ~(ICANON|ECHO);
+    // 设置终端配置信息
+    tcsetattr(STDIN_FILENO,TCSANOW,&new1);
+
+    // 在新模式下获取数据   
+    int key_val = 0; 
+    do{
+    	key_val += getchar();
+    }while(stdin->_IO_read_end - stdin->_IO_read_ptr);
+
+    // 还原配置信息
+    tcsetattr(STDIN_FILENO,TCSANOW,&old); 
+    return key_val; 
 }
+
 char* Get_string(char* buf,int len)
 {
     char* str;
@@ -1608,6 +2182,30 @@ char* Get_string(char* buf,int len)
 				continue;
 	}
 	return str;
+}
+char* get_str(char* str,size_t len)
+{
+	if(NULL == str)
+	{
+		puts("空指针异常\n");
+		return NULL;
+	}
+
+	char *in=fgets(str,len,stdin);
+	
+	size_t cnt = strlen(str);
+	if('\n' == str[cnt-1])
+	{
+		str[cnt-1] = '\0';
+	}
+	
+	clear_stdin();
+
+	return str;
+}
+void clear_stdin()
+{
+	stdin->_IO_read_ptr = stdin->_IO_read_end;//清理输入缓冲区
 }
 int Get_choice(char *choice_t)
 {

@@ -36,7 +36,6 @@ void display_colour(char name[]);
 
 
 /*
-
 30: 黑
 31: 红
 32: 绿
@@ -73,7 +72,7 @@ void display_colour(char name[])
 
 void my_err(const char* err_string,int line)
 {
-    fprintf(stderr,"line:%d\n",line);
+    fprintf(stderr,"line:%d",line);
     perror(err_string);
     exit(1);
 }
@@ -122,9 +121,8 @@ void display_attribute(struct stat buf,char* name)
     if(buf.st_mode & S_IRGRP)//用户组具有可读权限
         printf("r");
     else
-    printf("\033[%dm%s\033[0m",colour,name);
-    //display_colour(name,buf);
-　　　可写
+        printf("-");
+    if(buf.st_mode & S_IWGRP)//　　　可写
         printf("w");
     else
         printf("-");
@@ -193,143 +191,20 @@ void display_single(char* name)
 }
 
 
-
-/*
-*  根据命令行参数和完整路径名显示目标文件
-*  参数flag:  命令行参数
-*　参数pathname:　包含了文件名的路径名
-*/
-void display(int flag,char* pathname)
+void display_R(int flag_param,char* path)
 {
-
-    int i,j;
-    struct stat buf;
-    char name[256];
-    char link_name[PATH_MAX+1];
-    int link_flag;
-
-    //从路径中解析出文件名
-    for(i=0,j=0;i<strlen(pathname);i++)
-    {
-        if(pathname[i]=='/')
-        {
-            j=0;
-            continue;
-        }
-        name[j++]=pathname[i];
-    }
-    name[j]='\0';
-
-    //用lstat而不是stat以方便解析链接文件
-    if(lstat(pathname,&buf)==-1)
-    {
-        if(errno!=13)
-        	my_err("lstat error",__LINE__);
-        else
-        	return ;
-    }
-    
-    if(S_ISLNK(buf.st_mode))
-        link_flag=1;
-
-	if(link_flag == 1)//如果是链接文件,找到他的源文件信息
-	{
-		readlink(pathname,link_name,PATH_MAX);  
-        //link_name存放源文件的路径信息
-	}
-
-	int flag_color= 0;
-	if(S_ISDIR(buf.st_mode))  
-        flag_color = 1;; 
-        //判断是否为目录文件
-
-
-
-
-    //\e[1; --开启颜色输出  + 颜色号码 + 字符串 + \e[0m 关闭颜色输出
-    switch(flag)
-    {
-        case PARAM_NONE:  //没有-l和-a选项
-            if(name[0]!='.')
-                display_single(name);
-            break;
-        case PARAM_A:     //-a:显示包括隐藏文件在内的所有文件
-            display_single(name);
-            break;
-        case PARAM_L:     //-l：每个文件单独占一行，显示文件的详细属性信息
-            if(name[0]!='.')
-                {   
-                    display_attribute(buf,name);
-                    //printf(" \033[%dm%s\033[0m\n",colour,name);
-                    /*if(flag_color == 1)
-				    {
-					    printf("\033[34m %s\033[0m", name);
-				    }
-				    else    
-                    printf( " %-s",name);*/
-                    if(link_flag == 1)
-					{
-				      	printf(" -> ");
-						printf( "%s",link_name);
-					}
-				    printf( "\n");
-                }
-            break;
-        case PARAM_R://-R
-            if(name[0]!='.')
-            {
-                if(name[0]!='.')
-                    display_single(name);
-            }
-            break;
-        case PARAM_A + PARAM_L: //同时有-a和-l选项的情况
-            display_attribute(buf,name);
-            printf(" \033[%dm%s\033[0m\n",colour,name);
-            break;
-        case PARAM_A+ PARAM_R://-AR
-            //display_single(name);
-            if(name[0]!='.')
-            {
-                if(name[0]!='.')
-                    display_single(name);
-            }
-            break;
-        case PARAM_L+ PARAM_R://－LR
-            if(name[0]!='.')
-                {   
-                    display_attribute(buf,name);
-                    printf(" \033[%dm%s\033[0m\n",colour,name);
-                    if(link_flag == 1)
-					{
-				      	printf(" -> ");
-						printf( "%s",link_name);
-					}
-				    printf( "\n");
-                }
-            break;
-        case PARAM_A+PARAM_L+PARAM_R://－ARL
-            display_attribute(buf,name);
-            printf(" \033[%dm%s\033[0m\n",colour,name);
-            break;
-
-        default:
-            break;
-    }
-}
-
-void display_dir(int flag_param,char* path)
-{
-   
-    char t;
-    
+    int i;
     DIR* dir;
     struct dirent* ptr;
     int count=0;
-
-    //int flag_param_temp=flag_param;
+    int flag_param_temp=flag_param;
     struct stat buf;
     
     dir=opendir(path);
+
+    printf("\n%s:\n", path);
+    printf("\n");
+
     if(dir==NULL)
     {
     	if(errno!=13)
@@ -358,9 +233,9 @@ void display_dir(int flag_param,char* path)
     
     closedir(dir);
 
-    printf("\n%s:\n", path);
+   /* printf("\n%s:\n", path);
     //display_dir(flag_param, path);
-    printf("\n");
+    printf("\n");*/
     
     
     int len=strlen(path);
@@ -403,31 +278,124 @@ void display_dir(int flag_param,char* path)
                     if(flag_param>=8)
                         display(3,filenames[i]);
                     else
-                    	{
-                            display(flag_param-4,filenames[i]);
-                      	}
-                    	len=strlen(filenames[i]);
-                    
+                        display(flag_param-4,filenames[i]);
+                    len=strlen(filenames[i]);
                     filenames[i][len]='/';
-			        filenames[i][len+1]='\0';
+				    filenames[i][len+1]='\0';
                     //strcat(filenames[i],"/"); 
                     display_R(flag_param_temp,filenames[i]);
                 }
                 else 
                     display(flag_param,filenames[i]);
             }
+           
+        //}
+        //else
+		//{
+		//	for (i = 0; i < count; i++)
+		//		display(flag_param,filenames[i]);
+
+		//}
+
+        
+        /*strncpy(filenames,path,len);
+        filenames[len]='\0';
+        strcat(filenames,ptr->d_name);
+        filenames[len+strlen(ptr->d_name)]='/';
+		filenames[len+strlen(ptr->d_name)+1]='\0';
+        display_R(flag_param,filenames);*/
+
+   
+    
+     if((flag_param & PARAM_L) == 0)
+        printf("\n");
+    for(int i;i<count;i++)
+        free(filenames[i]);
+    closedir(dir);
+}
 
 
+/*
+*  根据命令行参数和完整路径名显示目标文件
+*  参数flag:  命令行参数
+*　参数pathname:　包含了文件名的路径名
+*/
+void display(int flag,char* pathname)
+{
+    int i,j;
+    struct stat buf;
+    char name[NAME_MAX+1];
 
+    //从路径中解析出文件名
+    for(i=0,j=0;i<strlen(pathname);i++)
+    {
+        if(pathname[i]=='/')
+        {
+            j=0;
+            continue;
+        }
+        name[j++]=pathname[i];
+    }
+    name[j]='\0';
 
+    //用lstat而不是stat以方便解析链接文件
+    if(lstat(pathname,&buf)==-1)
+    {
+        if(errno!=13)
+        	my_err("lstat error",__LINE__);
+        else
+        	return ;
+    }
 
+    //\e[1; --开启颜色输出  + 颜色号码 + 字符串 + \e[0m 关闭颜色输出
+    switch(flag)
+    {
+        case PARAM_NONE:  //没有-l和-a选项
+            if(name[0]!='.')
+                display_single(name);
+            break;
+        case PARAM_A:     //-a:显示包括隐藏文件在内的所有文件
+            display_single(name);
+            break;
+        case PARAM_L:     //-l：每个文件单独占一行，显示文件的详细属性信息
+            if(name[0]!='.')
+                {   display_attribute(buf,name);
+                    printf(" \033[%dm%s\033[0m\n",colour,name);
+                }
+            break;
+        case PARAM_R://-R
+            if(name[0]!='.')
+                display_single(name);
+            break;
+        case PARAM_A + PARAM_L: //同时有-a和-l选项的情况
+            display_attribute(buf,name);
+            printf(" \033[%dm%s\033[0m\n",colour,name);
+            break;
+        case PARAM_A+ PARAM_R://-AR
+            display_single(name);
+            break;
+        case PARAM_L+ PARAM_R://－LR
+            if(name[0]!='.')
+                {   display_attribute(buf,name);
+                    printf(" \033[%dm%s\033[0m\n",colour,name);
+                }
+            break;
+        case PARAM_A+PARAM_L+PARAM_R://－ARL
+            display_attribute(buf,name);
+            printf(" \033[%dm%s\033[0m\n",colour,name);
+            break;
 
+        default:
+            break;
+    }
+}
 
-
-
-
-
-
+void display_dir(int flag_param,char* path)
+{
+    if(flag_param>=4)
+        display_R(flag_param,path);
+    else
+    {
     DIR *dir;
     struct dirent  *ptr;
     int count=0;
@@ -513,9 +481,7 @@ int main(int argc,char const* argv[])
         if(argv[i][0]=='-')//证明有参数
         {
             for(k=1;k<strlen(argv[i]);k++,j++)
-            {
                 param[j]=argv[i][k]; //获取-后面的参数保存到数组param中
-            }
             num++;
         }
         //num++;  //保存"-"的个数
@@ -553,7 +519,10 @@ int main(int argc,char const* argv[])
         display_dir(flag_param,path);
         return 0;
     }
-    /* if(argc==1)
+
+
+
+   /*  if(argc==1)
     {
         strcpy(path, ".");
         display_dir(flag_param,path);
@@ -573,7 +542,9 @@ int main(int argc,char const* argv[])
     else if(argc==3)
     {
         strcpy(path,argv[2]);
-    }*/
+    }
+    */
+
 
     i=1;
     do{

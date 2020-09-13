@@ -1,5 +1,12 @@
 #include "chat.h"
 #define EPOLLEVENT 1024
+#define BUFMAX 1024
+#define BUF 2048
+
+
+char *Server_time();
+int	Set_no_block(int sfd);
+
 int sys_log;
 MYSQL mysql;
 
@@ -24,15 +31,16 @@ int main()
     
     signal(SIGINT,Signal_close);
 
-    pthread_mutex_init(&mutex,NULL);
-    pthread_cond_init(&cond,NULL);
+    //pthread_mutex_init(&mutex,NULL);
+    //pthread_cond_init(&cond,NULL);
 
     Connect_mysql();
     /*printf("线程池启动\n");
     pool_init(MAX_THREAD_NUM);
     printf("线程池启动成功!\n");
     sleep(2);*/
-
+    pool_init(50);
+    //sleep(2);
     //Read_from_mysql();
     Init_socket();
 
@@ -47,9 +55,36 @@ void Signal_close(int i)
     printf("服务器关闭\n");
     exit(1);
 }
-void Init_socket()
+
+
+char *Server_time()
 {
-  
+	time_t ctime;//服务器时间
+	struct tm *server_time;
+	time(&ctime);
+	server_time=localtime(&ctime);
+	return asctime(server_time);
+}
+
+int	Set_no_block(int sfd)
+{
+	/* 内层调用fcntl()的F_GETFL获取flag，
+	 * 外层fcntl()将获取到的flag设置为O_NONBLOCK非阻塞*/
+	if( fcntl(sfd, F_SETFL, fcntl(sfd, F_GETFL, 0) ) == -1)
+	{	
+        return -1;
+    }
+	return 0;
+}
+
+void Init_socket(int argc,char *argv[])
+{
+    struct stat stat_buf;
+	const char* file_name=argv[1];   
+    int file_fd=open(file_name,O_RDONLY);
+	fstat(file_fd,&stat_buf);
+	close(file_fd); 
+
     List_Init(list_ser,server_user_node_t);
     printf("服务端启动\n");
     struct sockaddr_in serv_addr;
@@ -59,6 +94,8 @@ void Init_socket()
 
     lfd=Socket(AF_INET,SOCK_STREAM,0);
 
+
+    Set_no_block(lfd);
     //端口复用
     int opt=1;
     setsockopt(lfd,SOL_SOCKET,SO_REUSEADDR,(void*)&opt,sizeof(opt));
@@ -83,8 +120,8 @@ void Init_socket()
     int i;
     int ret;
     pthread_t pid;
-    char buf[BUFSIZ];
-    memset(buf,0,sizeof(buf));
+    char buf[BUFMAX];
+    //memset(buf,0,sizeof(buf));
     while(1)
     {
         ret=epoll_wait(epfd,ep,EPOLLEVENT,-1);
@@ -92,6 +129,7 @@ void Init_socket()
         {
 
             //printf("the event is %x\n",ep[i].events);
+            int fd=ep[i].data.fd;
 
             if (!(ep[i].events & EPOLLIN))      //如果不是"读"事件, 继续循环
                 continue;
@@ -101,12 +139,81 @@ void Init_socket()
                 cli_addr_len=sizeof(cli_addr);
                 cfd=Accept(lfd,(struct sockaddr*)&cli_addr,&cli_addr_len);
                 printf("连接到新的客户端ip:%s\n端口号:%d\n",inet_ntoa(cli_addr.sin_addr),cli_addr.sin_port);
+                
+                /*设置非阻塞io*/
+				if(Set_no_block(cfd) != 0 )
+				{
+					printf("SET_no_black\n");
+					printf("%s",Server_time());
+					close(cfd);
+					continue;
+				}
+                
                 tep.events=EPOLLIN;
                 tep.data.fd=cfd;
-                epoll_ctl(epfd,EPOLL_CTL_ADD,cfd,&tep);
+                if(epoll_ctl(epfd,EPOLL_CTL_ADD,cfd,&tep)<0)
+                {
+                    printf("EPOLL_CTL add client error\n");
+                    printf("%s",Server_time());
+					
+                    close(cfd);
+					continue;
+                }
+
             }
+            /*else if(ep[i].events & EPOLLOUT) 
+            {
+                printf("start to sendfile !\n");
+                printf("处理写事件\n");
+                int write;
+                write=send(fd,buf,strlen(buf),0);
+                if(write == -1)
+                {
+                    my_err("write event error",__LINE__);
+                    close(fd);
+                }
+                else
+                {
+                    printf("发送消息成功\n");
+                }
+                memset(buf,0,BUFMAX);
+            }*/
+            /*else if(ep[i].events & EPOLLOUT)
+            {
+
+				printf("start to sendfile !\n");
+				int send_ret=0;
+                int left=stat_buf.st_size;
+				file_fd=open(file_name,O_RDONLY);
+
+				while(left>0)
+                {
+					send_ret=sendfile(cfd,file_fd,NULL,BUF);
+					if(send_ret<0 && errno==EAGAIN)
+                    {
+						continue;
+					}
+                    else if(send_ret==0)
+                    {
+						break;
+					}
+                    else
+                    {
+						left-=send_ret;
+					}
+				}
+
+				printf("sendfile over !\n");
+				close(file_fd);
+
+				tep.data.fd=cfd;
+				epoll_ctl(epfd,EPOLL_CTL_DEL,cfd,&tep);
+
+				close(cfd);
+            }*/
             else if(ep[i].events & EPOLLIN)
             {
+                memset(buf,0,sizeof(buf));
                 int n=recv(ep[i].data.fd,buf,sizeof(buf),MSG_WAITALL);
                 int fd=ep[i].data.fd;
                 printf("////////////////////////////\n");
@@ -158,7 +265,7 @@ void Init_socket()
                 int flag;
                 memcpy(&flag,buf,sizeof(int));
                 printf("flag:%d\n",flag);
-                //threadpool_add(work,(void*)recv_pack_t);
+                
                 switch(flag)
                 {
                     case LOGIN:
@@ -227,13 +334,41 @@ void Init_socket()
                     case VIEW_GROUP_RECORD:
                         View_group_record(fd,buf);
                         break;
-                     case SEND_FILE:
-                        Send_file(fd,buf);
+                    /*case SEND_FILE:
+                        printf("here\n");
+                        {
+                            printf("111111111111111\n");
+                            char *buf1=(char*)malloc(sizeof(1024));
+                            printf("22222222222222222\n");
+                            memcpy(buf1,buf,sizeof(file_t));
+                            printf("333333333333333333\n");
+                            threadpool_add(Send_file,(void*)buf1);*/
+                            /*printf("....\n");
+                            file_t file;
+                            char *str=(char*)malloc(sizeof(file));
+                            memcpy(str,buf,sizeof(file));
+                            pthread_t recv_file_id;
+                            pthread_create(&recv_file_id,NULL,Send_file,(void*)str);
+                            printf(">>>>\n");*/
+                            
+                            //Send_file(fd,buf);
+                            //break;
+                        //}
+                    case SEND_FILE:
+                        break;
+                    case UPLOAD:
+                        Upload(fd,buf);
+                        break;;
+                    /*case RECV_FILE:
+                        //Recv_file(fd,buf);
+                        break;*/
+                    case DOWNLOAD:
+                        Download(fd,buf);
                         break;
                     case 0:
                         break;
                 }
-            }       
+            }
         }
     }
     close(epfd);
@@ -639,8 +774,120 @@ void Add_node(int fd,int id,char* name)
     printf("pos->data.name=%s\n",pos->data.name);
     List_AddTail(list_ser,pos);
 }
-
 void Add_friend(int fd,char* buf)
+{
+
+    Relation_t relation;
+    memcpy(&relation,buf,sizeof(relation));
+    printf("server/ friend send:%d\n",relation.send);
+    printf("server/ friend recv:%d\n",relation.recv);
+    printf("server/ friend message:%s\n",relation.message);
+
+    char buf_t[BUFSIZ];
+    //查询有没有这两个人的账号
+    sprintf(buf_t,"select request from friend where (uid=%d and fid=%d) or (uid=%d and fid=%d)",relation.send,relation.recv,relation.recv,relation.send);
+    printf("buf_t:%s\n",buf_t);
+    int ret=mysql_real_query(&mysql,buf_t,strlen(buf_t));
+    if(ret)
+    {
+        Mysql_with_error(&mysql);
+    }
+    MYSQL_RES *result;  
+    MYSQL_ROW  row;
+    result=mysql_store_result(&mysql);
+    row=mysql_fetch_row(result);
+    //获得申请者的客户端套接字
+    int send_fd;
+    send_fd=Get_connfd(relation.send);
+
+    //如果没有这两个的信息
+    if(row==NULL)
+    {
+        //查看添加好友账户是否存在
+        char buf[BUFSIZ];
+        sprintf(buf,"select status from account where id=%d",relation.recv);
+        printf("buf:%s\n",buf);
+        ret=mysql_real_query(&mysql,buf,strlen(buf));
+        if(ret)
+        {
+            Mysql_with_error(&mysql);
+        }
+        MYSQL_RES *result1;  
+        MYSQL_ROW  row1;
+        result1=mysql_store_result(&mysql);
+        row1=mysql_fetch_row(result1);
+        if(row1==NULL)
+        {
+            char mes[256];
+            sprintf(mes,"账号[%d]不存在",relation.recv);
+            Send_pack(send_fd,PRINT_APPLY,mes);
+            return;
+        }
+
+
+        //用户存在
+        relation.relation=STRANGER;
+        memset(buf_t,0,sizeof(buf_t));
+        //请求为0
+        //表示好友还没验证
+        sprintf(buf_t,"insert into friend values('%d','%d','%d','%d')",relation.send,relation.recv,relation.relation,0);
+        printf("buf_t:%s\n",buf_t);
+        ret=mysql_real_query(&mysql,buf_t,strlen(buf_t));
+        if(ret)
+        {
+            Mysql_with_error(&mysql);
+        }
+        printf("用户%d对%d发起了好友申请\n",relation.send,relation.recv);
+
+        //获得被申请好友的客户端套接字
+        //如果在线
+        int recv_fd=Get_connfd(relation.recv);
+        printf("hehehheheheh>>>>>>>>>\n");
+        printf("recv_fd:%d\n",recv_fd);
+        if(recv_fd<0)
+        {
+            printf("所申请的用户[%d]不在线\n",relation.recv);
+            Send_pack(send_fd,PRINT_APPLY,"d");
+            return;
+        }
+        else
+        {
+            char str[256];
+            sprintf(str,"用户[%d]向你发送了好友请求",relation.send);
+            Send_connfd_pack(ADD_FRIEND_APPLY,relation.send,relation.recv,str);
+
+            //如果在线为request为2已经发送
+            char buf[BUFSIZ];
+            sprintf(buf,"update friend set request=2 where (uid=%d and fid=%d)",relation.send,relation.recv);
+            printf("buf=%s\n",buf);
+            int ret=mysql_real_query(&mysql,buf,strlen(buf));
+            if(ret)
+            {
+                Mysql_with_error(&mysql);
+            }
+        }
+    }
+    else if(row!=NULL)
+    {
+        if(atoi(row[0])==0)
+        {
+            char mes[256];
+            sprintf(mes,"正在等待对方验证，请不要重复发好友申请");
+            Send_pack(send_fd,PRINT_APPLY,mes);
+            return;
+        }
+        if(atoi(row[0])==2)
+        {
+            char mes[256];
+            sprintf(mes,"请勿重复添加好友");
+            Send_pack(send_fd,PRINT_APPLY,mes);
+            return;
+        }
+    }
+
+
+}
+/*void Add_friend(int fd,char* buf)
 {
 
     Relation_t relation;
@@ -716,7 +963,7 @@ void Add_friend(int fd,char* buf)
     }
 
 
-}
+}*/
 void Send_connfd_pack(int flag,int sender,int recver,char* buf)
 {
     int recv_fd;
@@ -856,6 +1103,80 @@ void Del_friend(int fd,char* buf)
     printf("server/ friend recv:%d\n",relation.recv);
     printf("server/ friend message:%s\n",relation.message);
 
+     //获得发送者的端口号
+    int send_fd=Get_connfd(relation.send);
+
+    char buf_t[BUFSIZ];
+    sprintf(buf_t,"select request from friend where (uid=%d and fid=%d) or (uid=%d and fid=%d)",relation.send,relation.recv,relation.recv,relation.send);
+    printf("buf_t:%s\n",buf_t);
+    int ret=mysql_real_query(&mysql,buf_t,strlen(buf_t));
+    if(ret)
+    {
+        Mysql_with_error(&mysql);
+    }
+    MYSQL_RES *result; 
+    MYSQL_ROW  row;
+    result=mysql_store_result(&mysql);
+    row=mysql_fetch_row(result);
+    if(row==NULL)
+    {
+        char mes[256];
+        sprintf(mes,"好友[%d]不存在",relation.recv);
+        Send_pack(send_fd,DEL_FRIEND_APPLY,mes);
+        return;
+    }
+    if(atoi(row[0])==0)
+    {
+        char mes[256];
+        sprintf(mes,"你和[%d]还不是好友,无法删除",relation.recv);
+        Send_pack(send_fd,DEL_FRIEND_APPLY,mes);
+        return;
+    }
+
+
+
+    memset(buf_t,0,sizeof(buf_t));
+    //更新这两个人的关系
+    sprintf(buf_t,"delete from friend where (uid=%d and fid=%d) or (uid=%d and fid=%d)",relation.send,relation.recv,relation.recv,relation.send);
+    printf("buf_t:%s\n",buf_t);
+    ret=mysql_real_query(&mysql,buf_t,strlen(buf_t));
+    if(ret)
+    {
+        Mysql_with_error(&mysql);
+        printf("删除好友失败\n");
+    }
+    printf("[%d]删除了与[%d]的好友关系\n",relation.send,relation.recv);
+
+   
+    char str1[BUFSIZ];
+    char str2[BUFSIZ];
+    sprintf(str1,"你与[%d]的朋友关系已经解除",relation.recv);
+    Send_pack(send_fd,DEL_FRIEND_APPLY,str1);
+
+    //被删除者的端口号
+    int recv_fd=Get_connfd(relation.recv);
+
+    if(recv_fd<0)
+    {
+        char mes[256];
+        sprintf(mes,"好友[%d]不在线",relation.recv);
+        Send_pack(send_fd,DEL_FRIEND_APPLY,mes);
+        return;
+    }
+    sprintf(str2,"你已经被[%d]删除了好友关系",relation.send);
+    Send_pack(recv_fd,DEL_FRIEND_APPLY,str2);
+}
+
+
+/*void Del_friend(int fd,char* buf)
+{
+    
+    Relation_t relation;
+    memcpy(&relation,buf,sizeof(relation));
+    printf("server/ friend send:%d\n",relation.send);
+    printf("server/ friend recv:%d\n",relation.recv);
+    printf("server/ friend message:%s\n",relation.message);
+
     char buf_t[BUFSIZ];
     //更新这两个人的关系
     sprintf(buf_t,"delete from friend where (uid=%d and fid=%d) or (uid=%d and fid=%d)",relation.send,relation.recv,relation.recv,relation.send);
@@ -877,25 +1198,33 @@ void Del_friend(int fd,char* buf)
 
     //被删除者的端口号
     int recv_fd=Get_connfd(relation.recv);
+
+    if(recv_fd)
+    {
+        char mes[256];
+        sprintf(mes,"好友[%d]不在线",relation.recv);
+        Send_pack(send_fd,DEL_FRIEND_APPLY,mes);
+        return;
+    }
     sprintf(str2,"你已经被[%d]删除了好友关系",relation.send);
     Send_pack(recv_fd,DEL_FRIEND_APPLY,str2);
 
 
-    /*server_list_t pos;
-    server_list_t pos_friend;
+    //server_list_t pos;
+    //server_list_t pos_friend;
 
-    pos=Find_server_user(pack_t->data.send_name);
-    Find_del_server_user(pos,pack_t->data.message);
+    //pos=Find_server_user(pack_t->data.send_name);
+    //Find_del_server_user(pos,pack_t->data.message);
 
-    pos_friend=Find_server_user(pack_t->data.message);
-    Find_del_server_user(pos_friend,pack_t->data.send_name);
+    //pos_friend=Find_server_user(pack_t->data.message);
+    //Find_del_server_user(pos_friend,pack_t->data.send_name);
 
-    free(pack_t);*/
-}
+    //free(pack_t);
+}*/
 int Check_relationship(int fd,int send,int recv)
 {
     char str[BUFSIZ];
-    sprintf(str,"select *from friend where (uid=%d and fid=%d) or (uid=%d and fid=%d)",send,recv,recv,send);
+    sprintf(str,"select status from friend where (uid=%d and fid=%d and request=2) or (uid=%d and fid=%d and request=2)",send,recv,recv,send);
     printf("str:%s\n",str);
     int ret=mysql_real_query(&mysql,str,strlen(str));
     if(ret)
@@ -907,17 +1236,20 @@ int Check_relationship(int fd,int send,int recv)
     MYSQL_ROW  row;
     result=mysql_store_result(&mysql);
     row=mysql_fetch_row(result);
+    printf("here\n");
     if(row==NULL)
     {
+        printf("why>\n");
         char mes[256];
-        sprintf(mes,"[%d]还不是您的好友",atoi(row[1]));
+        sprintf(mes,"[%d]还不是您的好友",recv);
         Send_pack(fd,PRIVATE_CHAT_APPLY,mes);
+        //Send_pack(fd,PRIVATE_CHAT_APPLY,"0");
         return -1;
     }
-    if(atoi(row[2])==2)
+    if(atoi(row[0])==2)
     {
         char mes[256];
-        sprintf(mes,"[%d]已经被屏蔽",atoi(row[1]));
+        sprintf(mes,"[%d]已经被屏蔽",recv);
         Send_pack(fd,PRIVATE_CHAT_APPLY,mes);
         return 0;
     }
@@ -934,7 +1266,7 @@ void Private_chat(int fd,char* buf)
     printf("server/ friend chat message:%s\n",mes.message);
 
     int flag=Check_relationship(fd,mes.sender,mes.recver);
-    if(flag==1)
+    if(flag>0)
     {
         //先插入mysql
         char str[BUFSIZ];
@@ -958,6 +1290,7 @@ void Private_chat(int fd,char* buf)
             char mes1[256];
             sprintf(mes1,"[%d]不在线",mes.recver);
             Send_pack(send_fd,PRIVATE_CHAT_APPLY,mes1);
+            return;
         }
         else
         {
@@ -1036,7 +1369,14 @@ void Private_chat(int fd,char* buf)
         }
     }
     else if(flag==0)
+    {
         printf("[%d]和[%d]处于屏蔽状态\n",mes.sender,mes.recver);
+        char mes1[256];
+        memset(&mes1,0,sizeof(mes1));
+        sprintf(mes1,"你与[%d]处于屏蔽状态,无法聊天",mes.sender);
+        Send_pack(fd,PRIVATE_CHAT_APPLY,mes1);
+        return ;
+    }
 
 }
 void View_chat_history(int fd,char* buf)
@@ -1045,7 +1385,7 @@ void View_chat_history(int fd,char* buf)
     memcpy(&mes,buf,sizeof(mes));
 
     char str[BUFSIZ];
-    sprintf(str,"select *from friend where (uid=%d and fid=%d) or (uid=%d and fid=%d)",mes.sender,mes.recver,mes.recver,mes.sender);
+    sprintf(str,"select *from friend where (uid=%d and fid=%d and request=2) or (uid=%d and fid=%d and request=2)",mes.sender,mes.recver,mes.recver,mes.sender);
     printf("str:%s\n",str);
     int ret=mysql_real_query(&mysql,str,strlen(str));
     if(ret)
@@ -1058,12 +1398,13 @@ void View_chat_history(int fd,char* buf)
     row=mysql_fetch_row(result);
     if(row==NULL)
     {
-        Send_pack(fd,PRINT_APPLY,"你们还不是好友，请先添加好友聊天");
+        Send_pack(fd,VIEW_CHAT_HISTORY_APPLY,"你们还不是好友，请先添加好友聊天");
         printf("[%d]查询聊天记录失败\n",mes.sender);
+        Send_pack(fd,VIEW_CHAT_HISTORY_APPLY,"over");
     }
 
     char str2[BUFSIZ];
-    sprintf(str2,"select *from chat_message where (uid=%d and fid=%d) or (uid=%d and fid=%d)",mes.sender,mes.recver,mes.recver,mes.sender);
+    sprintf(str2,"select *from chat_message where (uid=%d and fid=%d and status=2) or (uid=%d and fid=%d and status=2)",mes.sender,mes.recver,mes.recver,mes.sender);
     printf("str2:%s\n",str2);
     ret=mysql_real_query(&mysql,str2,strlen(str2));
     if(ret)
@@ -1079,10 +1420,14 @@ void View_chat_history(int fd,char* buf)
     result2=mysql_store_result(&mysql);
     while((row2=mysql_fetch_row(result2)))
     {
+         char str1[256];
+         memset(str1,0,sizeof(str1));
         printf("1111111\n");
-        sprintf(str1,"[%d]----------[%d]:   %s",atoi(row2[0]),atoi(row2[1]),row2[2]);
+        sprintf(str1,"[%d]对[%d]:%s",atoi(row2[0]),atoi(row2[1]),row2[2]);
         Send_pack(send_fd,VIEW_CHAT_HISTORY_APPLY,str1);
     }
+    Send_pack(fd,VIEW_CHAT_HISTORY_APPLY,"over");
+
     printf("[%d]查询了与[%d]的聊天记录\n",mes.sender,mes.recver);
 
 
@@ -1096,12 +1441,52 @@ void Shield_friend(int fd,char* buf)
     printf("server/ friend recv:%d\n",relation.recv);
     printf("server/ friend message:%s\n",relation.message);
 
+
+    //获得发送者的端口号
+    int send_fd=Get_connfd(relation.send);
+
     char buf_t[BUFSIZ];
+    sprintf(buf_t,"select request,status from friend where (uid=%d and fid=%d) or (uid=%d and fid=%d)",relation.send,relation.recv,relation.recv,relation.send);
+    printf("buf_t:%s\n",buf_t);
+    int ret=mysql_real_query(&mysql,buf_t,strlen(buf_t));
+    if(ret)
+    {
+        Mysql_with_error(&mysql);
+    }
+     MYSQL_RES *result;  
+    MYSQL_ROW  row;
+    result=mysql_store_result(&mysql);
+    row=mysql_fetch_row(result);
+    if(row==NULL)
+    {
+        char mes[256];
+        sprintf(mes,"账号[%d]不存在",relation.recv);
+        Send_pack(send_fd,SHIELD_APPLY,mes);
+        return;
+    }
+    if(atoi(row[0])==0)
+    {
+        char mes[256];
+        sprintf(mes,"对方还不是你的好友,操作无效");
+        Send_pack(send_fd,SHIELD_APPLY,mes);
+        return;
+    }
+    if(atoi(row[1])==2)
+    {
+        char mes[256];
+        sprintf(mes,"你已经屏蔽了好友[%d],请勿重复操作",relation.recv);
+        Send_pack(send_fd,SHIELD_APPLY,mes);
+        return;
+    }
+
+
+
+    memset(buf_t,0,sizeof(buf_t));
     //更新这两个人的关系
     relation.relation=BLACK;
     sprintf(buf_t,"update friend set status=2 where (uid=%d and fid=%d) or (uid=%d and fid=%d)",relation.send,relation.recv,relation.recv,relation.send);
     printf("buf_t:%s\n",buf_t);
-    int ret=mysql_real_query(&mysql,buf_t,strlen(buf_t));
+    ret=mysql_real_query(&mysql,buf_t,strlen(buf_t));
     if(ret)
     {
         Mysql_with_error(&mysql);
@@ -1109,17 +1494,28 @@ void Shield_friend(int fd,char* buf)
     }
     printf("[%d]屏蔽了与[%d]的好友关系\n",relation.send,relation.recv);
 
-    //获得发送者的端口号
-    int send_fd=Get_connfd(relation.send);
+    
+
+   
 
     char str1[256];
     sprintf(str1,"你已经屏蔽了[%d]",relation.recv);
     Send_pack(send_fd,SHIELD_APPLY,str1);
 
     int recv_fd=Get_connfd(relation.recv);
+
+    if(recv_fd<0)
+    {
+        char mes[256];
+        sprintf(mes,"屏蔽的好友[%d]不在线",relation.recv);
+        Send_pack(send_fd,SHIELD_APPLY,mes);
+        return;
+    }
+    printf("????\n");
     char str2[256];
+    memset(str2,0,sizeof(str2));
     sprintf(str2,"你被[%d]屏蔽了",relation.send);
-    Send_pack(recv_fd,SHIELD_APPLY,str1);
+    Send_pack(recv_fd,SHIELD_APPLY,str2);
 
 }
 void Unshield_friend(int fd,char* buf)
@@ -1130,12 +1526,52 @@ void Unshield_friend(int fd,char* buf)
     printf("server/ friend recv:%d\n",relation.recv);
     printf("server/ friend message:%s\n",relation.message);
 
+    //获得发送者的端口号
+    int send_fd=Get_connfd(relation.send);
+
+
+
     char buf_t[BUFSIZ];
-    //更新这两个人的关系
-    relation.relation=BLACK;
-    sprintf(buf_t,"update friend set status=1 where (uid=%d and fid=%d) or (uid=%d and fid=%d)",relation.send,relation.recv,relation.recv,relation.send);
+    sprintf(buf_t,"select request,status from friend where (uid=%d and fid=%d) or (uid=%d and fid=%d)",relation.send,relation.recv,relation.recv,relation.send);
     printf("buf_t:%s\n",buf_t);
     int ret=mysql_real_query(&mysql,buf_t,strlen(buf_t));
+    if(ret)
+    {
+        Mysql_with_error(&mysql);
+    }
+     MYSQL_RES *result;  
+    MYSQL_ROW  row;
+    result=mysql_store_result(&mysql);
+    row=mysql_fetch_row(result);
+    if(row==NULL)
+    {
+        char mes[256];
+        sprintf(mes,"账号[%d]不存在",relation.recv);
+        Send_pack(send_fd,UNSHIELD_APPLY,mes);
+        return;
+    }
+    if(atoi(row[0])==0)
+    {
+        char mes[256];
+        sprintf(mes,"对方还不是你的好友,操作无效");
+        Send_pack(send_fd,UNSHIELD_APPLY,mes);
+        return;
+    }
+    if(atoi(row[1])==1)
+    {
+        char mes[256];
+        sprintf(mes,"[%d]已经被解除了屏蔽,操作无效",relation.recv);
+        Send_pack(send_fd,UNSHIELD_APPLY,mes);
+        return;
+    }
+
+
+    memset(buf_t,0,sizeof(buf_t));
+    //更新这两个人的关系
+    relation.relation=PAL;
+    sprintf(buf_t,"update friend set status=1 where (uid=%d and fid=%d) or (uid=%d and fid=%d)",relation.send,relation.recv,relation.recv,relation.send);
+    printf("buf_t:%s\n",buf_t);
+    ret=mysql_real_query(&mysql,buf_t,strlen(buf_t));
     if(ret)
     {
         Mysql_with_error(&mysql);
@@ -1143,9 +1579,7 @@ void Unshield_friend(int fd,char* buf)
     }
     printf("[%d]成功解除了屏蔽与[%d]的好友关系\n",relation.send,relation.recv);
 
-    //获得发送者的端口号
-    int send_fd=Get_connfd(relation.send);
-
+   
     char str1[256];
     sprintf(str1,"你已经成功解除屏蔽[%d]",relation.recv);
     Send_pack(send_fd,UNSHIELD_APPLY,str1);
@@ -1157,10 +1591,11 @@ void Unshield_friend(int fd,char* buf)
             char mes1[256];
             sprintf(mes1,"[%d]不在线",relation.recv);
             Send_pack(send_fd,UNSHIELD_APPLY,mes1);
+        return;
     }
     char str2[256];
     sprintf(str2,"你被[%d]解除了屏蔽",relation.send);
-    Send_pack(recv_fd,SHIELD_APPLY,str1);
+    Send_pack(recv_fd,SHIELD_APPLY,str2);
 }
 
 //一起实现
@@ -1271,6 +1706,7 @@ void View_friend_list(int fd,char* buf)
             }
         }
     }
+    Send_pack(fd,VIEW_FRIEND_LIST_APPLY,"over");
     printf("[%d]查询好友成功\n",friend.send);
 }
     
@@ -1538,10 +1974,7 @@ void Add_group(int fd,char* buf)
                 Mysql_with_error(&mysql);
             }
     }
-
-
-
-
+}
    
 
     
@@ -1655,7 +2088,6 @@ void Add_group(int fd,char* buf)
         printf("str3:%s\n",str3);
         Send_connfd_pack(ADD_GROUP_APPLY,relation.send,group.admin,str3);
 */
-}
 void Add_group_accept(int fd,char* buf)
 {
     Relation_t relation;
@@ -1734,7 +2166,7 @@ void Withdraw_group(int fd,char* buf)
     if(row==NULL)
     {
         char mes[256];
-        sprintf(mes,"你不在该群[%d]中,无法退出",relation.recv);
+        sprintf(mes,"群[%d]不存在",relation.recv);
         Send_pack(fd,WITHDRAW_GROUP_APPLY,mes);
         return;
     }
@@ -1767,6 +2199,17 @@ void Withdraw_group(int fd,char* buf)
 
         int send_fd=Get_connfd(group.group_owner);
 
+         //获得申请退群者的端口号
+        int fd_t=Get_connfd(relation.send);
+
+        if(send_fd<0)
+        {
+            char mes[256];
+            sprintf(mes,"[%d]不在线,请稍后再试",group.group_owner);
+            Send_pack(fd_t,WITHDRAW_GROUP_APPLY,mes);
+            return;
+        }
+
         char mes[256];
         printf("[%d]退出了群聊[%d]\n",relation.send,relation.recv);
         sprintf(mes,"[%d]退出了你的群聊[%d]",relation.send,relation.recv);
@@ -1783,8 +2226,7 @@ void Withdraw_group(int fd,char* buf)
             Mysql_with_error(&mysql);
         }
 
-         //获得申请退群者的端口号
-        int fd_t=Get_connfd(relation.send);
+       
         memset(mes,0,sizeof(mes));
         sprintf(mes,"您已经退出了群聊[%d]\n",relation.recv);
         printf("mes:%s\n",mes);
@@ -1810,10 +2252,12 @@ void Withdraw_group(int fd,char* buf)
             {
                 Mysql_with_error(&mysql);
             }
+            
 
             char str2[256];
             sprintf(str2,"群[%d]已经解散",relation.recv);
             Send_pack(send_fd,DEL_GROUP_APPLY,str2);
+            return ;
         }
 
 }
@@ -1843,6 +2287,7 @@ void View_group_member(int fd,char* buf)
         char mes[256];
         sprintf(mes,"你还没有加入此群聊或此群不存在");
         Send_pack(send_fd,VIEW_GROUP_MEMBER_APPLY,mes);
+         Send_pack(fd,VIEW_GROUP_MEMBER_APPLY,"over");
         return ;
     }
 
@@ -1858,16 +2303,50 @@ void View_group_member(int fd,char* buf)
     MYSQL_RES *result1;  
     MYSQL_ROW  row1;
     result1=mysql_store_result(&mysql);
-    char member[MAX_CHAR][MAX_CHAR];
+   
+    while((row1=mysql_fetch_row(result1)))
+    {
+
+        char buf[BUFSIZ];
+ 
+        memset(buf,0,sizeof(buf));
+        sprintf(buf,"select username,status from account where id=%d",atoi(row1[0]));
+        printf("buf:%s\n",buf);
+        ret=mysql_real_query(&mysql,buf,strlen(buf));
+        if(ret)
+        {
+            Mysql_with_error(&mysql);
+        }
+        MYSQL_RES *result2;  
+        MYSQL_ROW  row2;
+        result2=mysql_store_result(&mysql);
+        row2=mysql_fetch_row(result2);
+
+        char mes[256];
+        memset(&mes,0,sizeof(mes));
+        //账号 名字 状态
+        if(atoi(row2[1])==1)
+            sprintf(mes,"\033[;33m\33[1m%d\t\033[;31m\33[1m%s\t\033[;35m\33[1m%s\033[0m",atoi(row1[0]),row2[0],"在线");
+        else if(atoi(row2[1])==0)
+            sprintf(mes,"\033[;33m\33[1m%d\t\033[;31m\33[1m%s\t\033[;35m\33[1m%s\033[0m",atoi(row1[0]),row2[0],"离线");
+        Send_pack(send_fd,VIEW_GROUP_MEMBER_APPLY,mes);
+         //Send_pack(fd,VIEW_GROUP_MEMBER_APPLY,"over");
+    }
+
+    Send_pack(fd,VIEW_GROUP_MEMBER_APPLY,"over");
+}
+/*
+
+char member[MAX_CHAR][MAX_CHAR];
 
     int i=0;
     int j=0;
-    while((row1=mysql_fetch_row(result1)))
+while((row1=mysql_fetch_row(result1)))
     {
         strcpy(member[i],row1[0]);
         i++;
     }
-    for(j=0;j<i;j++)
+for(j=0;j<i;j++)
     {
         char buf[BUFSIZ];
         memset(buf,0,sizeof(buf));
@@ -1891,16 +2370,14 @@ void View_group_member(int fd,char* buf)
         else if(atoi(row2[1])==0)
             sprintf(mes,"\033[;33m\33[1m%d\t\033[;31m\33[1m%s\t\033[;35m\33[1m%s\033[0m",atoi(member[j]),row2[0],"离线");
         Send_pack(send_fd,VIEW_GROUP_MEMBER_APPLY,mes);
-    }
-
-
-}
+    }*/
 void View_add_group(int fd,char* buf)
 {
     Relation_t relation;
     memcpy(&relation,buf,sizeof(relation));
 
     char str[BUFSIZ];
+    memset(str,0,sizeof(str));
     sprintf(str,"select gid,mid,status from group_member where (mid=%d and request=1)",relation.send);
     printf("str:%s\n",str);
     int ret=mysql_real_query(&mysql,str,strlen(str));
@@ -1921,18 +2398,34 @@ void View_add_group(int fd,char* buf)
         printf("2222222222\n");
          printf("你[%d]还没有加入任何群\n",relation.send);
         char mes[256];
+         memset(&mes,0,sizeof(mes));
         sprintf(mes,"你还没有加入任何群聊");
         Send_pack(send_fd,VIEW_ADD_GROUP_APPLY,mes);
+         Send_pack(fd,VIEW_ADD_GROUP_APPLY,"over");
         return ;
     }
     printf("44444444\n");
     
-    //while((row=mysql_fetch_row(result)))
-    do
+
+
+    memset(str,0,sizeof(str));
+    sprintf(str,"select gid,mid,status from group_member where (mid=%d and request=1)",relation.send);
+    printf("str:%s\n",str);
+    ret=mysql_real_query(&mysql,str,strlen(str));
+    if(ret)
+    {
+        Mysql_with_error(&mysql);
+        printf("[%d]查询群信息失败\n",relation.send);
+    }
+    MYSQL_RES *result2;  
+    MYSQL_ROW  row2;
+    result2=mysql_store_result(&mysql);
+    while((row2=mysql_fetch_row(result2)))
     {    
         printf("3333333333333\n");
         char str[BUFSIZ];
-        sprintf(str,"select group_name from groups where gid=%d",atoi(row[0]));
+        memset(str,0,sizeof(str));
+        sprintf(str,"select group_name from groups where gid=%d",atoi(row2[0]));
         printf("str:%s\n",str);
         ret=mysql_real_query(&mysql,str,strlen(str));
         if(ret)
@@ -1947,16 +2440,29 @@ void View_add_group(int fd,char* buf)
         
 
         char mes[256];
+        memset(&mes,0,sizeof(mes));
         //群号 群名  地位
-        if(atoi(row[2])==1)
-            sprintf(mes,"\033[;33m\33[1m%d\t\033[;31m\33[1m%s\t\033[;36m\33[1m%s\033[0m",atoi(row[0]),row1[0],"群主");
-        if(atoi(row[2])==2)
-             sprintf(mes,"\033[;33m\33[1m%d\t\033[;31m\33[1m%s\t\033[;36m\33[1m%s\033[0m",atoi(row[0]),row1[0],"群管理");
-        if(atoi(row[2])==3)
-             sprintf(mes,"\033[;33m\33[1m%d\t\033[;31m\33[1m%s\t\033[;36m\33[1m%s\033[0m",atoi(row[0]),row1[0],"群成员");
-        Send_pack(fd,VIEW_ADD_GROUP_APPLY,mes);
-    }while((row=mysql_fetch_row(result)));
+        if(atoi(row2[2])==1)
+        {
+            sprintf(mes,"\033[;33m\33[1m%d\t\033[;31m\33[1m%s\t\033[;36m\33[1m%s\033[0m",atoi(row2[0]),row1[0],"群主");
+            Send_pack(fd,VIEW_ADD_GROUP_APPLY,mes);
+        }
+        else if(atoi(row2[2])==2)
+        {     
+            sprintf(mes,"\033[;33m\33[1m%d\t\033[;31m\33[1m%s\t\033[;36m\33[1m%s\033[0m",atoi(row2[0]),row1[0],"群管理");
+            Send_pack(fd,VIEW_ADD_GROUP_APPLY,mes);
+        }
+        else if(atoi(row2[2])==3)
+        {
+             sprintf(mes,"\033[;33m\33[1m%d\t\033[;31m\33[1m%s\t\033[;36m\33[1m%s\033[0m",atoi(row2[0]),row1[0],"群成员");
+            Send_pack(fd,VIEW_ADD_GROUP_APPLY,mes);
+        }
+        
+    }
+    //while((row=mysql_fetch_row(result)));
     
+    Send_pack(fd,VIEW_ADD_GROUP_APPLY,"over");
+
     printf("666666666666\n");
     printf("[%d]查询群信息成功\n",relation.send);
 
@@ -1971,11 +2477,34 @@ void Group_chat(int fd,char* buf)
     printf("mes.message= %s\n",mes.message);
 
 
-    //找出发送者姓名
+    //先判断有没有这个群
     char str3[BUFSIZ];
-    sprintf(str3,"select username from account where id=%d",mes.sender);
+    memset(str3,0,sizeof(str3));
+    sprintf(str3,"select group_name from groups where gid=%d",mes.recver);
     printf("str3:%s\n",str3);
     int ret=mysql_real_query(&mysql,str3,strlen(str3));
+    if(ret)
+    {
+        Mysql_with_error(&mysql);
+    }
+    MYSQL_RES *result4;  
+    MYSQL_ROW  row4;
+    result4=mysql_store_result(&mysql);
+    row4=mysql_fetch_row(result4);
+    if(row4==NULL)
+    {
+        char mes1[256];
+        memset(&mes1,0,sizeof(mes1));
+        sprintf(mes1,"[%d]群聊不存在",mes.recver);
+        Send_pack(fd,GROUP_CHAT_APPLY,mes1);
+        return ;
+    }
+
+    //找出发送者姓名
+    memset(str3,0,sizeof(str3));
+    sprintf(str3,"select username from account where id=%d",mes.sender);
+    printf("str3:%s\n",str3);
+    ret=mysql_real_query(&mysql,str3,strlen(str3));
     if(ret)
     {
         Mysql_with_error(&mysql);
@@ -1989,8 +2518,10 @@ void Group_chat(int fd,char* buf)
     strcpy(name,row3[0]);
 
 //是否是群成员
+//1为已加群
     char str[BUFSIZ];
-    sprintf(str,"select mid from group_member where (gid=%d and mid!=%d)",mes.recver,mes.sender);
+    memset(str,0,sizeof(str));
+    sprintf(str,"select mid from group_member where (gid=%d and request=1)",mes.recver);
     printf("str:%s\n",str);
     ret=mysql_real_query(&mysql,str,strlen(str));
     if(ret)
@@ -2000,17 +2531,35 @@ void Group_chat(int fd,char* buf)
     MYSQL_RES *result;  
     MYSQL_ROW  row;
     result=mysql_store_result(&mysql);
-   //row=mysql_fetch_row(result);
-    //if(row==NULL)
-      //  Send_pack(fd,GROUP_CHAT,"你还不是该群成员");
-    
-    while((row=mysql_fetch_row(result)))
+    row=mysql_fetch_row(result);
+    if(row==NULL)
+    {
+        char mes1[256];
+        memset(&mes1,0,sizeof(mes1));
+        sprintf(mes1,"你还不是该群[%d]成员",mes.recver);
+        Send_pack(fd,GROUP_CHAT_APPLY,mes1);
+        return ;
+    }
+
+
+    memset(str,0,sizeof(str));
+    sprintf(str,"select mid from group_member where (gid=%d and mid!=%d)",mes.recver,mes.sender);
+    printf("str:%s\n",str);
+    ret=mysql_real_query(&mysql,str,strlen(str));
+    if(ret)
+    {
+        Mysql_with_error(&mysql);
+    }
+    MYSQL_RES *result2;  
+    MYSQL_ROW  row2;
+    result2=mysql_store_result(&mysql);
+    while((row2=mysql_fetch_row(result2)))
     {
         //先插入mysql
         char str1[BUFSIZ];
         //0未发送
-        //发送者  接受者  信息  状态
-        sprintf(str1,"insert into group_message values('%d','%d','%s','%d')",mes.sender,atoi(row[0]),mes.message,0);
+        //发送者  接受者  信息  状态 群号
+        sprintf(str1,"insert into group_message values('%d','%d','%s','%d','%d')",mes.sender,atoi(row2[0]),mes.message,0,mes.recver);
 
         printf("str1:%s\n",str1);
         ret=mysql_real_query(&mysql,str1,strlen(str1));
@@ -2019,7 +2568,7 @@ void Group_chat(int fd,char* buf)
             Mysql_with_error(&mysql);
         }
 
-        printf("[%d]对[%d]群聊成员[%d]的聊天记录以及写入mysql\n",mes.sender,mes.recver,atoi(row[0]));
+        printf("[%d]对[%d]群聊成员[%d]的聊天记录以及写入mysql\n",mes.sender,mes.recver,atoi(row2[0]));
 
         /*char str2[BUFSIZ];
         sprintf(str2,"select status from account where id=%d",atoi(row[0]));
@@ -2033,7 +2582,7 @@ void Group_chat(int fd,char* buf)
         result1=mysql_store_result(&mysql);
         row1=mysql_fetch_row(result1);*/
 
-        int send_fd=Get_connfd(atoi(row[0]));
+        int send_fd=Get_connfd(atoi(row2[0]));
         //不在线
         /*if(atoi(row1[0])==0)
         {
@@ -2045,6 +2594,7 @@ void Group_chat(int fd,char* buf)
         }
         //在线
         char mes1[256];
+        memset(&mes1,0,sizeof(mes1));
         //发送者账号 名字 信息
         sprintf(mes1,"[%d]\t%s\t%s",mes.sender,name,mes.message);
         Send_pack(send_fd,GROUP_CHAT_APPLY,mes1);
@@ -2054,7 +2604,7 @@ void Group_chat(int fd,char* buf)
    
         char str3[BUFSIZ];
         //已发改为1
-        sprintf(str3,"update group_message set status=1 where (send_name=%d and recv_name=%d and message=%s)",mes.sender,atoi(row[0]),mes.message);
+        sprintf(str3,"update group_message set status=1 where (send_name=%d and recv_name=%d and message=%s and gid=%d)",mes.sender,atoi(row2[0]),mes.message,mes.recver);
         ret=mysql_real_query(&mysql,str3,strlen(str3));
         if(ret)
         {
@@ -2086,6 +2636,8 @@ void View_group_record(int fd,char* buf)
     {
         Send_pack(fd,VIEW_GROUP_RECORD_APPLY,"你还不是群成员，请先添加群");
         printf("[%d]查询群聊天记录失败\n",mes.sender);
+
+         Send_pack(fd,VIEW_GROUP_RECORD_APPLY,"over");
         return ;
     }
 
@@ -2093,6 +2645,8 @@ void View_group_record(int fd,char* buf)
     {
         Send_pack(fd,VIEW_GROUP_RECORD_APPLY,"你还不是群成员,请等待管理审核");
         printf("[%d]查询群聊天记录失败\n",mes.sender);
+
+         Send_pack(fd,VIEW_GROUP_RECORD_APPLY,"over");
         return ;
     }
 
@@ -2111,22 +2665,31 @@ void View_group_record(int fd,char* buf)
     row1=mysql_fetch_row(result1);
 
     char str1[BUFSIZ];
-    sprintf(str1,"select send_name,message from group_message where (send_name=%d and recv_name=%d) || (send_name=%d and recv_name=%d)",mes.sender,mes.recver,mes.sender,atoi(row1[0]));
+    memset(str1,0,sizeof(str1));
+    sprintf(str1,"select send_name,message from group_message where (recv_name=%d and gid=%d) || (send_name=%d and recv_name=%d)",mes.sender,mes.recver,mes.sender,atoi(row1[0]));
     printf("str1:%s\n",str1);
+    ret=mysql_real_query(&mysql,str1,strlen(str1));
+    if(ret)
+    {
+        Mysql_with_error(&mysql);
+    }
     MYSQL_RES *result2;
     MYSQL_ROW  row2;
     result2=mysql_store_result(&mysql);
     
     int send_fd=Get_connfd(mes.sender);
+    printf(">>>>>>\n");
     //循环读取每一行数据
     while((row2=mysql_fetch_row(result2)))
     {
         char str1[256];
         memset(str1,0,sizeof(str1));
         printf("1111111\n");
-        sprintf(str1,"[%d]在群[%d]:%s",atoi(row1[0]),mes.recver,row2[1]);
+        sprintf(str1,"[%d]在群[%d]:%s",atoi(row2[0]),mes.recver,row2[1]);
         Send_pack(fd,VIEW_GROUP_RECORD_APPLY,str1);
     }
+
+    Send_pack(fd,VIEW_GROUP_RECORD_APPLY,"over");
     printf("[%d]查询了群[%d]的聊天记录\n",mes.sender,mes.recver);
 }
 
@@ -2226,6 +2789,14 @@ void Set_group_admin(int fd,char* buf)
 
 
     int recv_fd=Get_connfd(leader.admin);
+
+    if(recv_fd<0)
+    {
+        char mes[256];
+        sprintf(mes,"[%d]不在线",leader.admin);
+        Send_pack(send_fd,SET_GROUP_ADMIN_APPLY,mes);
+        return;
+    }
     memset(&mes,0,sizeof(mes));
     sprintf(mes,"您已经成为该群[%d]的管理员",leader.recver);
     Send_pack(recv_fd,SET_GROUP_ADMIN_APPLY,mes);
@@ -2314,9 +2885,19 @@ void Kick(int fd,char* buf)
         sprintf(mes,"您踢出群成员[%d]成功",leader.admin);
         Send_pack(send_fd,KICK_APPLY,mes);
 
+
+        if(recv_fd<0)
+        {
+            char mes[256];
+            sprintf(mes,"[%d]不在线",leader.admin);
+            Send_pack(send_fd,KICK_APPLY,mes);
+            return ;
+        }
+
         memset(&mes,0,sizeof(mes));
         sprintf(mes,"您已经被管理员[%d]踢出群[%d]",leader.sender,leader.recver);
         Send_pack(recv_fd,KICK_APPLY,mes);
+        return ;
     }
     else 
     {
@@ -2350,35 +2931,304 @@ void Kick(int fd,char* buf)
     }*/
 
 }
-
-void Send_file(int fd,char* buf)
+int Check_relationship2(int fd,int send,int recv)
 {
-    char *str=(char*)malloc(sizeof(file));
-    memcpy(str,buf,sizeof(file));
-    pthread_t recv_file_id;
-    pthread_create(&recv_file_id,NULL,Recv_file,(void*)str);
-}
-void *Recv_file(void *arg)
-{
-    char *buf=(char*)arg;
-    file file_t;
-    memcpy(&file_t,buf,sizeof(file_t));
-
-    printf("name=%s\n",file_t.file_name);
-    printf("recv=%d\n",file_t.recver);
-    printf("send=%d\n",file_t.sender);
-    printf("filesize=%d\n",file_t.file_size);
-
-    //得到好友套接字
-    int recv_fd=Get_connfd(file_t.recver);
-    //向好友转发
-    if(send(recv_fd,buf,sizeof(buf),0)<0)
+    char str[BUFSIZ];
+    sprintf(str,"select status from friend where (uid=%d and fid=%d and request=2) or (uid=%d and fid=%d and request=2)",send,recv,recv,send);
+    printf("str:%s\n",str);
+    int ret=mysql_real_query(&mysql,str,strlen(str));
+    if(ret)
     {
-        my_err("send file error",__LINE__);
+        Mysql_with_error(&mysql);
     }
-    free(buf);
-    return NULL;
+
+    MYSQL_RES *result; 
+    MYSQL_ROW  row;
+    result=mysql_store_result(&mysql);
+    row=mysql_fetch_row(result);
+    printf("here\n");
+    if(row==NULL)
+    {
+        /*printf("why>\n");
+        char mes[256];
+        sprintf(mes,"[%d]还不是您的好友",recv);
+        Send_pack(fd,RECV_FILE,mes);*/
+        //Send_pack(fd,PRIVATE_CHAT_APPLY,"0");
+        return -1;
+    }
+    if(atoi(row[0])==2)
+    {
+        char mes[256];
+        sprintf(mes,"[%d]已经被屏蔽",recv);
+        Send_pack(fd,RECV_FILE,mes);
+        return 0;
+    }
+    return 1;
 }
+
+void Upload(int fd,char* buf)
+{
+    file_t file;
+    memcpy(&file,buf,sizeof(file));
+    printf("file server flag:%d\n",file.flag);
+    printf("file server send:%d\n",file.sender);
+    printf("file server recv:%d\n",file.recver);
+    printf("file server name:%s\n",file.file_name);
+    //printf("file server message:%s\n",file.message);
+    printf("file server file_size:%d\n",file.file_size);
+
+
+
+    char buff[1024];
+    memset(buff,0,sizeof(buff));
+    char file_name[100];
+    memset(file_name,0,sizeof(file_name));
+  
+
+    strcpy(file_name,file.file_name);
+    memset(buff,0,sizeof(buff));
+
+
+
+    //FILE * fp=fopen(file_name,"w+");
+    //fclose(fp);
+    int fp = open(file_name,O_CREAT |O_TRUNC ,0666);
+    if(fp < 0)
+    {
+        perror("open fail");
+    }
+    close(fp);
+
+    fp = open(file_name,O_APPEND | O_WRONLY);
+    if(fp < 0)
+        perror("open fail");
+    memset(buff,0,sizeof(buff));
+
+    int len=0;
+    int write_len;
+    int i=0;
+    //接收文件
+     while((len=recv(fd,buff,sizeof(buff),0))>0)
+    {
+        
+        i++;
+        printf("server recv len:%d\n",len);
+
+        if(strcmp(buff,"end") == 0)
+            break;
+        if(len<0)
+        {
+            printf("recv file fail\n");
+            return ;
+        }
+
+        
+        write_len=write(fp,buff,len);
+   
+        memset(buff,0,sizeof(buff));
+    }
+    close(fp);
+    printf("接受文件成功！\n");
+
+
+
+    //int fd=Get_connfd(file.sender);
+
+   int flag=Check_relationship2(fd,file.sender,file.recver);
+
+    if(flag>0)
+    {
+        char str[BUFSIZ];
+        memset(str,0,sizeof(str));
+        //用户  朋友  文件名  请求为0 未发送
+        sprintf(str,"insert into file (uid,fid,filename,request)values('%d','%d','%s','%d')",file.sender,file.recver,file.file_name,0);
+        printf("str:%s\n",str);
+        int ret=mysql_real_query(&mysql,str,strlen(str));
+        if(ret)
+        {
+            Mysql_with_error(&mysql);
+        }
+
+
+        int recv_fd=Get_connfd(file.recver);
+        if(recv_fd<0)
+        {
+            char mes[256];
+            memset(&mes,0,sizeof(mes));
+            sprintf(mes,"[%d]不在线",file.recver);
+            Send_pack(fd,RECV_APPLY,mes);
+
+            free(buf);
+            return ;
+        }
+
+
+        char mes[256];
+        memset(&mes,0,sizeof(mes));
+        sprintf(mes,"[%d]向你发送了一个文件:%s到了服务器,请去下载",file.sender,file.file_name);
+        Send_pack(recv_fd,RECV_APPLY,mes);
+
+
+        char str1[BUFSIZ];
+        memset(str1,0,sizeof(str1));
+        //用户  朋友  文件名  请求为1 已发送
+        sprintf(str1,"update file set request=1 where (uid=%d and fid=%d)",file.sender,file.recver);
+        printf("str1:%s\n",str1);
+        ret=mysql_real_query(&mysql,str1,strlen(str1));
+        if(ret)
+        {
+            Mysql_with_error(&mysql);
+        }
+    }
+    else if(flag==0)
+    {
+        printf("[%d]和[%d]处于屏蔽状态\n",file.sender,file.recver);
+        char mes1[256];
+        memset(&mes1,0,sizeof(mes1));
+        sprintf(mes1,"你与[%d]处于屏蔽状态,无法发送文件",file.recver);
+        Send_pack(fd,RECV_APPLY,mes1);
+        free(buf);
+        return ;
+    }
+    else if(flag<0)
+    {
+        printf("why>\n");
+        char mes[256];
+        sprintf(mes,"[%d]还不是您的好友",file.recver);
+        Send_pack(fd,RECV_FILE,mes);
+        return ;
+    }
+}
+
+/*void* Send_file(void *arg)
+{
+    arg=(char*)arg;
+    file_t file;
+    memcpy(&file,arg,sizeof(file));
+    printf("flag= %d\n",file.flag);
+
+    printf("server file_flag=%d\n",file.flag);
+    printf("server file_name=%s\n",file.file_name);
+    printf("server file_recver=%d\n",file.recver);
+    printf("server file_sender=%d\n",file.sender);
+    printf("server file_size=%d\n",file.file_size);*/
+    //printf("server file_pos=%lld\n",file.pos);
+
+
+    // //得到好友套接
+  //  int recv_fd=Get_connfd(file.recver);
+
+//    printf("sercver file mes=%s\n",file.data);
+    
+    
+   /* if(strcmp(file.data,"over")==0)
+    {
+        return NULL;
+    }*/
+    
+
+    //向好友转发
+  //  send(recv_fd,arg,1024,0);
+  //  free(arg);
+  //  return NULL;
+   /* PACK request;
+    memcpy(&request,buf,sizeof(request));
+
+
+
+	char filename[50];
+	memset(filename, 0, sizeof(filename));
+
+	printf("收到文件名:%s\n",request.data);
+    strcpy(filename,request.data);
+	usleep(100000);*/
+
+  
+
+
+    /*char data[10];
+    memset(data,0,sizeof(data));
+    sprintf(data,"start");
+    //发送下就绪信息
+    if(Send_file_pack(fd,0,sizeof(data),data)<0)
+    {
+        my_err("write error",__LINE__);
+    }*/
+	 
+//}
+
+void Download(int fd,char* buf)
+{
+    file_t file;
+    memcpy(&file,buf,sizeof(file));
+    printf("server recv file name=%s",file.file_name);
+
+
+    file_t file_t;
+    file_t.flag=RECV_FILE;
+    strcpy(file_t.file_name,file.file_name);
+
+    char buff[BUFMAX];
+    memcpy(buff,&file_t,sizeof(file_t));
+
+    send(fd,buff,sizeof(buff),0);
+
+
+    char buffer[1024];
+    memset(buffer,0,sizeof(buffer));
+
+    int fp=open(file_t.file_name,O_RDONLY);
+    printf("file name=%s\n",file_t.file_name);
+
+    if(fp<0)
+    {
+        printf("open fail\n");
+        char mes[256];
+        sprintf(mes,"文件%s不存在",file_t.file_name);
+        Send_pack(fd,RECV_APPLY,mes);
+        return ;
+    }
+
+    else 
+    {
+        int i = 0;
+        memset(buffer,0,sizeof(buffer));
+        int len= 0;
+        
+        while((len=read(fp,buffer,sizeof(buffer)))>0)
+        {
+            i++;
+            
+            printf("len= %d\n",len);
+
+            if(send(fd,buffer,len,0) < 0)
+            {
+                printf("Send file fail\n");
+                break;
+            }
+            
+            memset(buffer,0,sizeof(buffer));
+
+        }
+        
+        close(fp);
+        memset(buffer,0,sizeof(buffer));
+
+        sleep(1);
+        strcpy(buffer,"end");
+        send(fd,buffer,strlen(buffer),0);
+        
+        printf("发送成功\n");
+        remove(file.file_name);
+
+        char mes[256];
+        memset(mes,0,sizeof(mes));
+        sprintf(mes,"账户 :%d 接收文件%s成功",fd,file.file_name);
+        Send_pack(fd,RECV_APPLY,mes);
+    }
+
+}
+
 void Connect_mysql()
 {
     mysql_init(&mysql);
@@ -2403,16 +3253,6 @@ void Close_mysql(MYSQL mysql)
     printf("MYSQL数据库关闭!\n");
 }
 
-/*
-void Read_from_mysql()
-{
-
-    Server_user();//读取用户信息
-    //Server_friend();
-    //Server_group();
-    //Server_group_member();
-}
-*/
 void my_err(const char* err_string,int line)
 {
     fprintf(stderr,"line:%d",line);

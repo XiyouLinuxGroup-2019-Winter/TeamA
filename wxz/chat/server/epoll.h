@@ -9,16 +9,31 @@
 #include <sys/types.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <dirent.h>
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <sys/wait.h>
+//#include "fcntl-linux.h"
+#include <limits.h>
+#include <termio.h>
+#include <sys/sendfile.h>
 #include "wrang.h"
 #include "List.h"
+#include "pthreadpool.h"
 
 
-#define SERV_ADDRESS "127.0.0.1"
+
+//#define SERV_ADDRESS "47.94.14.45"
+//#define SERV_ADDRESS "127.0.0.1"
+//#define SERV_ADDRESS "192.168.30.185"
+#define SERV_ADDRESS "192.168.1.184"
 #define SERV_PORT 8013
 
 #define MAX 50
 #define MAX_CHAR 300
 #define SAVE 10
+#define BUF 2048
+
 
 #define REGISTER 1
 #define LOGIN 2
@@ -81,6 +96,10 @@
 //#define REGISTER_ERROR_APPLY 54
 #define EXIT 54
 //#define EXIT_APPLY 55
+#define RECV_APPLY 55
+#define UPLOAD 56
+#define DOWNLOAD 57
+
 
 #define DOWNLINE 0
 #define ONLINE 1
@@ -91,14 +110,26 @@
 #define ADMIN 2
 #define COMMON 3
 
+pthread_mutex_t mutex_gmb;
+pthread_cond_t cond_gmb;
 
-
+pthread_mutex_t mutex_msg;
+pthread_cond_t cond_msg;
 
 pthread_mutex_t mutex_login;
 pthread_cond_t cond_login;
 
-pthread_mutex_t mutex;
-pthread_cond_t cond;
+pthread_mutex_t mutex_show;
+pthread_cond_t cond_show;
+
+pthread_mutex_t mutex_add_grp;
+pthread_cond_t cond_add_grp;
+
+pthread_mutex_t mutex_gchat;
+pthread_cond_t cond_gchat;
+
+pthread_mutex_t mutex_gcord;
+pthread_cond_t cond_gcord;
 
 int cfd;
 
@@ -197,6 +228,9 @@ typedef struct group_leader
     char message[256];
 }Group_leader;
 
+
+
+
 typedef struct file
 {
     int flag;
@@ -204,9 +238,11 @@ typedef struct file
     int recver;
     int file_size;
     char file_name[100];
-    char message[MAX_CHAR];
-}file;
+    char data[800];
+}file_t;
 int len;
+
+
 
 typedef struct account
 {
@@ -219,6 +255,7 @@ typedef struct account
     int online;      //1:开;0:关
     int connfd;      //链接套接字
 }Account_t;
+
 int username;
 int nums=0;
 void Login_menu();
@@ -295,9 +332,17 @@ void Set_group_admin_apply(char* buf);
 void Kick();
 void Kick_apply(char* buf);
 
-void Send_file();
-void Recv_file(char *buf);
 
+void File_menu();
+
+//void Upload();
+void Send_file();
+//void* Send_file(void *arg);
+
+void Download();
+//void* Recv_file(void *arg);
+void Recv_file(char* buf);
+void Recv_apply(char* buf);
 
 
 void Send_message(int flag,char* buf);
@@ -308,7 +353,8 @@ void Send_message(int flag,char* buf);
 void display(char* str);
 void my_err(const char* err_string,int line);
 char* Get_string(char* buf,int len);
-char getch();
+//char getch();
+int getch();
 void Clear_buffer();
 int Get_choice(char *choice_t);
 
